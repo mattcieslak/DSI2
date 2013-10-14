@@ -1,0 +1,13 @@
+pypbc
+pypbc/*
+umcp_11
+umcp_11/*
+*.pyc
+talairach
+*.trk
+*.nii*
+*~
+*.wpr
+preprocess/*
+*.pkl
+

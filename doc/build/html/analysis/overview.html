@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Analysis of local termination patterns &mdash; dsi2 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dsi2 0.0.1 documentation" href="../index.html" />
+    <link rel="prev" title="Connectome Mapping Toolkit" href="../preprocessing/connectomemapper.html" /> 
+  </head>
+  <body>
+    <div class="header-wrapper">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">dsi2 0.0.1 documentation</a></div>
+        <div class="rel">
+          <a href="../preprocessing/connectomemapper.html" title="Connectome Mapping Toolkit"
+             accesskey="P">previous</a> |
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="analysis-of-local-termination-patterns">
+<h1>Analysis of local termination patterns<a class="headerlink" href="#analysis-of-local-termination-patterns" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The examples presented below don&#8217;t currently work. It might be nice to
+have a full json file that works with a bare-bones data tarball.</p>
+</div>
+<p>Here we describe how to write a script that runs LTPA on a group
+of tractography datasets.</p>
+<div class="section" id="setting-up-your-environment">
+<h2>Setting up your environment<a class="headerlink" href="#setting-up-your-environment" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">dsi2</span></tt> requires some environment variables to be set so it can find
+resources in your file system. On a *nix system these are set using the
+<tt class="docutils literal"><span class="pre">export</span></tt> command.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">DSI2_DATA</span></tt> is the path to the <tt class="docutils literal"><span class="pre">example_data</span></tt> directory that</dt>
+<dd><p class="first last">is provided on this website (<strong>NOTE: upload the example data</strong>).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">LOCAL_TRACKDB</span></tt> is the path to your directory containing your</dt>
+<dd><p class="first last">locally stored .pkl files. If this variable is not set, dsi2 will
+check your home directory for a <tt class="docutils literal"><span class="pre">local_trackdb</span></tt> directory.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="organizing-your-local-datasource">
+<h2>Organizing your local datasource<a class="headerlink" href="#organizing-your-local-datasource" title="Permalink to this headline">¶</a></h2>
+<p>Data for LTPA has two parts: the .pkl file containing the streamline mapping for
+a single subject and the corresponding metadata. The streamline mapping is a
+pickled <tt class="xref py py-class docutils literal"><span class="pre">TrackDataset</span></tt> object. It
+contains the mapping from voxel <span class="math">\((i,j,k)\)</span> index to a set of id&#8217;s referencing
+the streamlines that pass through the voxel.</p>
+<p>Metadata provides information
+about the person whose white matter is stored in the pkl - their age, gender,
+brain injuries, etc. <tt class="docutils literal"><span class="pre">dsi2</span></tt> stores paths and metadata for local data in a .json file.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When beginning a project, the first step should be to create this json file.
+Run DSI Studio and connectome mapper to process the raw data and make sure
+the files are placed in the locations specified in the json file. Streamline
+labels can be created by <tt class="docutils literal"><span class="pre">dsi2</span></tt> based on the paths in the json file.</p>
+</div>
+<p>Here is an example <tt class="docutils literal"><span class="pre">local_data.json</span></tt></p>
+<div class="highlight-javascript"><div class="highlight"><pre> <span class="p">[</span>
+  <span class="p">{</span>
+      <span class="s2">&quot;scan_id&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;length_min&quot;</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="s2">&quot;pkl_trk_path&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1/subj1.Louvain.nsm.MNI.trk&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;cutoff_angle&quot;</span><span class="o">:</span> <span class="mi">55</span><span class="p">,</span>
+      <span class="s2">&quot;scan_group&quot;</span><span class="o">:</span> <span class="s2">&quot;control&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;qa_threshold&quot;</span><span class="o">:</span> <span class="mf">1.0</span><span class="p">,</span>
+      <span class="s2">&quot;smoothing&quot;</span><span class="o">:</span> <span class="mf">0.0</span><span class="p">,</span>
+      <span class="s2">&quot;length_max&quot;</span><span class="o">:</span> <span class="mi">400</span><span class="p">,</span>
+      <span class="s2">&quot;gfa_threshold&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s2">&quot;reconstruction&quot;</span><span class="o">:</span> <span class="s2">&quot;qsdr&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;trk_space&quot;</span><span class="o">:</span> <span class="s2">&quot;qsdr&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;study&quot;</span><span class="o">:</span> <span class="s2">&quot;example study&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;attributes&quot;</span><span class="o">:</span> <span class="p">{</span>
+          <span class="s2">&quot;handedness&quot;</span><span class="o">:</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;weight&quot;</span><span class="o">:</span> <span class="mi">190</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;pkl_path&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1/subj1.Louvain.nsm.MNI.pkl&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;trk_file&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1/QSDR.100000.nsm.trk&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;software&quot;</span><span class="o">:</span> <span class="s2">&quot;DSI Studio&quot;</span>
+      <span class="s2">&quot;track_scalars&quot;</span><span class="o">:</span> <span class="p">[],</span>
+      <span class="s2">&quot;track_labels&quot;</span><span class="o">:</span> <span class="p">[</span>
+          <span class="p">{</span>
+              <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;Lausanne&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;parameters&quot;</span><span class="o">:</span> <span class="p">{</span>
+                  <span class="s2">&quot;scale&quot;</span><span class="o">:</span> <span class="mi">33</span><span class="p">,</span>
+                  <span class="s2">&quot;dilation&quot;</span><span class="o">:</span> <span class="mi">2</span>
+              <span class="p">},</span>
+              <span class="s2">&quot;notes&quot;</span><span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;graphml_path&quot;</span><span class="o">:</span> <span class="s2">&quot;lausanne2008/resolution83/resolution83.graphml&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;numpy_path&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1/subj1.scale33.thick2.npy&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;volume_path&quot;</span><span class="o">:</span> <span class="s2">&quot;atlases/subj1/scale33.thick2.nii.gz&quot;</span>
+          <span class="p">},</span>
+          <span class="p">{</span>
+              <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;Lausanne&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;parameters&quot;</span><span class="o">:</span> <span class="p">{</span>
+                  <span class="s2">&quot;scale&quot;</span><span class="o">:</span> <span class="mi">60</span><span class="p">,</span>
+                  <span class="s2">&quot;dilation&quot;</span><span class="o">:</span> <span class="mi">2</span>
+              <span class="p">},</span>
+              <span class="s2">&quot;notes&quot;</span><span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;graphml_path&quot;</span><span class="o">:</span> <span class="s2">&quot;lausanne2008/resolution150/resolution150.graphml&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;numpy_path&quot;</span><span class="o">:</span> <span class="s2">&quot;subj1/subj1.thick2.npy&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;volume_path&quot;</span><span class="o">:</span> <span class="s2">&quot;atlases/subj1/scale60.thick2.nii.gz&quot;</span>
+          <span class="p">}</span>
+         <span class="p">]</span>
+   <span class="p">},</span>
+   <span class="p">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="basic-information">
+<h3>Basic information<a class="headerlink" href="#basic-information" title="Permalink to this headline">¶</a></h3>
+<p>The following fields are all optional <em>except for scan_id and scan_group</em></p>
+<dl class="docutils">
+<dt>&#8220;scan_id&#8221;</dt>
+<dd>A unique identifier for this dataset</dd>
+<dt>&#8220;length_min&#8221;</dt>
+<dd>Minimum streamline length in millimeters</dd>
+<dt>&#8220;length_max&#8221;</dt>
+<dd>Maximum streamline length in millimeters</dd>
+<dt>&#8220;pkl_path&#8221;</dt>
+<dd>The pickled streamline mapping object</dd>
+<dt>&#8220;pkl_trk_path&#8221;</dt>
+<dd>Path to the trackvis .trk file used to create the hashed pkl file</dd>
+<dt>&#8220;cutoff_angle&#8221;</dt>
+<dd>Maximum turning angle used in tracking</dd>
+<dt>&#8220;scan_group&#8221;</dt>
+<dd>To which experimental group does this data belong (eg &#8220;control&#8221; or &#8220;tbi&#8221;)</dd>
+<dt>&#8220;qa_threshold&#8221;</dt>
+<dd>QA threshold used during tracking</dd>
+<dt>&#8220;smoothing&#8221;</dt>
+<dd>DSI Studio smoothing parameter</dd>
+<dt>&#8220;reconstruction&#8221;</dt>
+<dd>How was the diffusion data reconstructed?</dd>
+<dt>&#8220;trk_space&#8221;</dt>
+<dd>Which coordinate system is the trk file in?</dd>
+<dt>&#8220;study&#8221;</dt>
+<dd>An identifier for the study this person was a part of</dd>
+<dt>&#8220;attributes&#8221;</dt>
+<dd>A dictionary of attributes for this subject. Key/value pairs could include
+handedness, weight, gender, scores on questionnaires, etc</dd>
+<dt>&#8220;trk_file&#8221;:</dt>
+<dd>Path to the original trackvis formatted file</dd>
+<dt>&#8220;software&#8221;:</dt>
+<dd>Software used to reconstruct DWI and/or perform tractography</dd>
+</dl>
+</div>
+<div class="section" id="streamline-labels">
+<h3>Streamline Labels<a class="headerlink" href="#streamline-labels" title="Permalink to this headline">¶</a></h3>
+<p>Since the <tt class="xref py py-class docutils literal"><span class="pre">TrackDataset</span></tt> object maps from
+voxel to streamline ID, it is easy to store a label value for each streamline ID.
+Labels can be defined based on which regions the streamline connects.</p>
+<p>It is useful to have multiple labels per streamline. For instance, you might have
+multiple resolutions of an atlas and want to have access to the streamlines&#8217; labels
+under each resolution. That is why this field is a list of objects describing a
+single labeling.</p>
+<dl class="docutils">
+<dt>&#8220;name&#8221;</dt>
+<dd>A name identifying which family of atlases these labels come from</dd>
+<dt>&#8220;notes&#8221;</dt>
+<dd>A place to store notes about this set of labels</dd>
+<dt>&#8220;graphml_path&#8221;</dt>
+<dd>If the regions have labels, they should be stored in a graphml file
+like those included in the connectome mapping toolkit.</dd>
+<dt>&#8220;numpy_path&#8221;</dt>
+<dd>The labels are stored in a numpy file on disk.</dd>
+<dt>&#8220;volume_path&#8221;</dt>
+<dd>path to the nifti file that contains the regions for this labeling
+scheme. It should be in the same space (ie qsdr/MNI/native) as the
+trk file &#8220;trk_space&#8221;.</dd>
+<dt>&#8220;parameters&#8221;</dt>
+<dd>key/value pairs that describe this version of the atlas. For example
+the Lausanne family of atlases has a range of &#8220;scale&#8221; parameters.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="creating-streamline-labels">
+<h2>Creating streamline labels<a class="headerlink" href="#creating-streamline-labels" title="Permalink to this headline">¶</a></h2>
+<p>Assuming DSI Studio and Connectome Mapper ran successfully, you can pass your
+json file to a <tt class="xref py py-class docutils literal"><span class="pre">LocalDataImporter</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.ui.local_data_importer</span> <span class="kn">import</span> <span class="n">LocalDataImporter</span>
+
+<span class="n">ldi</span> <span class="o">=</span> <span class="n">LocalDataImporter</span><span class="p">(</span><span class="n">json_file</span><span class="o">=</span><span class="s">&quot;path/to/file.json&quot;</span><span class="p">)</span>
+<span class="n">ldi</span><span class="o">.</span><span class="n">validate_localdb</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will &#8220;fill-in&#8221; the missing files from your json. If only trk files and
+nii files exist, it will create the pkl files and produce numpy files for
+each atlas in the &#8220;track_labels&#8221; list. Alternatively, you could call the
+<tt class="docutils literal"><span class="pre">edit_traits()</span></tt> method on <tt class="docutils literal"><span class="pre">ldi</span></tt> and check your configuration visually.</p>
+</div>
+<div class="section" id="searching-your-local-datasource">
+<h2>Searching your local datasource<a class="headerlink" href="#searching-your-local-datasource" title="Permalink to this headline">¶</a></h2>
+<p>Once the necessary streamline labels and pickle files are in their specified
+locations, we can begin to search the database.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.database.local_data</span> <span class="kn">import</span> <span class="n">get_local_data</span>
+<span class="kn">from</span> <span class="nn">dsi2.database.track_datasource</span> <span class="kn">import</span> <span class="n">TrackDataSource</span>
+
+<span class="c"># Load the json file to a list of Scan objects</span>
+<span class="n">scans</span> <span class="o">=</span> <span class="n">get_local_data</span><span class="p">(</span><span class="s">&quot;path/to/file.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">scans</span></tt> will be a list of objects that can be used to select only the data
+you want for this analysis. It does <strong>not</strong> load the pkl into memory until
+you call its <tt class="xref py py-meth docutils literal"><span class="pre">get_track_dataset()</span></tt> function.
+Let&#8217;s select only scans from the &#8220;example&#8221; study and load them into memory.:</p>
+<div class="highlight-python"><pre>example_scans = [ scan for scan in scans if scan.study_id == "example study ]
+# Use them to build a queryable data source
+trk_src = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])</pre>
+</div>
+<p><tt class="docutils literal"><span class="pre">trk_src</span></tt> provides an interface to a searchable MNI space. Raw streamlines
+aren&#8217;t particularly useful, so we will create an object that uses this interface
+to search through and aggregate streamlines.</p>
+</div>
+<div class="section" id="aggregating-streamlines-based-on-termination-regions">
+<h2>Aggregating streamlines based on termination regions<a class="headerlink" href="#aggregating-streamlines-based-on-termination-regions" title="Permalink to this headline">¶</a></h2>
+<p>To apply perform the analysis from <a class="footnote-reference" href="#id2" id="id1">[1]</a> we need to create an <em>aggregator</em>. An
+aggregator</p>
+<blockquote>
+<div><ul class="simple">
+<li>Subclasses <tt class="xref py py-class docutils literal"><span class="pre">ClusterEditor</span></tt></li>
+<li>Overrides the <tt class="docutils literal"><span class="pre">aggregate</span></tt> method</li>
+<li>operates on a <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt></li>
+</ul>
+</div></blockquote>
+<p>For a region-based LTPA, we can create a <tt class="xref py py-class docutils literal"><span class="pre">RegionLabelAggregator</span></tt>
+that will provide some methods for easily analyzing these streamlines resulting from the
+search. Suppose we&#8217;d like to search a set of coordinates around <span class="math">\((33,54,45)\)</span>.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.aggregation.region_labeled_clusters</span> <span class="kn">import</span> <span class="n">RegionLabelAggregator</span>
+<span class="kn">from</span> <span class="nn">dsi2.streamlines.track_math</span> <span class="kn">import</span> <span class="n">sphere_around_ijk</span>
+
+<span class="n">region_agg</span> <span class="o">=</span> <span class="n">RegionLabelAggregator</span><span class="p">()</span>
+<span class="c"># give the aggregator access to the TrackDataSource</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">set_track_source</span><span class="p">(</span><span class="n">trk_src</span><span class="p">)</span>
+
+<span class="c"># create a set of search coordinates</span>
+<span class="n">sphere_radius</span> <span class="o">=</span> <span class="mi">2</span>                  <span class="c"># voxels</span>
+<span class="n">center_coordinate</span> <span class="o">=</span> <span class="p">(</span><span class="mi">33</span><span class="p">,</span><span class="mi">54</span><span class="p">,</span><span class="mi">45</span><span class="p">)</span>     <span class="c"># in MNI152 i,j,k coordinates</span>
+<span class="n">search_coords</span> <span class="o">=</span> <span class="n">sphere_around_ijk</span><span class="p">(</span><span class="n">sphere_radius</span><span class="p">,</span> <span class="n">center_coordinate</span><span class="p">)</span>
+
+<span class="c"># Put the coordinates to use:</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">query_track_source_with_coords</span><span class="p">(</span><span class="n">search_coords</span><span class="p">)</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">update_clusters</span><span class="p">()</span>
+
+<span class="c"># which regions pairs were found and how many streamlines to each?</span>
+<span class="n">conn_ids</span><span class="p">,</span> <span class="n">connection_vectors</span> <span class="o">=</span> <span class="n">region_agg</span><span class="o">.</span><span class="n">connection_vector_matrix</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">conn_ids</span></tt> is a list of connections (regionA, regionB) found that pass through
+the search coordinates. If there are <span class="math">\(n\)</span> individuals in the <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt>
+and <span class="math">\(m\)</span> elements in <tt class="docutils literal"><span class="pre">conn_ids</span></tt>, then <tt class="docutils literal"><span class="pre">connection_vectors</span></tt> will be an
+<span class="math">\(n \times m\)</span> matrix where row <span class="math">\(i\)</span> column <span class="math">\(j\)</span> contains the streamline
+count connection region pair math:<cite>j</cite> in subject <span class="math">\(i\)</span>&#8216;s data.</p>
+<p><tt class="docutils literal"><span class="pre">search_results</span></tt> will be a new <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt>
+containing <tt class="xref py py-class docutils literal"><span class="pre">TrackDataset</span></tt>s where only the streamlines
+passing through the voxel at <span class="math">\((33,54,45)\)</span>.</p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Cieslak, M., &amp; Grafton, S.T. Local termination pattern analysis:
+a tool for comparing white matter morphology. Brain Imaging Behav, DOI 10.1007/s11682-013-9254-z (2013).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preprocessing/preproc.html">Preparing data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Analysis of local termination patterns</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-your-environment">Setting up your environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#organizing-your-local-datasource">Organizing your local datasource</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-information">Basic information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#streamline-labels">Streamline Labels</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-streamline-labels">Creating streamline labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#searching-your-local-datasource">Searching your local datasource</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#aggregating-streamlines-based-on-termination-regions">Aggregating streamlines based on termination regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          <h3 style="margin-top: 1.5em;">Search</h3>
+          <form class="search" action="../search.html" method="get">
+            <input type="text" name="q" />
+            <input type="submit" value="Go" />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
+          <p class="searchtip" style="font-size: 90%">
+            Enter search terms or a module, class or function name.
+          </p>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <a href="../preprocessing/connectomemapper.html" title="Connectome Mapping Toolkit"
+             >previous</a> |
+          <a href="../genindex.html" title="General Index"
+             >index</a>
+            <br/>
+            <a href="../_sources/analysis/overview.txt"
+               rel="nofollow">Show Source</a>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer">
+        &copy; Copyright 2013, Matt Cieslak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
