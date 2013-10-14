@@ -1,0 +1,16 @@
+.dropbox
+*.pyc
+*.src.gz
+*.trk
+*.fib.gz
+*.wpr
+*.nii*
+*.png
+*.pkl
+trackset.py
+sphere_tracks.py
+Icon*
+*.npy
+*.csv
+example_data
+roger_data
