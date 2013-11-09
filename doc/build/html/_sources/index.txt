@@ -61,6 +61,7 @@ Getting Started
 
    preprocessing/preproc
    analysis/overview
+   workflows/browsing
 
 References
 ----------

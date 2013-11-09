@@ -251,15 +251,18 @@ search. Suppose we'd like to search a set of coordinates around :math:`(33,54,45
   # which regions pairs were found and how many streamlines to each?
   conn_ids, connection_vectors = region_agg.connection_vector_matrix()
 
+  # if running an interactive ipython session, plot it
+  region_agg.plot_connection_vector_lines(connection_vectors,conn_ids)
+
 ``conn_ids`` is a list of connections (regionA, regionB) found that pass through
 the search coordinates. If there are :math:`n` individuals in the :py:class:`~dsi2.database.track_datasource.TrackDataSource`
 and :math:`m` elements in ``conn_ids``, then ``connection_vectors`` will be an
 :math:`n \times m` matrix where row :math:`i` column :math:`j` contains the streamline
 count connection region pair math:`j` in subject :math:`i`\'s data.
 
-``search_results`` will be a new :py:class:`~dsi2.database.track_datasource.TrackDataSource` 
-containing :py:class:`~dsi2.streamlines.track_dataset.TrackDataset`\s where only the streamlines
-passing through the voxel at :math:`(33,54,45)`. 
+
+Running a whole-brain LTPA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 

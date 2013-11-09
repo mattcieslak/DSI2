@@ -14,3 +14,5 @@ Icon*
 *.csv
 example_data
 roger_data
+*~
+.*.swp

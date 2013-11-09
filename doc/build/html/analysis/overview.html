@@ -27,6 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="dsi2 0.0.1 documentation" href="../index.html" />
+    <link rel="next" title="Browsing the Streamline Database" href="../workflows/browsing.html" />
     <link rel="prev" title="Connectome Mapping Toolkit" href="../preprocessing/connectomemapper.html" /> 
   </head>
   <body>
@@ -37,6 +38,8 @@
         <div class="rel">
           <a href="../preprocessing/connectomemapper.html" title="Connectome Mapping Toolkit"
              accesskey="P">previous</a> |
+          <a href="../workflows/browsing.html" title="Browsing the Streamline Database"
+             accesskey="N">next</a> |
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a>
         </div>
@@ -290,6 +293,9 @@ search. Suppose we&#8217;d like to search a set of coordinates around <span clas
 
 <span class="c"># which regions pairs were found and how many streamlines to each?</span>
 <span class="n">conn_ids</span><span class="p">,</span> <span class="n">connection_vectors</span> <span class="o">=</span> <span class="n">region_agg</span><span class="o">.</span><span class="n">connection_vector_matrix</span><span class="p">()</span>
+
+<span class="c"># if running an interactive ipython session, plot it</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">plot_connection_vector_lines</span><span class="p">(</span><span class="n">connection_vectors</span><span class="p">,</span><span class="n">conn_ids</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">conn_ids</span></tt> is a list of connections (regionA, regionB) found that pass through
@@ -297,9 +303,9 @@ the search coordinates. If there are <span class="math">\(n\)</span> individuals
 and <span class="math">\(m\)</span> elements in <tt class="docutils literal"><span class="pre">conn_ids</span></tt>, then <tt class="docutils literal"><span class="pre">connection_vectors</span></tt> will be an
 <span class="math">\(n \times m\)</span> matrix where row <span class="math">\(i\)</span> column <span class="math">\(j\)</span> contains the streamline
 count connection region pair math:<cite>j</cite> in subject <span class="math">\(i\)</span>&#8216;s data.</p>
-<p><tt class="docutils literal"><span class="pre">search_results</span></tt> will be a new <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt>
-containing <tt class="xref py py-class docutils literal"><span class="pre">TrackDataset</span></tt>s where only the streamlines
-passing through the voxel at <span class="math">\((33,54,45)\)</span>.</p>
+</div>
+<div class="section" id="running-a-whole-brain-ltpa">
+<h2>Running a whole-brain LTPA<a class="headerlink" href="#running-a-whole-brain-ltpa" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
@@ -332,9 +338,11 @@ a tool for comparing white matter morphology. Brain Imaging Behav, DOI 10.1007/s
 <li class="toctree-l2"><a class="reference internal" href="#creating-streamline-labels">Creating streamline labels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#searching-your-local-datasource">Searching your local datasource</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#aggregating-streamlines-based-on-termination-regions">Aggregating streamlines based on termination regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-a-whole-brain-ltpa">Running a whole-brain LTPA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html">Browsing the Streamline Database</a></li>
 </ul>
 
           <h3 style="margin-top: 1.5em;">Search</h3>
@@ -357,6 +365,8 @@ a tool for comparing white matter morphology. Brain Imaging Behav, DOI 10.1007/s
         <div class="left">
           <a href="../preprocessing/connectomemapper.html" title="Connectome Mapping Toolkit"
              >previous</a> |
+          <a href="../workflows/browsing.html" title="Browsing the Streamline Database"
+             >next</a> |
           <a href="../genindex.html" title="General Index"
              >index</a>
             <br/>
