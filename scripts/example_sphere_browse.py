@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import time, sys, os
 sys.path.append("..")
+
+os.environ["DSI2_DATA"] = os.path.join(os.getenv("HOME"),"Dropbox","DSI2","example_data")
+os.environ["LOCAL_TRACKDB"] = os.path.join(os.getenv("HOME"),"example_trackdb")
+
 from dsi2.aggregation.region_clusters import RegionAggregator
 from dsi2.aggregation.clustering_algorithms import QuickBundlesAggregator,FastKMeansAggregator
 from dsi2.database.track_datasource import TrackDataSource
@@ -14,8 +18,8 @@ from dsi2.ui.sphere_browser import SphereBrowser
 test = "clustering"
 
 # If aggregation, which algorithm?
-#aggregator = "dipy"
-aggregator = "kmeans"
+aggregator = "dipy"
+#aggregator = "kmeans"
 
 # Want to load multiple subjects?
 #TEST_MULTISUBJECTS = True
@@ -23,8 +27,7 @@ TEST_MULTISUBJECTS = False
 
 from dsi2.database.local_data import get_local_data
 from dsi2.database.local_data import pkl_dir
-os.environ["LOCAL_TRACKDB"] = "/home/cieslak/example_trackdb"
-local_trackdb = get_local_data("/home/cieslak/example_trackdb/example_data.json")
+local_trackdb = get_local_data(os.path.join(os.getenv("HOME"),"example_trackdb","example_data.json"))
 
 # how many subjects?
 if TEST_MULTISUBJECTS:
