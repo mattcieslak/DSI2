@@ -13,6 +13,9 @@ from ..streamlines.track_math import connection_ids_from_tracks
 from ..volumes.mask_dataset import MaskDataset
 import networkx as nx
 import numpy as np
+import nibabel as nib
+import gzip
+from scipy.io.matlab import loadmat
 
 dsi2_data = os.getenv("DSI2_DATA")
 local_tdb_var = os.getenv("LOCAL_TRACKDB")
@@ -34,6 +37,34 @@ def __get_region_ints_from_graphml(graphml):
     """
     graph = nx.read_graphml(graphml)
     return sorted(map(int, graph.nodes()))
+
+def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
+    """
+    Creates a qsdr atlas from a DSI Studio fib file and a b0 atlas.
+    """
+    # Load the mapping from the fib file
+    fibf = gzip.open(fib_file,"rb")
+    m = loadmat(fibf)
+    fibf.close()
+    volume_dimension = m['dimension'].squeeze().astype(int)
+    mx = m['mx'].squeeze().astype(int)
+    my = m['my'].squeeze().astype(int)
+    mz = m['mz'].squeeze().astype(int)
+    
+    # Load the QSDR template volume from DSI studio
+    QSDR_vol = os.path.join("/storage2/cieslak/bin/dsi_studio64/dsi_studio_64/NTU90_QA.nii.gz")
+    QSDR_nim = nib.load(QSDR_vol)
+    QSDR_data = QSDR_nim.get_data()
+    
+    # Labels in b0 space
+    old_atlas = nib.load(b0_atlas).get_data()
+    
+    # Fill up the output atlas with labels from b0,collected through the fib mappings
+    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
+    aff = QSDR_nim.get_affine()
+    aff[(0,1,2),(0,1,2)]*=2
+    onim = nib.Nifti1Image(new_atlas,aff)
+    onim.to_filename(output_v)
 
 def create_missing_files(scan):
     """
