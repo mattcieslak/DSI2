@@ -52,7 +52,7 @@ class RegionAggregator(ClusterEditor):
     # Previously from "Atlas"
     possible_atlases = List
     atlas_parameters = Dict
-    
+
 
     def _b_plot_connection_vector_fired(self):
         """Listen for button clicks"""
@@ -76,7 +76,7 @@ class RegionAggregator(ClusterEditor):
             query[ap] = getattr(self, "%s_%s" % (self.atlas_name, ap))
         print "\t\t++ querying track_source for labels labels with", query
         new_labels = self.track_source.change_atlas(query)
-        
+
         # Set the .connections attribute on each TrackDataset
         print "\t\t++ updating graphical objects"
         for tds,c in zip(self.track_sets,new_labels):
@@ -123,14 +123,14 @@ class RegionAggregator(ClusterEditor):
 
     def set_track_source(self,tsource):
         """
-        Overwriting the 
+        Overwriting the
         """
         self.track_source = tsource
         self.track_source.set_render_tracks(self.render_tracks)
-        # The track source contains label data, NOTE the track_source will 
+        # The track source contains label data, NOTE the track_source will
         # cache the label vectors for each subject
         self.atlas_parameters = self.track_source.load_label_data()
-        
+
     @on_trait_change('+parameter')
     def clustering_param_changed(self,obj, name, old, new):
         print "\t+ %s parameter on clusterer changed" % name
@@ -143,9 +143,9 @@ class RegionAggregator(ClusterEditor):
         else:
             print "\t\t++ param not applicable to current atlas"
         # Update clusters either way
-        if self.auto_clusterize:
+        if self.auto_aggregate:
             self.update_clusters()
-                
+
     def default_traits_view(self):
         """
         The editable traits in the algorithm_widgets will depend on the atlas
@@ -153,10 +153,10 @@ class RegionAggregator(ClusterEditor):
         """
         if self.track_source is None:
             raise ValueError("Must have a track_source set to determine traits")
-        
-        
+
+
         self.possible_atlases = self.atlas_parameters.keys()
-        groups = []        
+        groups = []
         # Loop over the available atlases
         for atlas_name in self.possible_atlases:
             # define a trait for each editable parameter
@@ -179,13 +179,13 @@ class RegionAggregator(ClusterEditor):
                       show_border=True,
                       label=atlas_name+" parameters")
             )
-        
+
         # widgets for editing algorithm parameters
         traits_view = View(
-          # All cluster editors have these          
-          Group( 
+          # All cluster editors have these
+          Group(
             Group(
-              Item("auto_clusterize"),
+              Item("auto_aggregate"),
               Item("render_clusters"),
               Item("render_tracks"),
             ),

@@ -5,7 +5,7 @@ sys.path.append("..")
 os.environ["DSI2_DATA"] = os.path.join(os.getenv("HOME"),"Dropbox","DSI2","example_data")
 os.environ["LOCAL_TRACKDB"] = os.path.join(os.getenv("HOME"),"example_trackdb")
 
-from dsi2.aggregation.region_clusters import RegionAggregator
+from dsi2.aggregation.region_labeled_clusters import RegionLabelAggregator
 from dsi2.aggregation.clustering_algorithms import QuickBundlesAggregator,FastKMeansAggregator
 from dsi2.database.track_datasource import TrackDataSource
 from dsi2.streamlines.track_math import sphere_around_ijk
@@ -14,8 +14,8 @@ from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.ui.sphere_browser import SphereBrowser
 
 # Test an atlas or aggregation algorithm?
-#test = "regions"
-test = "clustering"
+test = "regions"
+#test = "clustering"
 
 # If aggregation, which algorithm?
 aggregator = "dipy"
@@ -36,7 +36,7 @@ else:
     track_source = TrackDataSource(track_datasets = [local_trackdb[0].get_track_dataset()])
 
 if test == "regions":
-    cl = RegionAggregator()
+    cl = RegionLabelAggregator()
 elif test == "clustering":
     if aggregator == "dipy":
         cl = QuickBundlesAggregator()
