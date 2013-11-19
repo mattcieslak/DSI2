@@ -79,23 +79,24 @@ class TrackScalarSource(HasTraits):
     name = Str("")
     description = Str("")
     parameters = Dict()
-    
+
     # file paths to data
     numpy_path = File("")
     graphml_path = File("")
     volume_path = File("")
-    
+
     scalars = Array
-    
+
     def load_array(self,base_dir):
         self.scalars = np.load(
             os.path.join(base_dir,numpy_path))
-    
+
 scalar_table = TableEditor(
     columns =
     [   ObjectColumn(name="name"),
         ObjectColumn(name="numpy_path"),
-        ObjectColumn(name="volume_path"),
+        ObjectColumn(name="b0_volume_path"),
+        ObjectColumn(name="qsdr_volume_path"),
         ObjectColumn(name="graphml_path"),
         ObjectColumn(name="description")
     ],
@@ -204,10 +205,10 @@ class Scan(Dataset):
             show_labels=False,
             show_border=True,
             label = "Scalar values"
-            ),        
+            ),
         )
     )
-    
+
     def __init__(self,**traits):
         """
         Holds the information OF A SINGLE SCAN.
@@ -243,10 +244,10 @@ class Scan(Dataset):
         jdict = {}
         for trait in self.editable_traits():
             if trait in ("atlases","track_labels","track_scalars",
-                         "track_label_items","track_scalar_items"): 
+                         "track_label_items","track_scalar_items"):
                 continue
             jdict[trait] = getattr(self,trait)
-            
+
         # Get the list of track_labels
         labels = []
         for source in self.track_label_items:
@@ -270,7 +271,7 @@ class Scan(Dataset):
                 }
             )
         return jdict
-    
+
     def get_label_source(self,**kw):
         """
         Someday there should be a BTree indexing these,
@@ -285,9 +286,9 @@ class Scan(Dataset):
         return matches[0]
 
 
-                
-            
-            
+
+
+
 class Query(Dataset):
     def __init__(self,**traits):
         super(Query,self).__init__(**traits)
