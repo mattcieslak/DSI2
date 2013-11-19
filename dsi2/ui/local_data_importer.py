@@ -38,15 +38,15 @@ def __get_region_ints_from_graphml(graphml):
 def create_missing_files(scan):
     """
     Creates files on disk that are needed to visualize data
-    
+
     Discrete space indexing
     -----------------------
-    If the file stored in ``pkl_file`` does not exist,  
+    If the file stored in ``pkl_file`` does not exist,
     The ``trk_file`` attribute is loaded and indexed in MNI152
-    space. 
+    space.
     Looks into all the track_labels and track_scalars and ensures
     that they exist at loading time
-    
+
     """
     # Ensure that the path where pkls are to be stored exists
     if not os.path.isabs(scan.pkl_path):
@@ -58,7 +58,7 @@ def create_missing_files(scan):
         print "\t+ making directory for pkl_files"
         os.makedirs(pkl_directory)
     print "\t\t++ pkl_directory is", pkl_directory
-    
+
     # Check that the pkl file exists
     if not os.path.exists(abs_pkl_file):
         if not os.path.exists(scan.trk_file):
@@ -72,10 +72,10 @@ def create_missing_files(scan):
     tds.hash_voxels_to_tracks()
     print "\t\t++ Done."
 
-     
+
     # =========================================================
     # Loop over the track labels, creating .npy files as needed
-    n_labels = len(scan.track_label_items) 
+    n_labels = len(scan.track_label_items)
     print "\t+ Intersecting", n_labels, "label datasets"
     for lnum, label_source in enumerate(scan.track_label_items):
         # Load the mask
@@ -90,7 +90,7 @@ def create_missing_files(scan):
         print "\t\t++ Loading volume %d/%d:\n\t\t\t %s" % (
                 lnum, n_labels, label_source.volume_path )
         mds = MaskDataset(label_source.volume_path)
-        
+
         # Get the region labels from the parcellation
         if label_source.graphml_path == "":
             print "\t\t++ No graphml exists: using unique region labels"
@@ -98,7 +98,7 @@ def create_missing_files(scan):
         else:
             print "\t\t++ Using graphml regions",label_source.graphml
             regions = __get_region_ints_from_graphml(label_source.graphml_path)
-        
+
         # Save it.
         conn_ids = connection_ids_from_tracks(mds, tds,
               save_npy=npy_path,
@@ -107,7 +107,7 @@ def create_missing_files(scan):
         print "\t\t++ Saved %s" % npy_path
         print "\t\t\t*** %.2f streamlines not accounted for by regions"%(
                 np.sum(conn_ids==0)/float(len(conn_ids)))
-            
+
     # =========================================================
     # Loop over the track scalars, creating .npy files as needed
     print "\t Dumping trakl GFA/QA values"
@@ -130,7 +130,7 @@ def create_missing_files(scan):
         abs_pkl_trk_file = scan.pkl_trk_path
     print "\t+ Dumping MNI152 hash table"
     tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
-            
+
 scan_table = TableEditor(
     columns =
     [   ObjectColumn(name="scan_id",editable=True),
@@ -153,10 +153,10 @@ class LocalDataImporter(HasTraits):
     Holds a list of Scan objects. These can be loaded from
     and saved to a json file.
     """
-    json_file = File(pkl_dir)
+    json_file = File()
     datasets = List(Instance(Scan))
     save = Button()
-    
+
     def _json_file_changed(self):
         if not os.path.exists(self.json_file):
             print "no such file", self.json_file
@@ -166,20 +166,16 @@ class LocalDataImporter(HasTraits):
         fop.close()
         self.datasets = [
           Scan(pkl_dir=pkl_dir, data_dir=dsi2_data, **d) for d in jdata]
-        
+
     def validate_localdb(self):
-        """ Looks at every entry in the loaded db and 
+        """ Looks at every entry in the loaded db and
         checks that the loadable files exist.
         """
         for scan in self.datasets:
-            try:
-                create_missing_files(scan)
-            except Exception, e:
-                print "+ FAILED to process", scan.scan_id
-                print e
-            
-    
-        
+            create_missing_files(scan)
+
+
+
     # UI definition for the local db
     traits_view = View(
         Group(
@@ -198,8 +194,8 @@ class LocalDataImporter(HasTraits):
         resizable=True,
         width=900,
         height=500
-        
+
     )
-        
-        
-    
+
+
+
