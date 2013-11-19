@@ -128,7 +128,7 @@ class SlicerPanel(HasTraits):
         try:
             color_tuple = self.sphere_color.toTuple()
         except:
-            color = self.sphere_color
+            color_tuple = self.sphere_color
         self.sphere_viz.actor.property.color = (
                      color_tuple[0]/255.,
                      color_tuple[1]/255.,
