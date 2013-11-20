@@ -11,24 +11,21 @@ import cPickle as pickle
 
 from dsi2.ui.local_data_importer import (LocalDataImporter, b0_to_qsdr_map,
                                          create_missing_files)
-#def test_b0_to_qsdr_map(tmpdir):
-    #td =  "/" + tmpdir.relto("/")
-    #print type(td)
-    #b0_vol = os.path.join(test_input_data,"0377A",
-            #"B0.scale33.thick2.nii.gz")
-    #fib_file = os.path.join(test_input_data,"0377A",
-            #"0377A.src.gz.odf8.f3.reg1.qsdr.1.25.2mm.map.fib.gz")
-    #qsdr_out = os.path.join(td,"QSDR_out.nii.gz")
-    #correct_file = os.path.join(test_output_data,
-            #"0377A","QSDR.scale33.thick2.nii.gz")
-    ## Call the test function
-    #b0_to_qsdr_map(fib_file,b0_vol,qsdr_out)
-    #correct_vol = nib.load(correct_file).get_data()
-    #test_vol = nib.load(qsdr_out).get_data()
-    #assert (test_vol==correct_vol).all()
-
-
-
+def test_b0_to_qsdr_map(tmpdir):
+    td =  "/" + tmpdir.relto("/")
+    print type(td)
+    b0_vol = os.path.join(test_input_data,"0377A",
+            "B0.scale33.thick2.nii.gz")
+    fib_file = os.path.join(test_input_data,"0377A",
+            "0377A.src.gz.odf8.f3.reg1.qsdr.1.25.2mm.map.fib.gz")
+    qsdr_out = os.path.join(td,"QSDR_out.nii.gz")
+    correct_file = os.path.join(test_output_data,
+            "0377A","QSDR.scale33.thick2.nii.gz")
+    # Call the test function
+    b0_to_qsdr_map(fib_file,b0_vol,qsdr_out)
+    correct_vol = nib.load(correct_file).get_data()
+    test_vol = nib.load(qsdr_out).get_data()
+    assert (test_vol==correct_vol).all()
 
 
 def test_create_missing_files(tmpdir):
