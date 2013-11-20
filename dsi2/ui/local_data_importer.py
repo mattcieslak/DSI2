@@ -18,14 +18,15 @@ import gzip
 from scipy.io.matlab import loadmat
 
 dsi2_data = os.getenv("DSI2_DATA")
-local_tdb_var = os.getenv("LOCAL_TRACKDB")
-home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
-if local_tdb_var:
-    pkl_dir = local_tdb_var
-    print "Using $LOCAL_TRACKDB environment variable",
-elif os.path.exists(home_pkl):
-    pkl_dir = home_pkl
-    print "Using local_trackdb in home directory for data"
+pkl_dir = os.getenv("LOCAL_TRACKDB")
+#home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
+#if local_tdb_var:
+#    pkl_dir = local_tdb_var
+#    print "Using $LOCAL_TRACKDB environment variable",
+#elif os.path.exists(home_pkl):
+#    pkl_dir = home_pkl
+#    print "Using local_trackdb in home directory for data"
+
 if dsi2_data:
     print "Using $DSI2_DATA environment variable",
 else:
@@ -50,15 +51,15 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     mx = m['mx'].squeeze().astype(int)
     my = m['my'].squeeze().astype(int)
     mz = m['mz'].squeeze().astype(int)
-    
+
     # Load the QSDR template volume from DSI studio
-    QSDR_vol = os.path.join("/storage2/cieslak/bin/dsi_studio64/dsi_studio_64/NTU90_QA.nii.gz")
+    QSDR_vol = os.path.join(dsi2_data,"NTU90_QA.nii.gz")
     QSDR_nim = nib.load(QSDR_vol)
     QSDR_data = QSDR_nim.get_data()
-    
+
     # Labels in b0 space
     old_atlas = nib.load(b0_atlas).get_data()
-    
+
     # Fill up the output atlas with labels from b0,collected through the fib mappings
     new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
     aff = QSDR_nim.get_affine()
@@ -66,7 +67,8 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     onim = nib.Nifti1Image(new_atlas,aff)
     onim.to_filename(output_v)
 
-def create_missing_files(scan):
+
+def create_missing_files(scan,input_dir, output_dir):
     """
     Creates files on disk that are needed to visualize data
 
@@ -79,25 +81,28 @@ def create_missing_files(scan):
     that they exist at loading time
 
     """
+
     # Ensure that the path where pkls are to be stored exists
-    if not os.path.isabs(scan.pkl_path):
-        abs_pkl_file = os.path.join(scan.pkl_dir,scan.pkl_path)
-    else:
-        abs_pkl_file = scan.pkl_path
+    abs_pkl_file = os.path.join(output_dir,scan.pkl_path)
     pkl_directory = os.path.split(abs_pkl_file)[0]
     if not os.path.exists(pkl_directory):
         print "\t+ making directory for pkl_files"
         os.makedirs(pkl_directory)
     print "\t\t++ pkl_directory is", pkl_directory
 
-    # Check that the pkl file exists
+
+    if os.path.isabs(scan.trk_file):
+        abs_trk_file = scan.trk_file
+    else:
+        abs_trk_file = os.path.join(input_dir,scan.trk_file)
+    # Check that the pkl file exists, or the trk file
     if not os.path.exists(abs_pkl_file):
-        if not os.path.exists(scan.trk_file):
-            raise ValueError(scan.trk_file + " does not exist")
+        if not os.path.exists(abs_trk_file):
+            raise ValueError(abs_trk_file + " does not exist")
     # Load the tracks
-    print "\t+ loading", scan.trk_file
-    tds = TrackDataset(fname=scan.trk_file)
-    ## NOTE: If these were MNI 152 @ 1mm, we could do something like
+    print "\t+ loading", abs_trk_file
+    tds = TrackDataset(abs_trk_file)
+    # NOTE: If these were MNI 152 @ 1mm, we could do something like
     # tds.tracks_at_ijk = streamline_mapping(tds.tracks,(1,1,1))
     print "\t+ hashing tracks in qsdr space"
     tds.hash_voxels_to_tracks()
@@ -113,22 +118,45 @@ def create_missing_files(scan):
         # File containing the corresponding label vector
         npy_path = label_source.numpy_path if \
             os.path.isabs(label_source.numpy_path) else \
-            os.path.join(scan.pkl_dir,label_source.numpy_path)
+            os.path.join(output_dir,label_source.numpy_path)
         print "\t\t++ Ensuring %s exists" % npy_path
         if os.path.exists(npy_path):
             print "\t\t++", npy_path, "already exists"
             continue
+
+        # Check to see if the qsdr volume exists. If not, create it from
+        # the B0 volume
+        abs_qsdr_path = label_source.qsdr_volume_path if os.path.isabs(
+            label_source.qsdr_volume_path) else os.path.join(
+                output_dir,label_source.qsdr_volume_path)
+        abs_b0_path = label_source.b0_volume_path if os.path.isabs(
+            label_source.b0_volume_path) else os.path.join(
+                input_dir,label_source.b0_volume_path)
+        abs_fib_file = scan.fib_file if os.path.isabs(
+            scan.fib_file ) else os.path.join(
+                input_dir,scan.fib_file )
+
+        if not os.path.exists(abs_qsdr_path):
+            # If neither volume exists, the data is incomplete
+            if not os.path.exists(abs_b0_path):
+                print "\t\t++ ERROR: must have a b0 volume and .map.fib.gz OR a qsdr_volume"
+                continue
+            print "\t\t++ mapping b0 labels to qsdr space"
+            b0_to_qsdr_map(abs_fib_file, abs_b0_path,
+                           abs_qsdr_path)
+
         print "\t\t++ Loading volume %d/%d:\n\t\t\t %s" % (
-                lnum, n_labels, label_source.volume_path )
-        mds = MaskDataset(label_source.volume_path)
+                lnum, n_labels, abs_qsdr_path )
+        mds = MaskDataset(abs_qsdr_path)
 
         # Get the region labels from the parcellation
+        abs_graphml_path = os.path.join(dsi2_data,label_source.graphml_path)
         if label_source.graphml_path == "":
             print "\t\t++ No graphml exists: using unique region labels"
             regions = mds.roi_ids
         else:
-            print "\t\t++ Using graphml regions",label_source.graphml
-            regions = __get_region_ints_from_graphml(label_source.graphml_path)
+            print "\t\t++ Using graphml regions",abs_graphml_path
+            regions = __get_region_ints_from_graphml(abs_graphml_path)
 
         # Save it.
         conn_ids = connection_ids_from_tracks(mds, tds,
@@ -187,6 +215,8 @@ class LocalDataImporter(HasTraits):
     json_file = File()
     datasets = List(Instance(Scan))
     save = Button()
+    input_directory = File()
+    output_directory = File()
 
     def _json_file_changed(self):
         if not os.path.exists(self.json_file):
@@ -196,14 +226,17 @@ class LocalDataImporter(HasTraits):
         jdata = json.load(fop)
         fop.close()
         self.datasets = [
-          Scan(pkl_dir=pkl_dir, data_dir=dsi2_data, **d) for d in jdata]
+          Scan(pkl_dir=self.output_directory,
+               data_dir=dsi2_data, **d) for d in jdata]
 
     def validate_localdb(self):
         """ Looks at every entry in the loaded db and
         checks that the loadable files exist.
         """
         for scan in self.datasets:
-            create_missing_files(scan)
+            create_missing_files(scan,
+                    input_dir=os.path.dirname(self.json_file),
+                    output_dir=self.output_directory)
 
 
 

@@ -95,6 +95,7 @@ scalar_table = TableEditor(
     columns =
     [   ObjectColumn(name="name"),
         ObjectColumn(name="numpy_path"),
+        ObjectColumn(name="qsdr_volume_path"),
         ObjectColumn(name="b0_volume_path"),
         ObjectColumn(name="qsdr_volume_path"),
         ObjectColumn(name="graphml_path"),
@@ -150,6 +151,7 @@ class Scan(Dataset):
     data_dir        = File("") # Data used by dsi2 package
     pkl_dir         = File("") # data root for pickle files
     trk_file        = File("") # path to the trk file
+    fib_file        = File("") # path to the DSI Studio's .fib.gz
     trk_space       = Enum("qsdr", "mni") # Which space is it in?
     # ROI labels and scalar (GFA/QA) values
     track_labels    = List(Dict)
