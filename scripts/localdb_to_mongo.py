@@ -6,10 +6,16 @@ test_output_data = os.getenv("TEST_OUTPUT_DATA")
 test_input_data = "/home/cieslak/testing_data/testing_input"
 test_output_data = "/home/cieslak/testing_data/testing_output"
 from scipy.stats import itemfreq
+import cPickle as pickle
 
 import pymongo
+from bson.binary import Binary
 connection = pymongo.MongoClient()
 db = connection.dsi2
+# Ensure there is an index for fast querying
+db.Lausanne2008scale33.ensure_index([("ijk",pymongo.ASCENDING), ("scan_id",pymongo.ASCENDING)])
+db.streamlines.ensure_index([("scan_id",pymongo.ASCENDING),("sl_id",pymongo.ASCENDING)])
+db.connections.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
 
 local_scans = get_local_data(test_output_data + "/example_data.json")
 
@@ -23,17 +29,56 @@ for sc in local_scans:
     total_n = len(trackds.tracks_at_ijk.keys())
     n=0
     print "total", total_n
+    inserts = []
     for coord,indices in trackds.tracks_at_ijk.iteritems():
         if n % 100 == 0:
             print n
         connections = trackds.connections[np.array(list(indices))]
         freqs = itemfreq(connections)
-        db.Lausanne2008scale33.update(
-            {"ijk":"%d_%d_%d" % tuple(map(int,coord))},
-            {u"$set":{sc.scan_id:
-                      dict([("c%d"%k, int(v)) for k,v in freqs])
-                      }
-            },
-            True
+        inserts.append(
+            {
+             "ijk":"%d_%d_%d" % tuple(map(int,coord)),
+             "scan_id":sc.scan_id,
+             "con":dict([("c%d"%k, int(v)) for k,v in freqs])
+            }
           )
         n += 1
+    print "actually inserting"
+    db.Lausanne2008scale33.insert(inserts)
+    print "done."
+
+    inserts = []
+    for ntrk, trk in enumerate(trackds.tracks):
+        if n % 1000 == 0:
+            db.streamlines.insert(inserts)
+            inserts = []
+            print n
+        inserts.append(
+            {
+              "scan_id":sc.scan_id,
+              "sl_id": ntrk,
+              "data":Binary(pickle.dumps(trk,protocol=2))
+             }
+        )
+        n += 1
+    db.streamlines.insert(inserts)
+
+    n=0
+    inserts = []
+    print "connectiondb", total_n
+    for coord,indices in trackds.tracks_at_ijk.iteritems():
+        if n % 100 == 0:
+            print n
+        connections = trackds.connections[np.array(list(indices))]
+        freqs = itemfreq(connections)
+        inserts.append(
+           {
+            "ijk":"%d_%d_%d" % tuple(map(int,coord)),
+            "scan_id":sc.scan_id,
+            "sl_id":list(map(int,indices))
+           }
+          )
+        n += 1
+    print "actually inserting"
+    db.connections.insert(inserts)
+    print "done"
