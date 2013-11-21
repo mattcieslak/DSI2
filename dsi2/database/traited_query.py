@@ -89,7 +89,8 @@ class TrackScalarSource(HasTraits):
 
     def load_array(self,base_dir):
         self.scalars = np.load(
-            os.path.join(base_dir,numpy_path))
+            os.path.join(base_dir,self.numpy_path)).astype(np.uint64)
+        return self.scalars
 
 scalar_table = TableEditor(
     columns =
