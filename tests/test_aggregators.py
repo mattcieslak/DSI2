@@ -32,24 +32,40 @@ for x in cluster3:
 
 toy_dataset.tracks = np.array(cluster1 + cluster2 + cluster3,dtype=object)
 
-def test_mini_batch_kmeans():
-    global scans
-    global tds
-    mbk = MiniBatchKMeans()
-    mbk.aggregate(toy_dataset)
-    assert
-    assert len(tds.track_dataset) == len(scans)
+def test_fast_kmeans():
+    fkm = FastKMeansAggregator(k=3,min_tracks=0)
+    clusters = fkm.aggregate(toy_dataset)
+    assert len(clusters) == 3
+
+
+    for cluster in clusters:
+        assert cluster.ntracks == 20
+        assert (np.diff(np.sort(cluster.indices)) == np.ones((19,))).all()
+
+
+    #assert (clusters[0].start_coordinate == np.array([-50., 0., 0.])).all()
+    #assert (clusters[0].end_coordinate == np.array([50., 0., 0.])).all()
+    #assert (clusters[1].start_coordinate == np.array([0., -50., 0.])).all()
+    #assert (clusters[1].end_coordinate == np.array([0., 50., 0.,])).all()
+    #assert (clusters[2].start_coordinate == np.array([0., 0., -50.])).all()
+    #assert (clusters[2].end_coordinate == np.array([0., 0., 50.])).all()
 
 def test_quickbundles():
-    query_coords = sphere_around_ijk(3,(33,54,45))
-    assert len(coords) == 123
-    assert type(tds) == TrackDataSource
-    search_results = tds.query_ijk(coords)
-    # There must be 2 results
-    assert len(search_results) == 2
-    # the known number of streamlines is 1844, 1480
-    assert search_results[0].get_ntracks() == 1844
-    assert search_results[1].get_ntracks() == 1480
+    qb = QuickBundlesAggregator()
+    clusters = qb.aggregate(toy_dataset)
+    assert len(clusters) == 3
+
+
+    for cluster in clusters:
+        assert cluster.ntracks == 20
+        assert (np.diff(np.sort(cluster.indices)) == np.ones((19,))).all()
+
+    #assert (clusters[0].start_coordinate == np.array([-50., 0., 0.])).all()
+    #assert (clusters[0].end_coordinate == np.array([50., 0., 0.])).all()
+    #assert (clusters[1].start_coordinate == np.array([0., -50., 0.])).all()
+    #assert (clusters[1].end_coordinate == np.array([0., 50., 0.,])).all()
+    #assert (clusters[2].start_coordinate == np.array([0., 0., -50.])).all()
+    #assert (clusters[2].end_coordinate == np.array([0., 0., 50.])).all()
 
 
 
