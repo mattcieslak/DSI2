@@ -51,3 +51,65 @@ toy_dataset = TrackDataset(header={"n_scalars":0}, streams = (),properties=scans
 toy_dataset.tracks = np.array(streamlines,dtype=object)
 toy_dataset.render_tracks = True
 toy_dataset.draw_tracks()
+
+from bson.code import Code
+
+mapper = Code(
+    """
+    function() {
+      for ( var key in this.con) {
+         emit(key, this.con[key]);
+         }
+    }
+    """
+)
+
+reducer = Code(
+    """
+    function(keyConId,valuesCounts) {
+        return Array.sum(valuesCounts);
+    }
+    """
+)
+
+
+
+def query_lausanne(coordinates):
+    results = db.Lausanne2008scale33.map_reduce(
+        mapper, reducer, "my_results", query = \
+            {"scan_id":{"$in":test_scan_ids},
+            "ijk":{"$in":
+                   ["%d_%d_%d" % tuple(map(int,coord)) for coord in test_coordinates]
+                   }
+        }, )
+
+def aggegate_lausanne(coordinates):
+    results = db.try2.aggregate([
+        {"$match":{
+            "scan_id":{"$in":test_scan_ids},
+            "ijk":{"$in":
+                   ["%d_%d_%d" % tuple(map(int,coord)) for coord in test_coordinates]
+                   }
+            }},
+        {"$unwind":"$con"},
+        {"$group":{"_id":{"scan_id":"$scan_id",
+                          "con_id":"$con.con"},
+                   "counts":{"$sum":"$con.count"}}
+         }
+    ])
+
+def aggegate_lausanne(coordinates):
+    results = db.try2.aggregate([
+        {"$match":{
+            "scan_id":{"$in":test_scan_ids},
+            "ijk":{"$in":
+                   ["%d_%d_%d" % tuple(map(int,coord)) for coord in test_coordinates]
+                   }
+            }},
+        {"$unwind":"$con"},
+        {"$group":{"_id":{"scan_id":"$scan_id",
+                          "con_id":"$con.con"},
+                   "counts":{"$sum":"$con.count"}}
+         }
+
+    ])

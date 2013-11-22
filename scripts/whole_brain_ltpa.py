@@ -22,51 +22,44 @@ wm_mask = MaskDataset(
     )
 wm_ijk = wm_mask.in_mask_voxel_ijk
 
-def save_to_nifti(fname, results, indices=np.array([]) ):
-    newimg = wm_mask.empty_copy()
-    new_data = newimg.get_data()
-    ix, jx, kx = wm_ijk.T
-    if indices.size > 0:
-        ix = ix[indices]
-        jx = jx[indices]
-        kx = kx[indices]
-    new_data[ix,jx,kx] = results
-    newimg.to_filename(fname)
-    os.system("3drefit -newid -redo_bstat %s"%fname)
+import pymongo
+from bson.binary import Binary
+connection = pymongo.MongoClient()
+db = connection.dsi2
 
 
-def within_between_analysis_percentage(arg):
-    """Finds the mean within subject and between subject correlation means"""
-    conn_ids,cvec = arg
-    cvec = cvec.astype(np.float)
-    correl = np.corrcoef(cvec)
-    if correl.size == 0: return tuple([-2]*11)
+test_scan_ids = ["0377A","2843A"]
 
-    # How many connection pairs were present?
-    n_connection_pairs = cvec.shape[1]
-    # pull out correlation coefficients depending on whether they are from
-    # the same or 2 different subjects
-    within_values  = correl[within_indices]
-    between_values = correl[between_indices]
-    # summary values
-    within_mean  = within_values.mean()
-    within_perms = np.zeros(NPERMUTATIONS,)
-    between_mean = between_values.mean()
-    between_perms = np.zeros(NPERMUTATIONS,)
+def query_sphere(sphere_coords):
+    sl_ids = db.connections.aggregate(
+        # Find the coordinates for each subject
+        [
+            {"$match":{
+                "scan_id":{"$in":test_scan_ids},
+                "ijk":{"$in":
+                       ["%d_%d_%d" % tuple(map(int,coord)) for coord in test_coordinates]}
+                }},
+            {"$project":{"scan_id":1,"sl_id":1}},
+            {"$unwind":"$sl_id"},
+            {"$group":{"_id":"$scan_id", "sl_ids":{"$addToSet":"$sl_id"}}}
+        ]
+    )["result"]
 
-    for N in xrange(NPERMUTATIONS):
-        # Shuffle the streamlines counts
-        _ = map(np.random.shuffle, cvec)
-        correl = np.corrcoef(cvec)
-        # observing a value higher due to chance
-        within_perms[N]   = correl[within_indices].mean()
-        between_perms[N]  = correl[between_indices].mean()
 
-    return  within_mean, between_mean, within_perms.mean(), between_perms.mean(), within_perms.std(), \
-            between_perms.std(), \
-            np.sum(within_perms < within_mean)/float(NPERMUTATIONS), \
-            np.sum(between_perms < between_mean)/float(NPERMUTATIONS), \
-            within_values.std(), between_values.std(), n_connection_pairs
+    track_datasets = []
+    for subj in sl_ids:
+        sl_data = db.streamlines.find(
+            {
+             "scan_id":sl_ids[0]["_id"],
+             "sl_id":{"$in":sl_ids[0]["sl_ids"]}
+            }
+        )
+        streamlines = [pickle.loads(d['data']) for d in sl_data]
+        scans = get_local_data(os.path.join(test_output_data,"example_data.json"))
+        toy_dataset = TrackDataset(header={"n_scalars":0}, streams = (),properties=scans[0])
+        toy_dataset.tracks = np.array(streamlines,dtype=object)
+        track_datasets.append(toy_dataset)
+    return track_datasets
 
 ###### Create a clusterer
 def evaluate_clustering_over_centers(centers,ATLAS,RADIUS):

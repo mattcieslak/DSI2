@@ -39,14 +39,15 @@ for sc in local_scans:
             {
              "ijk":"%d_%d_%d" % tuple(map(int,coord)),
              "scan_id":sc.scan_id,
-             "con":dict([("c%d"%k, int(v)) for k,v in freqs])
+             "con":[{"con":"c%d"%k, "count":int(v)} for k,v in freqs]
             }
           )
         n += 1
     print "actually inserting"
-    db.Lausanne2008scale33.insert(inserts)
+    db.try2.insert(inserts)
     print "done."
 
+    continue
     inserts = []
     for ntrk, trk in enumerate(trackds.tracks):
         if n % 1000 == 0:
