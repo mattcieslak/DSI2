@@ -12,6 +12,8 @@ import numpy as np
 import os
 from collections import defaultdict
 
+import dsi2.config
+
 def dictmatch(qdict,ddict):
     return all([ ddict.get(key,"") == val for key,val in qdict.iteritems() ] )
 
@@ -346,7 +348,8 @@ class TrackDataSource(HasTraits):
                 # Are there multiple values this property can take on?                
                 if len(propvals) <= 1: continue
                 varying_properties[atlas_name][propname] = sorted(list(propvals))
-        print varying_properties
+        #print varying_properties
+        dsi2.config.logger.debug("%s", varying_properties)
         
         # Put in a look-up
         self.label_cache = []  # one row for each subject

@@ -17,8 +17,11 @@ import nibabel as nib
 import gzip
 from scipy.io.matlab import loadmat
 
-dsi2_data = os.getenv("DSI2_DATA")
-pkl_dir = os.getenv("LOCAL_TRACKDB")
+import dsi2.config
+
+dsi2_data = dsi2.config.dsi2_data_path
+pkl_dir = dsi2.config.local_trackdb_path
+
 #home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
 #if local_tdb_var:
 #    pkl_dir = local_tdb_var
@@ -184,7 +187,7 @@ def create_missing_files(scan,input_dir, output_dir):
         print "\t\t++ Done."
 
     if not os.path.isabs(scan.pkl_trk_path):
-        abs_pkl_trk_file = os.path.join(scan.pkl_dir,scan.pkl_trk_path)
+        abs_pkl_trk_file = os.path.join(output_dir,scan.pkl_trk_path)
     else:
         abs_pkl_trk_file = scan.pkl_trk_path
     print "\t+ Dumping MNI152 hash table"
