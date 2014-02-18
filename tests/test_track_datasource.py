@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import sys
 import os
-test_input_data = os.getenv("TEST_INPUT_DATA")
-test_output_data = os.getenv("TEST_OUTPUT_DATA")
-test_input_data = "/home/cieslak/testing_data/testing_input"
-test_output_data = "/home/cieslak/testing_data/testing_output"
 import nibabel as nib
 import numpy as np
 import cPickle as pickle
+
+import paths
+
+import dsi2.config
+dsi2.config.local_trackdb_path = paths.test_output_data
 
 from dsi2.ui.local_data_importer import (LocalDataImporter, b0_to_qsdr_map,
                                          create_missing_files)
@@ -22,7 +23,7 @@ tds =None
 def test_loading():
     global scans
     global tds
-    scans = get_local_data(os.path.join(test_output_data,"example_data.json"))
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
     tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
     assert len(tds.track_datasets) == len(scans)
 
@@ -37,6 +38,27 @@ def test_querying():
     assert search_results[0].get_ntracks() == 1844
     assert search_results[1].get_ntracks() == 1480
 
+def test_get_subjects():
+    subjects = tds.get_subjects()
+    # There are two subjects
+    assert len(subjects) == 2
+    # The ids are 0377 and 2843
+    assert subjects[0] == "0377"
+    assert subjects[1] == "2843"
 
+def test_set_render_tracks():
+    tds.set_render_tracks(False)
+    for dataset in tds.track_datasets:
+        assert dataset.render_tracks == False
 
+    tds.set_render_tracks(True)
+    for dataset in tds.track_datasets:
+        assert dataset.render_tracks == True
+
+def test_len():
+    assert len(tds) == 2
+
+def test_load_label_data():
+    results = tds.load_label_data()
+    assert results["Lausanne2008"]["scale"] == [33, 60, 125, 250, 500]
 

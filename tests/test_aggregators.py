@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import sys
 import os
-test_input_data = os.getenv("TEST_INPUT_DATA")
-test_output_data = os.getenv("TEST_OUTPUT_DATA")
-test_input_data = "/home/cieslak/testing_data/testing_input"
-test_output_data = "/home/cieslak/testing_data/testing_output"
 import nibabel as nib
 import numpy as np
 import cPickle as pickle
+
+import paths
+
+import dsi2.config
+dsi2.config.local_trackdb_path = paths.test_input_data
 
 from dsi2.ui.local_data_importer import (LocalDataImporter, b0_to_qsdr_map,
                                          create_missing_files)
@@ -16,8 +17,7 @@ from dsi2.streamlines.track_dataset import TrackDataset
 from dsi2.aggregation.clustering_algorithms import FastKMeansAggregator, QuickBundlesAggregator
 
 
-
-scans = get_local_data(os.path.join(test_output_data,"example_data.json"))
+scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
 toy_dataset = TrackDataset(header={"n_scalars":0}, streams = (),properties=scans[0])
 
 cluster1 = [np.zeros((3,50)).T for x in range(20)]
@@ -66,7 +66,3 @@ def test_quickbundles():
     #assert (clusters[1].end_coordinate == np.array([0., 50., 0.,])).all()
     #assert (clusters[2].start_coordinate == np.array([0., 0., -50.])).all()
     #assert (clusters[2].end_coordinate == np.array([0., 0., 50.])).all()
-
-
-
-

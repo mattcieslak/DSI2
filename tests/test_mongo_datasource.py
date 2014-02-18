@@ -2,13 +2,13 @@
 import sys
 sys.path.append("..")
 import os
-test_input_data = os.getenv("TEST_INPUT_DATA")
-test_output_data = os.getenv("TEST_OUTPUT_DATA")
-test_input_data = "/home/cieslak/testing_data/testing_input"
-test_output_data = "/home/cieslak/testing_data/testing_output"
 import nibabel as nib
 import numpy as np
 import cPickle as pickle
+import paths
+import dsi2.config
+dsi2.config.local_trackdb_path = paths.test_output_data
+
 from dsi2.database.local_data import get_local_data
 from dsi2.streamlines.track_dataset import TrackDataset
 from dsi2.aggregation.clustering_algorithms import FastKMeansAggregator, QuickBundlesAggregator
@@ -24,7 +24,7 @@ db = connection.dsi2
 test_coordinates = sphere_around_ijk(3,(33,54,45))
 test_scan_ids = ["0377A","2843A"]
 
-sl_ids = db.connections.aggregate(
+sl_ids = db.coordinates.aggregate(
     # Find the coordinates for each subject
     [
         {"$match":{
@@ -46,11 +46,11 @@ sl_data = db.streamlines.find(
     }
 )
 streamlines = [pickle.loads(d['data']) for d in sl_data]
-scans = get_local_data(os.path.join(test_output_data,"example_data.json"))
-toy_dataset = TrackDataset(header={"n_scalars":0}, streams = (),properties=scans[0])
-toy_dataset.tracks = np.array(streamlines,dtype=object)
-toy_dataset.render_tracks = True
-toy_dataset.draw_tracks()
+scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+#toy_dataset = TrackDataset(header={"n_scalars":0}, streams = (),properties=scans[0])
+#toy_dataset.tracks = np.array(streamlines,dtype=object)
+#toy_dataset.render_tracks = True
+#toy_dataset.draw_tracks()
 
 from bson.code import Code
 
@@ -84,7 +84,7 @@ def query_lausanne(coordinates):
         }, )
 
 def aggegate_lausanne(coordinates):
-    results = db.try2.aggregate([
+    results = db.connections.aggregate([
         {"$match":{
             "scan_id":{"$in":test_scan_ids},
             "ijk":{"$in":
@@ -99,7 +99,7 @@ def aggegate_lausanne(coordinates):
     ])
 
 def aggegate_lausanne(coordinates):
-    results = db.try2.aggregate([
+    results = db.connections.aggregate([
         {"$match":{
             "scan_id":{"$in":test_scan_ids},
             "ijk":{"$in":

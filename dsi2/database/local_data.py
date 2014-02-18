@@ -2,8 +2,11 @@ import sys, os
 from .traited_query import Scan
 import json
 
-dsi2_data = os.getenv("DSI2_DATA")
-local_tdb_var = os.getenv("LOCAL_TRACKDB")
+import dsi2.config
+
+dsi2_data = dsi2.config.dsi2_data_path
+local_tdb_var = dsi2.config.local_trackdb_path
+
 home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
 if local_tdb_var:
     pkl_dir = local_tdb_var
