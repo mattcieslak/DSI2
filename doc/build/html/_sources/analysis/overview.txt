@@ -5,8 +5,7 @@ Analysis of local termination patterns
    :hidden:
 
 .. warning::
-  The examples presented below don't currently work. It might be nice to
-  have a full json file that works with a bare-bones data tarball.
+   These 
 
 Here we describe how to write a script that runs LTPA on a group
 of tractography datasets.
@@ -19,9 +18,13 @@ resources in your file system. On a \*nix system these are set using the
 
  * ``DSI2_DATA`` is the path to the ``example_data`` directory that 
     is provided on this website (**NOTE: upload the example data**).
+    This is data that dsi2 needs internally (such as standard atlas 
+    labels and the MNI 152 volume).
  * ``LOCAL_TRACKDB`` is the path to your directory containing your 
     locally stored .pkl files. If this variable is not set, dsi2 will
-    check your home directory for a ``local_trackdb`` directory.
+    check your home directory for a ``local_trackdb`` directory. If you 
+    have downloaded example_trackdb.tar.gz, the location of its extracted
+    directory 
 
 
 Organizing your local datasource

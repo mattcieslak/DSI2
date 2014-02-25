@@ -5,7 +5,7 @@
 *.fib.gz
 *.wpr
 *.nii*
-*.png
+./*.png
 *.pkl
 trackset.py
 sphere_tracks.py

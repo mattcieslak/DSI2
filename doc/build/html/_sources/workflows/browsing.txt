@@ -126,5 +126,8 @@ as you interact with the clustering widgets.
 The :guilabel:`Render clusters` checkbox used to render glyphs that summarize each cluster. This 
 functionality no longer works.
 
+Changing the appearance of streamlines
+"""""""""""""""""""""""""""""""""""""""
+
 
 
