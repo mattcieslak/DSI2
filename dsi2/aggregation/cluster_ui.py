@@ -183,13 +183,6 @@ class ClusterEditor(HasTraits):
             self.scene3d.disable_render = False
             print "\t+ Re-enabling rendering"
 
-    def repaint_streamlines(self):
-        print "re-painting streamlines"
-        self.scene3d.disable_render = True
-        self.clear_clusters()
-        self.update_clusters()
-        self.scene3d.scene.disable_render = False
-
     def set_track_sets(self,tsets):
         """
         The entry point for streamline data to the aggregator.

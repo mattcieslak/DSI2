@@ -22,16 +22,6 @@ from mayavi import mlab
 from .track_math import tracks_to_endpoints
 from mayavi.core.api import PipelineBase, Source
 
-def loadTrackDataset(fname="",tracks=None,header=None,**kwargs):
-    if fname.endswith(".pkl"):
-        fop = open(fname,"r")
-        tds = pickle.load(fop)
-        fop.close()
-    elif fname.endswith(".trk"):
-        tds = TrackDataset(fname=fname,tracks=tracks,header=header,**kwargs)
-    return tds
-
-
 mni_hdr = trackvis.empty_header()
 mni_hdr['dim'] = np.array([91,109,91],dtype="int16")
 mni_hdr['voxel_order'] = 'LAS'
@@ -455,15 +445,6 @@ class TrackDataset(HasTraits):
             for _ijk in ijk:
                 tracks_at_ijk[tuple(_ijk)].update(data)
         self.tracks_at_ijk = tracks_at_ijk
-
-    def dump_voxel_track_lookup(self, output,**kwargs):
-        """dumps this TrackDataset with all its lookup tables
-        into a binary pickle file.
-        """
-        self.hash_voxels_to_tracks(**kwargs)
-        fop = open(output,"wb")
-        pickle.dump(self,fop,pickle.HIGHEST_PROTOCOL)
-        fop.close()
 
     def dump_qsdr2MNI_track_lookup(self, output, savetrk=False):
         """Converts from trackvis voxmm to ijk.

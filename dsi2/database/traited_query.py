@@ -241,57 +241,6 @@ class Scan(Dataset):
         _trkds.properties = self
         return _trkds
 
-    def to_json(self):
-        # TODO: fix this!!
-        # turn the regular traits into a dict
-        jdict = {}
-        for trait in self.editable_traits():
-            if trait in ("atlases","track_labels","track_scalars",
-                         "track_label_items","track_scalar_items"):
-                continue
-            jdict[trait] = getattr(self,trait)
-
-        # Get the list of track_labels
-        labels = []
-        for source in self.track_label_items:
-            for subtrait in getattr(self,trait):
-                sub_jdict = {}
-                for ttrait in subtrait.editable_traits():
-                    sub_jdict[trait] = getattr(subtrait, trait)
-                lst.append(sub_jdict)
-            jdict[trait] = lst
-        # If labels is populated, then we're done
-        if len(jdict["track_labels"]):return jdict
-
-        # Otherwise, make a version based on .atlases
-        for atlas_name, atlas_path in self.atlases.iteritems():
-            jdict["track_labels"].append(
-                {"name":atlas_name,
-                 "numpy_path":atlas_path,
-                 "description":"",
-                 "volume_path":"",
-                 "graphml_path":""
-                }
-            )
-        return jdict
-
-    def get_label_source(self,**kw):
-        """
-        Someday there should be a BTree indexing these,
-        but for now it does a scan of scalar sources for those that
-        match **kw
-        """
-        matches = []
-        for src in self.track_label_items:
-            if all([src.parameters[k] == v for k,v in kw.iteritems()]):
-                matches.append(src)
-        assert len(matches) == 1
-        return matches[0]
-
-
-
-
-
 class Query(Dataset):
     def __init__(self,**traits):
         super(Query,self).__init__(**traits)

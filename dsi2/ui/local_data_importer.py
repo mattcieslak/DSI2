@@ -232,17 +232,6 @@ class LocalDataImporter(HasTraits):
           Scan(pkl_dir=self.output_directory,
                data_dir=dsi2_data, **d) for d in jdata]
 
-    def validate_localdb(self):
-        """ Looks at every entry in the loaded db and
-        checks that the loadable files exist.
-        """
-        for scan in self.datasets:
-            create_missing_files(scan,
-                    input_dir=os.path.dirname(self.json_file),
-                    output_dir=self.output_directory)
-
-
-
     # UI definition for the local db
     traits_view = View(
         Group(
