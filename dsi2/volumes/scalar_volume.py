@@ -125,12 +125,6 @@ class ScalarVolumes(HasTraits):
     def _scene3d_default(self):
         return MlabSceneModel()
 
-    def render_regions(self):
-        self.scene3d.disable_render = True
-        for volume in self.volumes:
-            volume.render()
-        self.scene3d.disable_render = False
-
     test_view = View(
         Item("volumes",editor=volume_table),
         Group(

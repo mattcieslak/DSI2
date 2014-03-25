@@ -442,6 +442,3 @@ class RegionPair(HasTraits):
             kind="modal",
             buttons=[OKButton,CancelButton]
             )
-
-class RegionPairs(HasTraits):
-    region_pairs = List(Instance(RegionPair))
