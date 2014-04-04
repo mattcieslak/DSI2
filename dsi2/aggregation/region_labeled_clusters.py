@@ -296,7 +296,42 @@ class RegionLabelAggregator(RegionAggregator):
             elif self.across_subject_comparison_operation == "Intersection":
                 connection_ids.intersection_update(conns)
         return sorted(list(connection_ids))
-
+    
+    def query_track_source_with_region_pair(self, region_id):                                                         
+        """ User has quered a coordinates.
+        1) Query the datasource for new streamlines
+        2) Send them to the aggregator for aggregation                                                                
+        3) Disable mayavi rendering
+        4) Remove previous streamlines from the engine                                                                
+        5) Add new streamlines to the engine
+           -- if we're aggregation, then paint the streamlines                                                        
+        6) re-enable mayavi rendering                                                                                 
+        """
+        if len(self.track_source) == 0:
+            print "\t+ No datasets in the track_source"                                                               
+            return
+        # Set the pre-filtered tracks                                                                                 
+        if self.scene3d:
+            #print "\t+ disabling rendering"
+            self.scene3d.disable_render = True
+        #print "\t+ creating ``track_sets`` from results ..."                                                         
+        self.set_track_sets(
+            self.track_source.query_connection_id(region_id))
+                                                 # every=self.downsample))                                            
+        
+        # Apply aggregation to the new ``track_sets`` if requested                                                    
+        if self.auto_aggregate:
+            #print "\t++ Applying aggregation to them ..."                                                            
+            self.update_clusters()
+        # Render their glyphs if the user wants                                                                       
+        if self.render_tracks:
+            #print "\t++ Rendering the new tracks."                                                                   
+            self.draw_tracks()                                                                                        
+        #print "\t++ Done"                                                                                            
+        if self.scene3d:
+            self.scene3d.disable_render = False                                                                       
+            print "\t+ Re-enabling rendering"   
+            
     def connection_vector_matrix(self,n_top=0):
         """
         Parameters
