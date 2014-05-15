@@ -22,7 +22,7 @@ db.coordinates.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCEND
 db.connections.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
 db.connections2.ensure_index([("con_id",pymongo.ASCENDING),("scan_id",pymongo.ASCENDING)])
 
-db.scans.ensure_index([("scan_id",pymongo.ASCENDING)])
+db.scans.ensure_index([("scan_id",pymongo.ASCENDING),("subject_id",pymongo.ASCENDING)])
 
 local_scans = get_local_data(test_output_data + "/example_data.json")
 
@@ -62,7 +62,7 @@ for sc in local_scans:
         freqs = itemfreq(connections)
         inserts.append(
             {
-             "ijk":"%d_%d_%d" % tuple(map(int,coord)),
+             "ijk":"(%d, %d, %d)" % tuple(map(int,coord)),
              "scan_id":sc.scan_id,
              "con":[{"con":"c%d"%k, "count":int(v)} for k,v in freqs]
             }
@@ -94,7 +94,7 @@ for sc in local_scans:
     for coord,indices in trackds.tracks_at_ijk.iteritems():
         inserts.append(
            {
-            "ijk":"%d_%d_%d" % tuple(map(int,coord)),
+            "ijk":"(%d, %d, %d)" % tuple(map(int,coord)),
             "scan_id":sc.scan_id,
             "sl_id":list(map(int,indices))
            }
@@ -108,7 +108,9 @@ for sc in local_scans:
     inserts.append(
             {
                 "scan_id":sc.scan_id,
-                "sls":len(trackds.tracks)
+                "subject_id":sc.subject_id,
+                "sls":len(trackds.tracks),
+                "header":Binary(pickle.dumps(trackds.header,protocol=2)),
             }
             )
     db.scans.insert(inserts)

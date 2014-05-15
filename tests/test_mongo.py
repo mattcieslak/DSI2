@@ -54,12 +54,13 @@ def test_scans_collection():
 
 def test_compare_tracks_at_ijk():
 
-    result = db.coordinates.find({"ijk": "33_54_45", "scan_id": "0377A"})
+    result = db.coordinates.find({"ijk": "(33, 54, 45)", "scan_id": "0377A"})
 
     assert result.count() == 1
 
     tracks = trackds.tracks_at_ijk[(33, 54, 45)]
 
-    # fix
-    assert result[0]["sl_id"] == tracks
+    mongo_tracks = result[0]["sl_id"]
+    assert len(mongo_tracks) == len(tracks)
+    assert set(mongo_tracks) == tracks
 
