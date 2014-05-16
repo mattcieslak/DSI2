@@ -6,7 +6,7 @@ from traitsui.api import View, Item, VGroup, HGroup, Group, \
 from ..streamlines.track_dataset import TrackDataset
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from .traited_query import Scan
-from .local_data import get_local_data
+#from .local_data import get_local_data
 import numpy as np
 import os
 from collections import defaultdict
@@ -14,6 +14,8 @@ import operator
 import pymongo
 from bson.binary import Binary
 import cPickle as pickle
+
+import dsi2.config
 
 connection = pymongo.MongoClient()
 db = connection.dsi2
@@ -32,6 +34,7 @@ class MongoTrackDataSource(HasTraits):
     needs_atlas_update = Bool(False)
     json_source = File("")
     label_cache = List(List(Dict))
+    render_tracks = Bool(False)
 
     def __init__(self,**traits):
         super(MongoTrackDataSource,self).__init__(**traits)
@@ -51,8 +54,7 @@ class MongoTrackDataSource(HasTraits):
             [rec["subject_id"] for rec in result])))
 
     def set_render_tracks(self,visibility):
-        for tds in self.track_datasets:
-            tds.render_tracks = visibility
+        self.render_tracks = visibility
 
     def __len__(self):
         return db.scans.count()
@@ -67,12 +69,42 @@ class MongoTrackDataSource(HasTraits):
         datasets = []
         for scan in scans:
             result = db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, { "sl_id": 1 } )
-            sls = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
-            result = db.streamlines.find( { "sl_id": { "$in": sls }, "scan_id": scan } )
+            streamlines = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
+            result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
             tracks = [pickle.loads(rec["data"]) for rec in result]
-            result = db.scans.find( { "scan_id": scan }, { "header": 1 } )
+            result = db.scans.find( { "scan_id": scan } )
+
+            if result.count() > 1:
+                logger.warning("Multiple records found for scan %s. Using first record.", scan)
+
             header = pickle.loads(result[0]["header"])
-            tds = TrackDataset(tracks=tracks, header=header, original_track_indices=np.array(sls))
+            
+            # build a Scan object to hold TrackDataset properties
+            properties = Scan()
+            properties.scan_id = result[0]["scan_id"]
+            properties.subject_id = result[0]["subject_id"]
+            properties.scan_gender = result[0]["gender"]
+            properties.scan_age = result[0]["age"]
+            properties.study = result[0]["study"]
+            properties.scan_group = result[0]["group"]
+            properties.smoothing = result[0]["smoothing"]
+            properties.cutoff_angle = result[0]["cutoff_angle"]
+            properties.qa_threshold = result[0]["qa_threshold"]
+            properties.gfa_threshold = result[0]["gfa_threshold"]
+            properties.length_min = result[0]["length_min"]
+            properties.length_max = result[0]["length_max"]
+            properties.institution = result[0]["institution"]
+            properties.reconstruction = result[0]["reconstruction"]
+            properties.scanner = result[0]["scanner"]
+            properties.n_directions = result[0]["n_directions"]
+            properties.max_b_value = result[0]["max_b_value"]
+            properties.bvals = result[0]["bvals"]
+            properties.bvecs = result[0]["bvecs"]
+            properties.label = result[0]["label"]
+            properties.trk_space = result[0]["trk_space"]
+
+            tds = TrackDataset(tracks=tracks, header=header, original_track_indices=np.array(streamlines), properties=properties)
+            tds.render_tracks = self.render_tracks
             tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
         
