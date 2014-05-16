@@ -9,36 +9,107 @@ from dsi2.database.track_datasource import TrackDataSource
 from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
 
-# load the traditional track datasource for comparison
-scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
-tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
-
 test_coordinates = sphere_around_ijk(3,(33,54,45))
 
 def test_query_ijk():
+
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
     mtds = MongoTrackDataSource()
+    
     mongo_results = mtds.query_ijk(test_coordinates)
-    results = tds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
 
-    assert len(mongo_results) == len(results)
-    for x, y in zip(mongo_results, results):
-        assert x.get_ntracks() == y.get_ntracks()
-        assert len(x.original_track_indices) == len(set(x.original_track_indices))
-        assert len(y.original_track_indices) == len(set(y.original_track_indices))
-        assert len(x.original_track_indices) == len(y.original_track_indices)
-        assert len(x.original_track_indices) == x.get_ntracks()
+    assert len(mongo_results) == len(local_results)
+    
+    for mongo, local in zip(mongo_results, local_results):
+        assert mongo.get_ntracks() == local.get_ntracks()
+        assert len(mongo.original_track_indices) == len(set(mongo.original_track_indices))
+        assert len(local.original_track_indices) == len(set(local.original_track_indices))
+        assert len(mongo.original_track_indices) == len(local.original_track_indices)
+        assert len(mongo.original_track_indices) == mongo.get_ntracks()
+        
+        assert mongo.render_tracks == local.render_tracks
 
-        for mongoidx, idx in enumerate(x.original_track_indices):
-            itemindex = np.where(y.original_track_indices == idx)[0]
-            assert len(itemindex) == 1
-            itemindex = itemindex[0]
-            assert (x.tracks[mongoidx] == y.tracks[itemindex]).all()
+        assert mongo.properties.scan_id == local.properties.scan_id
+        assert mongo.properties.subject_id == local.properties.subject_id
+        assert mongo.properties.scan_gender == local.properties.scan_gender
+        assert mongo.properties.scan_age == local.properties.scan_age
+        assert mongo.properties.study == local.properties.study
+        assert mongo.properties.scan_group == local.properties.scan_group
+        assert mongo.properties.smoothing == local.properties.smoothing
+        assert mongo.properties.cutoff_angle == local.properties.cutoff_angle
+        assert mongo.properties.qa_threshold == local.properties.qa_threshold
+        assert mongo.properties.gfa_threshold == local.properties.gfa_threshold
+        assert mongo.properties.length_min == local.properties.length_min
+        assert mongo.properties.length_max == local.properties.length_max
+        assert mongo.properties.institution == local.properties.institution
+        assert mongo.properties.reconstruction == local.properties.reconstruction
+        assert mongo.properties.scanner == local.properties.scanner
+        assert mongo.properties.n_directions == local.properties.n_directions
+        assert mongo.properties.max_b_value == local.properties.max_b_value
+        assert mongo.properties.bvals == local.properties.bvals
+        assert mongo.properties.bvecs == local.properties.bvecs
+        assert mongo.properties.label == local.properties.label
+        assert mongo.properties.trk_space == local.properties.trk_space
+
+        # streamlines will probably not be in the same order, but they
+        # should match based on their original index
+        for mongoindex, index in enumerate(mongo.original_track_indices):
+            localindex = np.where(local.original_track_indices == index)[0]
+            assert len(localindex) == 1
+            localindex = localindex[0]
+            assert (mongo.tracks[mongoindex] == local.tracks[localindex]).all()
 
 def test_len():
+
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+ 
     mtds = MongoTrackDataSource()
+
     assert len(mtds) == len(tds)
 
 def test_get_subjects():
+
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+ 
     mtds = MongoTrackDataSource()
+    
     assert mtds.get_subjects() == tds.get_subjects()
+
+def test_set_render_tracks():
+
+     # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+     
+    mtds = MongoTrackDataSource()
+    mongo_results = mtds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
+    for mongo, local in zip(mongo_results, local_results):
+        assert mongo.render_tracks == local.render_tracks
+
+    mtds.set_render_tracks(True)
+    tds.set_render_tracks(True)
+
+    mongo_results = mtds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
+    for mongo, local in zip(mongo_results, local_results):
+        assert mongo.render_tracks == True
+        assert mongo.render_tracks == local.render_tracks
+
+    mtds.set_render_tracks(False)
+    tds.set_render_tracks(False)
+
+    mongo_results = mtds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
+    for mongo, local in zip(mongo_results, local_results):
+        assert mongo.render_tracks == False
+        assert mongo.render_tracks == local.render_tracks
 
