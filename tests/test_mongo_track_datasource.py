@@ -10,18 +10,9 @@ from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
 
 test_coordinates = sphere_around_ijk(3,(33,54,45))
+test_con_ids = [3456, 3455]
 
-def test_query_ijk():
-
-    # load the traditional track datasource for comparison
-    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
-    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
-    
-    mtds = MongoTrackDataSource()
-    
-    mongo_results = mtds.query_ijk(test_coordinates)
-    local_results = tds.query_ijk(test_coordinates)
-
+def compare_results(mongo_results, local_results):
     assert len(mongo_results) == len(local_results)
     
     for mongo, local in zip(mongo_results, local_results):
@@ -62,6 +53,36 @@ def test_query_ijk():
             assert len(localindex) == 1
             localindex = localindex[0]
             assert (mongo.tracks[mongoindex] == local.tracks[localindex]).all()
+
+def test_query_ijk():
+
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
+    mtds = MongoTrackDataSource()
+    
+    mongo_results = mtds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
+
+    compare_results(mongo_results, local_results)
+
+def test_query_connection_id():
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+
+    # load connection data for the traditional track datasource
+    for trackds in tds.track_datasets:
+        atlas_labels = trackds.properties.track_label_items[0].load_array(paths.test_output_data)
+        trackds.set_connections(atlas_labels)
+    
+    mtds = MongoTrackDataSource()
+
+    mongo_results = mtds.query_connection_id(test_con_ids)
+    local_results = tds.query_connection_id(test_con_ids)
+
+    compare_results(mongo_results, local_results)
 
 def test_len():
 

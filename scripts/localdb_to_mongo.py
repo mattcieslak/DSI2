@@ -37,7 +37,6 @@ for sc in local_scans:
     print "Building alternate connections collection..."
     for con_id in con_ids:
         sl_ids = list(map(int,np.where(atlas_labels == con_id)[0]))
-        inserts = []
         inserts.append(
                 {
                     "con_id":"%d" % con_id,

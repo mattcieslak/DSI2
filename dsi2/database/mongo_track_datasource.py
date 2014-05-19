@@ -59,6 +59,36 @@ class MongoTrackDataSource(HasTraits):
     def __len__(self):
         return db.scans.count()
 
+    def build_track_dataset(self,result,tracks,original_track_indices):
+        header = pickle.loads(result["header"])
+ 
+        properties = Scan()
+        properties.scan_id = result["scan_id"]
+        properties.subject_id = result["subject_id"]
+        properties.scan_gender = result["gender"]
+        properties.scan_age = result["age"]
+        properties.study = result["study"]
+        properties.scan_group = result["group"]
+        properties.smoothing = result["smoothing"]
+        properties.cutoff_angle = result["cutoff_angle"]
+        properties.qa_threshold = result["qa_threshold"]
+        properties.gfa_threshold = result["gfa_threshold"]
+        properties.length_min = result["length_min"]
+        properties.length_max = result["length_max"]
+        properties.institution = result["institution"]
+        properties.reconstruction = result["reconstruction"]
+        properties.scanner = result["scanner"]
+        properties.n_directions = result["n_directions"]
+        properties.max_b_value = result["max_b_value"]
+        properties.bvals = result["bvals"]
+        properties.bvecs = result["bvecs"]
+        properties.label = result["label"]
+        properties.trk_space = result["trk_space"]
+
+        tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, properties=properties)
+        tds.render_tracks = self.render_tracks
+        return tds
+
     def query_ijk(self,ijk,every=0):
         # Get the scan_ids that contain these coordinates
         coords = [str(c) for c in ijk]
@@ -77,34 +107,7 @@ class MongoTrackDataSource(HasTraits):
             if result.count() > 1:
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
-            header = pickle.loads(result[0]["header"])
-            
-            # build a Scan object to hold TrackDataset properties
-            properties = Scan()
-            properties.scan_id = result[0]["scan_id"]
-            properties.subject_id = result[0]["subject_id"]
-            properties.scan_gender = result[0]["gender"]
-            properties.scan_age = result[0]["age"]
-            properties.study = result[0]["study"]
-            properties.scan_group = result[0]["group"]
-            properties.smoothing = result[0]["smoothing"]
-            properties.cutoff_angle = result[0]["cutoff_angle"]
-            properties.qa_threshold = result[0]["qa_threshold"]
-            properties.gfa_threshold = result[0]["gfa_threshold"]
-            properties.length_min = result[0]["length_min"]
-            properties.length_max = result[0]["length_max"]
-            properties.institution = result[0]["institution"]
-            properties.reconstruction = result[0]["reconstruction"]
-            properties.scanner = result[0]["scanner"]
-            properties.n_directions = result[0]["n_directions"]
-            properties.max_b_value = result[0]["max_b_value"]
-            properties.bvals = result[0]["bvals"]
-            properties.bvecs = result[0]["bvecs"]
-            properties.label = result[0]["label"]
-            properties.trk_space = result[0]["trk_space"]
-
-            tds = TrackDataset(tracks=tracks, header=header, original_track_indices=np.array(streamlines), properties=properties)
-            tds.render_tracks = self.render_tracks
+            tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
             tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
         
@@ -115,9 +118,38 @@ class MongoTrackDataSource(HasTraits):
         Subsets the track datasets so that only streamlines labeled as
         `region_pair_id`
         """
-        if self.needs_atlas_update: self.update_atlas()
-        return [ tds.subset(tds.get_tracks_by_connection_id(connection_id),every=every) \
-                       for tds in self.track_datasets ]
+
+        if type(connection_id) == int:
+            connection_id = np.array([connection_id])
+        elif type(connection_id) != np.ndarray:
+            connection_id = np.array(connection_id)
+
+        # Get the scan_ids that contain these connection(s)
+        cons = [str(c) for c in connection_id]
+        result = db.connections2.find( { "con_id": { "$in": cons } }, { "scan_id": 1 } )
+        scans = set([rec["scan_id"] for rec in result])
+
+        # Get the streamlines for each scan and build a list of TrackDatasets
+        datasets = []
+        for scan in scans:
+            result = db.connections2.find( { "con_id": { "$in": cons }, "scan_id": scan }, { "sl_ids": 1 } )
+            streamlines = []
+            for rec in result:
+                for sl in rec["sl_ids"]:
+                    streamlines.append(sl)
+            streamlines = sorted(list(set(streamlines)))
+            result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
+            tracks = [pickle.loads(rec["data"]) for rec in result]
+            result = db.scans.find( { "scan_id": scan } )
+
+            if result.count() > 1:
+                logger.warning("Multiple records found for scan %s. Using first record.", scan)
+
+            tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
+            tds = tds.subset(range(tds.get_ntracks()), every=every)
+            datasets.append(tds)
+
+        return datasets
 
     def change_atlas(self, query_specs):
         """ Sets the .connections for each TrackDataset to be loaded from the path
