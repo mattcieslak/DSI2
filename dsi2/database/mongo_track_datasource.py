@@ -20,6 +20,8 @@ import dsi2.config
 connection = pymongo.MongoClient()
 db = connection.dsi2
 
+def dictmatch(qdict,ddict):
+        return all([ ddict.get(key,"") == val for key,val in qdict.iteritems() ] )
 
 class MongoTrackDataSource(HasTraits):
     #  Holds a list of objects sporting
@@ -35,6 +37,7 @@ class MongoTrackDataSource(HasTraits):
     json_source = File("")
     label_cache = List(List(Dict))
     render_tracks = Bool(False)
+    atlas_id = None
 
     def __init__(self,**traits):
         super(MongoTrackDataSource,self).__init__(**traits)
@@ -125,22 +128,29 @@ class MongoTrackDataSource(HasTraits):
         elif type(connection_id) != np.ndarray:
             connection_id = np.array(connection_id)
 
-        # Get the scan_ids that contain these connection(s)
+        # Get the scan_ids that contain these connections
         cons = [str(c) for c in connection_id]
-        result = db.connections2.find( { "con_id": { "$in": cons } }, { "scan_id": 1 } )
+        result = db.connections2.find( { "con_id": { "$in": cons }, "atlas_id": self.atlas_id }, { "scan_id": 1 } )
         scans = set([rec["scan_id"] for rec in result])
 
         # Get the streamlines for each scan and build a list of TrackDatasets
+        # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
         datasets = []
-        for scan in scans:
-            result = db.connections2.find( { "con_id": { "$in": cons }, "scan_id": scan }, { "sl_ids": 1 } )
+        result = db.scans.find( criteria={ "scan_id": 1 } )
+        all_scans = [rec["scan_id"] for rec in result]
+        for scan in all_scans:
+            tracks = None
             streamlines = []
-            for rec in result:
-                for sl in rec["sl_ids"]:
-                    streamlines.append(sl)
-            streamlines = sorted(list(set(streamlines)))
-            result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
-            tracks = [pickle.loads(rec["data"]) for rec in result]
+            if scan in scans:
+                result = db.connections2.find( { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, { "sl_ids": 1 } )
+                streamlines = []
+                for rec in result:
+                    for sl in rec["sl_ids"]:
+                        streamlines.append(sl)
+                streamlines = sorted(list(set(streamlines)))
+                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
+                tracks = [pickle.loads(rec["data"]) for rec in result]
+
             result = db.scans.find( { "scan_id": scan } )
 
             if result.count() > 1:
@@ -157,15 +167,31 @@ class MongoTrackDataSource(HasTraits):
         """ Sets the .connections for each TrackDataset to be loaded from the path
         specified in its properties.atlases
         """
+
+        self.atlas_id = None
+        result = db.atlases.find( { "name": query_specs["name"] } )
+        match_count = 0
+        for rec in result:
+            atlas_dict = rec["parameters"]
+            atlas_dict["name"] = query_specs["name"]
+            if dictmatch(query_specs, atlas_dict):
+                self.atlas_id = rec["_id"]
+                match_count += 1
+
+        # Mimic TrackDataSource behavior for now.
+        if match_count != 1:
+            raise ValueError("Query did not return exactly one match")
+
+        # TODO: build new_labels
         print "\t+ Setting new atlas in TrackDataSource"
         new_labels = []
-        for tds, cache in zip(self.track_datasets,self.label_cache):
-            match = [lbl["data"] for lbl in cache if dictmatch(query_specs,lbl)]
-            if not len(match) ==1:
-                raise ValueError("Query did not return exactly one match")
-            # ATTACHES LABELS TO THE `.connections` ATTRIBUTE OF EACH TDS
-            tds.set_connections(match[0])
-            new_labels += match
+#        for tds, cache in zip(self.track_datasets,self.label_cache):
+#            match = [lbl["data"] for lbl in cache if dictmatch(query_specs,lbl)]
+#            if not len(match) ==1:
+#                raise ValueError("Query did not return exactly one match")
+#            # ATTACHES LABELS TO THE `.connections` ATTRIBUTE OF EACH TDS
+#            tds.set_connections(match[0])
+#            new_labels += match
 
         return new_labels
 

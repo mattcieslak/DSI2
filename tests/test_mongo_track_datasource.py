@@ -67,22 +67,61 @@ def test_query_ijk():
 
     compare_results(mongo_results, local_results)
 
+def test_load_label_data():
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
+    mtds = MongoTrackDataSource()
+
+    mongo_results = mtds.load_label_data()
+    local_results = tds.load_label_data()
+
+    assert mongo_results == local_results
+
 def test_query_connection_id():
     # load the traditional track datasource for comparison
     scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
     tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
 
-    # load connection data for the traditional track datasource
-    for trackds in tds.track_datasets:
-        atlas_labels = trackds.properties.track_label_items[0].load_array(paths.test_output_data)
-        trackds.set_connections(atlas_labels)
-    
     mtds = MongoTrackDataSource()
+ 
+    tds.load_label_data()
+    mtds.load_label_data()
 
-    mongo_results = mtds.query_connection_id(test_con_ids)
-    local_results = tds.query_connection_id(test_con_ids)
+    # Test each variation of the Lausanne2008 atlas
 
-    compare_results(mongo_results, local_results)
+    scales = [33, 60, 125, 250, 500]    
+    query = { "name": "Lausanne2008" }
+
+    for scale in scales:
+        query["scale"] = scale
+
+        tds.change_atlas(query)
+        mtds.change_atlas(query)
+
+        mongo_results = mtds.query_connection_id(test_con_ids)
+        local_results = tds.query_connection_id(test_con_ids)
+
+        compare_results(mongo_results, local_results)
+
+    # bogus atlas
+    query["scale"] = 700
+
+    local_exception = ""
+    mongo_exception = ""
+
+    try:
+        tds.change_atlas(query)
+    except ValueError, e:
+        local_exception = str(e)
+
+    try:
+        mtds.change_atlas(query)
+    except ValueError, e:
+        mongo_exception = str(e)
+
+    assert local_exception == mongo_exception != ""
 
 def test_len():
 
@@ -134,14 +173,4 @@ def test_set_render_tracks():
         assert mongo.render_tracks == False
         assert mongo.render_tracks == local.render_tracks
 
-def test_load_label_data():
-    # load the traditional track datasource for comparison
-    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
-    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
-    
-    mtds = MongoTrackDataSource()
 
-    mongo_results = mtds.load_label_data()
-    local_results = tds.load_label_data()
-
-    assert mongo_results == local_results
