@@ -169,25 +169,40 @@ class MongoTrackDataSource(HasTraits):
 
     def load_label_data(self):
         # What are the unique atlas names?
-        atlases = set([])
-        for prop in self.track_dataset_properties:
-            atlases.update([d.name for d in prop.track_label_items])
-        atlases = list(atlases)
-        print "\t+ Found %d unique atlases" % len(atlases)
+        result = db.scans.find( criteria={ "atlases": 1 } )
+        atlas_ids = set([])
+        for rec in result:
+            atlas_ids.update([a for a in rec["atlases"]])
+        #for prop in self.track_dataset_properties:
+        #    atlases.update([d.name for d in prop.track_label_items])
+        atlas_ids = list(atlas_ids)
+        print "\t+ Found %d unique atlases" % len(atlas_ids)
+
+        label_lut = {}
+        atlases = []
+        for atlas_id in atlas_ids:
+            result = db.atlases.find( { "_id": atlas_id } )
+            atlas_name = result[0]["name"]
+            atlases.append(atlas_name)
+            label_lut[atlas_name] = defaultdict(set)
+            for prop, propval in result[0]["parameters"].iteritems():
+                if prop == "notes": continue
+                label_lut[atlas_name][prop].update( (propval,) )
+
 
         # HORRIBLE.
-        label_lut = {}
-        for atlas_name in atlases:
-            label_lut[atlas_name] = defaultdict(set)
-            for tds_props in self.track_dataset_properties:
-                # loop over label sources
-                for label_source in tds_props.track_label_items:
-                    # If they're for this atlas, append the parameter value
-                    if label_source.name == atlas_name:
-                        # For each parameter
-                        for prop, propval in label_source.parameters.iteritems():
-                            if prop == "notes": continue
-                            label_lut[atlas_name][prop].update( (propval,) )
+#        label_lut = {}
+#        for atlas_name in atlases:
+#            label_lut[atlas_name] = defaultdict(set)
+#            for tds_props in self.track_dataset_properties:
+#                # loop over label sources
+#                for label_source in tds_props.track_label_items:
+#                    # If they're for this atlas, append the parameter value
+#                    if label_source.name == atlas_name:
+#                        # For each parameter
+#                        for prop, propval in label_source.parameters.iteritems():
+#                            if prop == "notes": continue
+#                            label_lut[atlas_name][prop].update( (propval,) )
 
         varying_properties = {}
         for atlas_name in atlases:
@@ -198,21 +213,23 @@ class MongoTrackDataSource(HasTraits):
                 varying_properties[atlas_name][propname] = sorted(list(propvals))
         print varying_properties
 
-        # Put in a look-up
-        self.label_cache = []  # one row for each subject
-        for props in self.track_dataset_properties:
-            subj_cache = []
-            # one row in the cache for each item
-            for label_item in props.track_label_items:
-                subj_lut = {"name":label_item.name}
-                subj_lut.update(label_item.parameters)
-                subj_lut['data'] = \
-                            np.load(
-                               os.path.join(props.pkl_dir,label_item.numpy_path)
-                               ).astype(np.uint64)
 
-                subj_cache.append(subj_lut)
-            self.label_cache.append(subj_cache)
+# TODO: do we need this cache?
+        # Put in a look-up
+#        self.label_cache = []  # one row for each subject
+#        for props in self.track_dataset_properties:
+#            subj_cache = []
+#            # one row in the cache for each item
+#            for label_item in props.track_label_items:
+#                subj_lut = {"name":label_item.name}
+#                subj_lut.update(label_item.parameters)
+#                subj_lut['data'] = \
+#                            np.load(
+#                               os.path.join(props.pkl_dir,label_item.numpy_path)
+#                               ).astype(np.uint64)
+#
+#                subj_cache.append(subj_lut)
+#            self.label_cache.append(subj_cache)
 
         # Make sure all the graphml paths are the same and
         #self.graphml_cache = {}
