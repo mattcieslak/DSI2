@@ -110,7 +110,8 @@ class MongoTrackDataSource(HasTraits):
             tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
             tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
-        
+            # TODO: set tds.connections to something appropriate
+
         return datasets
 
     def query_connection_id(self,connection_id,every=0):
@@ -148,6 +149,7 @@ class MongoTrackDataSource(HasTraits):
             tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
             tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
+            # TODO: set tds.connections to something appropriate
 
         return datasets
 
@@ -169,40 +171,25 @@ class MongoTrackDataSource(HasTraits):
 
     def load_label_data(self):
         # What are the unique atlas names?
+        # Find all the unique atlas ids.
         result = db.scans.find( criteria={ "atlases": 1 } )
         atlas_ids = set([])
         for rec in result:
             atlas_ids.update([a for a in rec["atlases"]])
-        #for prop in self.track_dataset_properties:
-        #    atlases.update([d.name for d in prop.track_label_items])
         atlas_ids = list(atlas_ids)
-        print "\t+ Found %d unique atlases" % len(atlas_ids)
+        # Map the ids to names
+        result = db.atlases.find( { "_id": { "$in": atlas_ids } }, { "name": 1 } )
+        atlases = list(set([rec["name"] for rec in result]))
+        print "\t+ Found %d unique atlases" % len(atlases)
 
         label_lut = {}
-        atlases = []
-        for atlas_id in atlas_ids:
-            result = db.atlases.find( { "_id": atlas_id } )
-            atlas_name = result[0]["name"]
-            atlases.append(atlas_name)
+        for atlas_name in atlases:
             label_lut[atlas_name] = defaultdict(set)
-            for prop, propval in result[0]["parameters"].iteritems():
-                if prop == "notes": continue
-                label_lut[atlas_name][prop].update( (propval,) )
-
-
-        # HORRIBLE.
-#        label_lut = {}
-#        for atlas_name in atlases:
-#            label_lut[atlas_name] = defaultdict(set)
-#            for tds_props in self.track_dataset_properties:
-#                # loop over label sources
-#                for label_source in tds_props.track_label_items:
-#                    # If they're for this atlas, append the parameter value
-#                    if label_source.name == atlas_name:
-#                        # For each parameter
-#                        for prop, propval in label_source.parameters.iteritems():
-#                            if prop == "notes": continue
-#                            label_lut[atlas_name][prop].update( (propval,) )
+            result = db.atlases.find( { "name": atlas_name } )
+            for rec in result:
+                for prop, propval in rec["parameters"].iteritems():
+                    if prop == "notes": continue
+                    label_lut[atlas_name][prop].update( (propval,) )
 
         varying_properties = {}
         for atlas_name in atlases:

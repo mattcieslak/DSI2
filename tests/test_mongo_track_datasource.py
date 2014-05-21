@@ -134,3 +134,14 @@ def test_set_render_tracks():
         assert mongo.render_tracks == False
         assert mongo.render_tracks == local.render_tracks
 
+def test_load_label_data():
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
+    mtds = MongoTrackDataSource()
+
+    mongo_results = mtds.load_label_data()
+    local_results = tds.load_label_data()
+
+    assert mongo_results == local_results
