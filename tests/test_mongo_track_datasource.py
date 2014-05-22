@@ -25,6 +25,8 @@ def compare_results(mongo_results, local_results):
         
         assert mongo.render_tracks == local.render_tracks
 
+        assert (mongo.connections == local.connections).all()
+
         assert mongo.properties.scan_id == local.properties.scan_id
         assert mongo.properties.subject_id == local.properties.subject_id
         assert mongo.properties.scan_gender == local.properties.scan_gender
@@ -49,6 +51,18 @@ def compare_results(mongo_results, local_results):
 
         for mongo_track, local_track in zip(mongo.tracks, local.tracks):
             assert (mongo_track == local_track).all()
+
+def test_load_label_data():
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
+    mtds = MongoTrackDataSource()
+
+    mongo_results = mtds.load_label_data()
+    local_results = tds.load_label_data()
+
+    assert mongo_results == local_results
 
 def test_query_ijk():
 
@@ -91,19 +105,22 @@ def test_query_ijk():
 
     compare_results(mongo_results, local_results)
 
-def test_load_label_data():
-    # load the traditional track datasource for comparison
-    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
-    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    # what if an atlas is loaded?
+    mtds.load_label_data()
+    tds.load_label_data()
+
+    query = { "name": "Lausanne2008", "scale": 33 }
     
-    mtds = MongoTrackDataSource()
+    mtds.change_atlas(query)
+    tds.change_atlas(query)
 
-    mongo_results = mtds.load_label_data()
-    local_results = tds.load_label_data()
+    mongo_results = mtds.query_ijk(test_coordinates)
+    local_results = tds.query_ijk(test_coordinates)
 
-    assert mongo_results == local_results
-
+    compare_results(mongo_results, local_results)
+ 
 def test_query_connection_id():
+
     # load the traditional track datasource for comparison
     scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
     tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
