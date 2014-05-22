@@ -93,25 +93,39 @@ class MongoTrackDataSource(HasTraits):
         return tds
 
     def query_ijk(self,ijk,every=0):
+        if every < 0:
+            raise ValueError("every must be >= 0.")
+
+        if every == 0:
+            every = 1
+
         # Get the scan_ids that contain these coordinates
         coords = [str(c) for c in ijk]
         result = db.coordinates.find( { "ijk": { "$in": coords } }, { "scan_id": 1 } )
         scans = set([rec["scan_id"] for rec in result])
 
         # Get the streamlines for each scan and build a list of TrackDatasets
+        # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
         datasets = []
-        for scan in scans:
-            result = db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, { "sl_id": 1 } )
-            streamlines = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
-            result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
-            tracks = [pickle.loads(rec["data"]) for rec in result]
+        result = db.scans.find( criteria={ "scan_id": 1 } )
+        all_scans = [rec["scan_id"] for rec in result]
+        for scan in all_scans:
+            tracks = None
+            streamlines = []
+            if scan in scans:
+                result = db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, { "sl_id": 1 } )
+                streamlines = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
+                # downsampling
+                streamlines = streamlines[every-1::every]
+                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
+                tracks = [pickle.loads(rec["data"]) for rec in result]
+
             result = db.scans.find( { "scan_id": scan } )
 
             if result.count() > 1:
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
             tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
-            tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
             # TODO: set tds.connections to something appropriate
 
@@ -122,6 +136,11 @@ class MongoTrackDataSource(HasTraits):
         Subsets the track datasets so that only streamlines labeled as
         `region_pair_id`
         """
+        if every < 0:
+            raise ValueError("every must be >= 0.")
+
+        if every == 0:
+            every = 1
 
         if type(connection_id) == int:
             connection_id = np.array([connection_id])
@@ -148,6 +167,8 @@ class MongoTrackDataSource(HasTraits):
                     for sl in rec["sl_ids"]:
                         streamlines.append(sl)
                 streamlines = sorted(list(set(streamlines)))
+                # downsampling
+                streamlines = streamlines[every-1::every]
                 result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
                 tracks = [pickle.loads(rec["data"]) for rec in result]
 
@@ -157,7 +178,6 @@ class MongoTrackDataSource(HasTraits):
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
             tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
-            tds = tds.subset(range(tds.get_ntracks()), every=every)
             datasets.append(tds)
             # TODO: set tds.connections to something appropriate
 

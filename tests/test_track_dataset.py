@@ -31,17 +31,23 @@ def test_subset():
     tds1 = pickle.load(fop)
     fop.close()
 
-    tds_subset = tds1.subset([12, 78, 99, 107])
-    assert len(tds_subset.tracks) == 4
+    indices = [12, 78, 99, 107]
 
-    tds_subset = tds1.subset([12, 78, 99, 107], inverse=True)
+    tds_subset = tds1.subset(indices)
+    assert len(tds_subset.tracks) == 4
+    assert tds_subset.original_track_indices == indices
+
+    tds_subset = tds1.subset(indices, every=2)
+    assert len(tds_subset.tracks) == 2
+    assert tds_subset.original_track_indices == indices[1::2]
+    
+    tds_subset = tds1.subset(indices, inverse=True)
     assert len(tds_subset.tracks) == 99996
 
-    # TODO: why do these fail?
-    tds_subset = tds1.subset([12, 78, 99, 107], inverse=True, every=2)
+    tds_subset = tds1.subset(indices, inverse=True, every=2)
     assert len(tds_subset.tracks) == 49998
     
-    tds_subset = tds1.subset([12, 78, 99, 107], inverse=True, every=1)
+    tds_subset = tds1.subset(indices, inverse=True, every=1)
     assert len(tds_subset.tracks) == 99996
 
 def test_length_filter():
