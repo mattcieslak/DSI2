@@ -64,6 +64,46 @@ def test_load_label_data():
 
     assert mongo_results == local_results
 
+def test_change_atlas():
+    # load the traditional track datasource for comparison
+    scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
+    tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
+    
+    mtds = MongoTrackDataSource()
+
+    mtds.load_label_data()
+    tds.load_label_data()
+
+    # try each Lausanne2008 variant
+    atlas = { "name": "Lausanne2008" }
+    scales = [33, 60, 125, 250, 500]
+    
+    for scale in scales:
+        atlas["scale"] = scale
+        mongo_results = mtds.change_atlas(atlas)
+        local_results = tds.change_atlas(atlas)
+        
+        for mongo, local in zip(mongo_results, local_results):
+            assert (mongo == local).all()
+
+    # bogus atlas
+    atlas["scale"] = 700
+
+    local_exception = ""
+    mongo_exception = ""
+
+    try:
+        tds.change_atlas(atlas)
+    except ValueError, e:
+        local_exception = str(e)
+
+    try:
+        mtds.change_atlas(atlas)
+    except ValueError, e:
+        mongo_exception = str(e)
+
+    assert local_exception == mongo_exception != ""
+
 def test_query_ijk():
 
     # load the traditional track datasource for comparison
@@ -167,25 +207,6 @@ def test_query_connection_id():
     except ValueError, e:
         local_exception = str(e)
     assert mongo_exception == local_exception != ""
-
-
-    # bogus atlas
-    query["scale"] = 700
-
-    local_exception = ""
-    mongo_exception = ""
-
-    try:
-        tds.change_atlas(query)
-    except ValueError, e:
-        local_exception = str(e)
-
-    try:
-        mtds.change_atlas(query)
-    except ValueError, e:
-        mongo_exception = str(e)
-
-    assert local_exception == mongo_exception != ""
 
 def test_len():
 
