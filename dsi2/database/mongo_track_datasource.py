@@ -123,14 +123,9 @@ class MongoTrackDataSource(HasTraits):
 
                 # If we've already loaded an atlas, build a connections list.
                 if self.atlas_id != None:
-                    result = db.connections.find( { "scan_id": scan, "atlas_id": self.atlas_id, "sl_ids": { "$in": streamlines } },
-                            [ "con_id", "sl_ids" ] )
-                    sl_cons = {}
-                    for rec in result:
-                        for sl in rec["sl_ids"]:
-                            sl_cons[sl] = int(rec["con_id"])
-
-                    connections = [sl_cons[sl] for sl in streamlines]
+                    connections = db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
+                    connections = connections["con_ids"]
+                    connections = [connections[sl] for sl in streamlines]
 
                 result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
                 tracks = [pickle.loads(rec["data"]) for rec in result]
@@ -225,16 +220,15 @@ class MongoTrackDataSource(HasTraits):
         if match_count != 1:
             raise ValueError("Query did not return exactly one match")
 
-        # TODO: build new_labels
         print "\t+ Setting new atlas in TrackDataSource"
         new_labels = []
-#        for tds, cache in zip(self.track_datasets,self.label_cache):
-#            match = [lbl["data"] for lbl in cache if dictmatch(query_specs,lbl)]
-#            if not len(match) ==1:
-#                raise ValueError("Query did not return exactly one match")
-#            # ATTACHES LABELS TO THE `.connections` ATTRIBUTE OF EACH TDS
-#            tds.set_connections(match[0])
-#            new_labels += match
+        result = db.scans.find(fields=[ "scan_id" ])
+        scans = [rec["scan_id"] for rec in result]
+        for scan in scans:
+            match = db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
+            if match != None:
+                match = [np.array(match["con_ids"])]
+                new_labels += match
 
         return new_labels
 
@@ -268,24 +262,6 @@ class MongoTrackDataSource(HasTraits):
                 if len(propvals) <= 1: continue
                 varying_properties[atlas_name][propname] = sorted(list(propvals))
         print varying_properties
-
-
-# TODO: do we need this cache?
-        # Put in a look-up
-#        self.label_cache = []  # one row for each subject
-#        for props in self.track_dataset_properties:
-#            subj_cache = []
-#            # one row in the cache for each item
-#            for label_item in props.track_label_items:
-#                subj_lut = {"name":label_item.name}
-#                subj_lut.update(label_item.parameters)
-#                subj_lut['data'] = \
-#                            np.load(
-#                               os.path.join(props.pkl_dir,label_item.numpy_path)
-#                               ).astype(np.uint64)
-#
-#                subj_cache.append(subj_lut)
-#            self.label_cache.append(subj_cache)
 
         # Make sure all the graphml paths are the same and
         #self.graphml_cache = {}
