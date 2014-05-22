@@ -50,6 +50,16 @@ def test_subset():
     tds_subset = tds1.subset(indices, inverse=True, every=1)
     assert len(tds_subset.tracks) == 99996
 
+    tds_subset = tds1.subset(indices, every=200000)
+    assert len(tds_subset.tracks) == 0
+
+    exception = ""
+    try:
+        tds_subset = tds1.subset(indices, every=-1)
+    except ValueError, e:
+        exception = str(e)
+    assert exception == "every must be >= 0."
+
 def test_length_filter():
     fop = open(os.path.join(paths.test_output_data, "0377A/0377A.src.gz.odf8.f3.reg1.qsdr.1.25.2mm.map.fib.gz.nsm.MNI.pkl"), "rb"    )
     tds1 = pickle.load(fop)

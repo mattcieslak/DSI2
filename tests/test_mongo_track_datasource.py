@@ -14,12 +14,13 @@ test_con_ids = [3456, 3455]
 
 def compare_results(mongo_results, local_results):
     assert len(mongo_results) == len(local_results)
+
+    # TODO: is it always the case that both sets (mongo and local) of 
+    # TrackDatasets are in the same order? The following assumes that they are.
     
     for mongo, local in zip(mongo_results, local_results):
         assert mongo.get_ntracks() == local.get_ntracks()
-        assert len(mongo.original_track_indices) == len(set(mongo.original_track_indices))
-        assert len(local.original_track_indices) == len(set(local.original_track_indices))
-        assert len(mongo.original_track_indices) == len(local.original_track_indices)
+        assert (mongo.original_track_indices == local.original_track_indices).all()
         assert len(mongo.original_track_indices) == mongo.get_ntracks()
         
         assert mongo.render_tracks == local.render_tracks
@@ -46,13 +47,8 @@ def compare_results(mongo_results, local_results):
         assert mongo.properties.label == local.properties.label
         assert mongo.properties.trk_space == local.properties.trk_space
 
-        # streamlines will probably not be in the same order, but they
-        # should match based on their original index
-        for mongoindex, index in enumerate(mongo.original_track_indices):
-            localindex = np.where(local.original_track_indices == index)[0]
-            assert len(localindex) == 1
-            localindex = localindex[0]
-            assert (mongo.tracks[mongoindex] == local.tracks[localindex]).all()
+        for mongo_track, local_track in zip(mongo.tracks, local.tracks):
+            assert (mongo_track == local_track).all()
 
 def test_query_ijk():
 
@@ -74,6 +70,19 @@ def test_query_ijk():
         local_results = tds.query_ijk(test_coordinates, e)
 
         compare_results(mongo_results, local_results)
+
+    every = -1
+    mongo_exception = ""
+    local_exception = ""
+    try:
+        mongo_results = mtds.query_ijk(test_coordinates, every)
+    except ValueError, e:
+        mongo_exception = str(e)
+    try:
+        local_results = tds.query_ijk(test_coordinates, every)
+    except ValueError, e:
+        local_exception = str(e)
+    assert mongo_exception == local_exception != ""
 
     # This should result in no matches with the test data
     no_match = [(0, 0, 0)]
@@ -128,6 +137,20 @@ def test_query_connection_id():
         local_results = tds.query_connection_id(test_con_ids, e)
 
         compare_results(mongo_results, local_results)
+
+    every = -1
+    mongo_exception = ""
+    local_exception = ""
+    try:
+        mongo_results = mtds.query_connection_id(test_con_ids, every)
+    except ValueError, e:
+        mongo_exception = str(e)
+    try:
+        local_results = tds.query_connection_id(test_con_ids, every)
+    except ValueError, e:
+        local_exception = str(e)
+    assert mongo_exception == local_exception != ""
+
 
     # bogus atlas
     query["scale"] = 700
@@ -196,5 +219,4 @@ def test_set_render_tracks():
     for mongo, local in zip(mongo_results, local_results):
         assert mongo.render_tracks == False
         assert mongo.render_tracks == local.render_tracks
-
 
