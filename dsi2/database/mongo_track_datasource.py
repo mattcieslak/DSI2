@@ -52,7 +52,7 @@ class MongoTrackDataSource(HasTraits):
             #[tds.properties for tds in self.track_datasets]
 
     def get_subjects(self):
-        result = db.scans.find(fields={ "subject_id": 1 })
+        result = db.scans.find(fields=[ "subject_id" ])
         return sorted(list(set(
             [rec["subject_id"] for rec in result])))
 
@@ -62,7 +62,7 @@ class MongoTrackDataSource(HasTraits):
     def __len__(self):
         return db.scans.count()
 
-    def build_track_dataset(self,result,tracks,original_track_indices):
+    def build_track_dataset(self,result,tracks,original_track_indices,connections):
         header = pickle.loads(result["header"])
  
         properties = Scan()
@@ -88,7 +88,8 @@ class MongoTrackDataSource(HasTraits):
         properties.label = result["label"]
         properties.trk_space = result["trk_space"]
 
-        tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, properties=properties)
+        tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, 
+                properties=properties, connections=connections)
         tds.render_tracks = self.render_tracks
         return tds
 
@@ -101,23 +102,37 @@ class MongoTrackDataSource(HasTraits):
 
         # Get the scan_ids that contain these coordinates
         coords = [str(c) for c in ijk]
-        result = db.coordinates.find( { "ijk": { "$in": coords } }, { "scan_id": 1 } )
+        result = db.coordinates.find( { "ijk": { "$in": coords } }, [ "scan_id" ] )
         scans = set([rec["scan_id"] for rec in result])
 
         # Get the streamlines for each scan and build a list of TrackDatasets
         # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
         datasets = []
-        result = db.scans.find( criteria={ "scan_id": 1 } )
+        result = db.scans.find( fields=[ "scan_id" ] )
         all_scans = [rec["scan_id"] for rec in result]
         for scan in all_scans:
             tracks = None
             streamlines = []
+            connections = []
             if scan in scans:
-                result = db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, { "sl_id": 1 } )
+                result = db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, [ "sl_id" ] )
                 streamlines = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
+
                 # downsampling
                 streamlines = streamlines[every-1::every]
-                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
+
+                # If we've already loaded an atlas, build a connections list.
+                if self.atlas_id != None:
+                    result = db.connections.find( { "scan_id": scan, "atlas_id": self.atlas_id, "sl_ids": { "$in": streamlines } },
+                            [ "con_id", "sl_ids" ] )
+                    sl_cons = {}
+                    for rec in result:
+                        for sl in rec["sl_ids"]:
+                            sl_cons[sl] = int(rec["con_id"])
+
+                    connections = [sl_cons[sl] for sl in streamlines]
+
+                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
                 tracks = [pickle.loads(rec["data"]) for rec in result]
 
             result = db.scans.find( { "scan_id": scan } )
@@ -125,9 +140,9 @@ class MongoTrackDataSource(HasTraits):
             if result.count() > 1:
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
-            tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
+            tds = self.build_track_dataset(result=result[0], tracks=tracks, 
+                    original_track_indices=np.array(streamlines), connections=np.array(connections))
             datasets.append(tds)
-            # TODO: set tds.connections to something appropriate
 
         return datasets
 
@@ -149,27 +164,35 @@ class MongoTrackDataSource(HasTraits):
 
         # Get the scan_ids that contain these connections
         cons = [str(c) for c in connection_id]
-        result = db.connections2.find( { "con_id": { "$in": cons }, "atlas_id": self.atlas_id }, { "scan_id": 1 } )
+        result = db.connections.find( { "con_id": { "$in": cons }, "atlas_id": self.atlas_id }, [ "scan_id" ] )
         scans = set([rec["scan_id"] for rec in result])
 
         # Get the streamlines for each scan and build a list of TrackDatasets
         # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
         datasets = []
-        result = db.scans.find( criteria={ "scan_id": 1 } )
+        result = db.scans.find( fields=[ "scan_id" ] )
         all_scans = [rec["scan_id"] for rec in result]
         for scan in all_scans:
             tracks = None
             streamlines = []
+            connections = []
             if scan in scans:
-                result = db.connections2.find( { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, { "sl_ids": 1 } )
-                streamlines = []
+                result = db.connections.find( 
+                        { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, 
+                        [ "sl_ids", "con_id" ] )
+                sl_cons = {}
                 for rec in result:
                     for sl in rec["sl_ids"]:
                         streamlines.append(sl)
+                        sl_cons[sl] = int(rec["con_id"])
                 streamlines = sorted(list(set(streamlines)))
+                
                 # downsampling
                 streamlines = streamlines[every-1::every]
-                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan } )
+                
+                connections = [sl_cons[sl] for sl in streamlines]
+
+                result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
                 tracks = [pickle.loads(rec["data"]) for rec in result]
 
             result = db.scans.find( { "scan_id": scan } )
@@ -177,9 +200,9 @@ class MongoTrackDataSource(HasTraits):
             if result.count() > 1:
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
-            tds = self.build_track_dataset(result=result[0], tracks=tracks, original_track_indices=np.array(streamlines))
+            tds = self.build_track_dataset(result=result[0], tracks=tracks, 
+                original_track_indices=np.array(streamlines), connections=np.array(connections))
             datasets.append(tds)
-            # TODO: set tds.connections to something appropriate
 
         return datasets
 
@@ -218,13 +241,13 @@ class MongoTrackDataSource(HasTraits):
     def load_label_data(self):
         # What are the unique atlas names?
         # Find all the unique atlas ids.
-        result = db.scans.find( criteria={ "atlases": 1 } )
+        result = db.scans.find( fields=[ "atlases" ] )
         atlas_ids = set([])
         for rec in result:
             atlas_ids.update([a for a in rec["atlases"]])
         atlas_ids = list(atlas_ids)
         # Map the ids to names
-        result = db.atlases.find( { "_id": { "$in": atlas_ids } }, { "name": 1 } )
+        result = db.atlases.find( { "_id": { "$in": atlas_ids } }, [ "name" ] )
         atlases = list(set([rec["name"] for rec in result]))
         print "\t+ Found %d unique atlases" % len(atlases)
 

@@ -15,12 +15,12 @@ db = connection.dsi2
 # Ensure there is an index for fast querying
 # TODO: How should the compound indexes be ordered? What is most efficient?
 
-db.Lausanne2008scale33.ensure_index([("ijk",pymongo.ASCENDING), ("scan_id",pymongo.ASCENDING)])
+#db.Lausanne2008scale33.ensure_index([("ijk",pymongo.ASCENDING), ("scan_id",pymongo.ASCENDING)])
 db.streamlines.ensure_index([("scan_id",pymongo.ASCENDING),("sl_id",pymongo.ASCENDING)])
 db.coordinates.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
 
-db.connections.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
-db.connections2.ensure_index([("con_id",pymongo.ASCENDING),("scan_id",pymongo.ASCENDING),("atlas_id",pymongo.ASCENDING)])
+#db.connections.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
+db.connections.ensure_index([("con_id",pymongo.ASCENDING),("scan_id",pymongo.ASCENDING),("atlas_id",pymongo.ASCENDING)])
 
 db.atlases.ensure_index([("name",pymongo.ASCENDING)])
 
@@ -50,9 +50,7 @@ for sc in local_scans:
 
         inserts = []
         con_ids = set(atlas_labels)
-        print "Building alternate connections collection..."
-        print label.name
-        print label.parameters["scale"]
+        print "Building connections collection for %s %d..." % (label.name, label.parameters["scale"])
         for con_id in con_ids:
             sl_ids = list(map(int,np.where(atlas_labels == con_id)[0]))
             inserts.append(
@@ -64,7 +62,7 @@ for sc in local_scans:
                     }
                     )
 
-        db.connections2.insert(inserts)
+        db.connections.insert(inserts)
 
         print "done."
 
