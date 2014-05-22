@@ -290,44 +290,41 @@ class TrackDataset(HasTraits):
           Return a subset containing streamlines in `aset` or not in `aset`
         every: int
           If 0, returns all streamlines in aset. Otherwise every nth streamline
-          is returned. Use `every` to downsample your tracks to prevent overplotting.
+          is returned, beginning with the nth streamline. every=1 is equivalent
+          to every=0. Use `every` to downsample your tracks to prevent overplotting.
 
         Returns:
         --------
          ds: TrackDataset
         """
+        if every < 0:
+            raise ValueError("every must be >= 0.")
+
         if type(aset) == set:
-            idx = np.array(list(aset),dtype=int)
+            idx = np.array(sorted(list(aset)),dtype=int)
         else:
             idx = aset
         if inverse:
             _trks = np.arange(self.get_ntracks(),dtype=int)
             idx = np.setdiff1d(_trks,idx)
+
         # Enable arbitrary downsampling through `every`
-        if every > 0:
-            if every > len(idx):
-                survivors=np.array([])
-                connections = np.array([])
-            else:
-                survivors = self.tracks[idx][::every]
-                #print "%i tracks reduced to %i"%(self.get_ntracks(),len(idx))
-                connections = self.connections[idx][::every] if self.connections.size > 0 \
-                            else np.array([])
-        else:
-            survivors = self.tracks[idx] if hasattr(self,"tracks") and self.tracks.size > 0 else None
-            #print "%i tracks reduced to %i"%(self.get_ntracks(),len(idx))
-            connections = self.connections[idx] if self.connections.size > 0 \
-                        else np.array([])
-            # If we're subsetting a subset, get the original indices
-            # TODO: my old pickles don't have this builtin. Remove hasattr in a future version
-            if not hasattr(self,"original_track_indices") or self.original_track_indices.size==0:
-                orig_idx = idx
-            elif self.original_track_indices.size > 0:
-                orig_idx = self.original_track_indices[idx]
+        if every == 0:
+            every = 1
+
+        survivors = self.tracks[idx][every-1::every] if hasattr(self,"tracks") and self.tracks.size > 0 else None
+        #print "%i tracks reduced to %i"%(self.get_ntracks(),len(idx))
+        connections = self.connections[idx][every-1::every] if self.connections.size > 0 \
+                    else np.array([])
+        # If we're subsetting a subset, get the original indices
+        # TODO: my old pickles don't have this builtin. Remove hasattr in a future version
+        if not hasattr(self,"original_track_indices") or self.original_track_indices.size==0:
+            orig_idx = idx[every-1::every]
+        elif self.original_track_indices.size > 0:
+            orig_idx = self.original_track_indices[idx][every-1::every]
 
         return TrackDataset(tracks=survivors, header=self.header,
                                connections=connections, properties=self.properties,
-                               #render_tracks=self.render_tracks, ## Comes through  .properties now
                                original_track_indices=orig_idx)
 
     def voxmm_to_ijk(self, trk, to_order= "", floor=True):

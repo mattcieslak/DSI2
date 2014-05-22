@@ -67,6 +67,21 @@ def test_query_ijk():
 
     compare_results(mongo_results, local_results)
 
+    # Try some different "every" values
+    every = [0, 2, 5, 7]
+    for e in every:
+        mongo_results = mtds.query_ijk(test_coordinates, e)
+        local_results = tds.query_ijk(test_coordinates, e)
+
+        compare_results(mongo_results, local_results)
+
+    # This should result in no matches with the test data
+    no_match = [(0, 0, 0)]
+    mongo_results = mtds.query_ijk(no_match)
+    local_results = tds.query_ijk(no_match)
+
+    compare_results(mongo_results, local_results)
+
 def test_load_label_data():
     # load the traditional track datasource for comparison
     scans = get_local_data(os.path.join(paths.test_output_data,"example_data.json"))
@@ -102,6 +117,15 @@ def test_query_connection_id():
 
         mongo_results = mtds.query_connection_id(test_con_ids)
         local_results = tds.query_connection_id(test_con_ids)
+
+        compare_results(mongo_results, local_results)
+
+    # Try some different "every" values with Lausanne2008-33
+    query["scale"] = 33
+    every = [0, 2, 5, 7]
+    for e in every:
+        mongo_results = mtds.query_connection_id(test_con_ids, e)
+        local_results = tds.query_connection_id(test_con_ids, e)
 
         compare_results(mongo_results, local_results)
 
