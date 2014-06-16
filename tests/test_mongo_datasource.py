@@ -19,7 +19,7 @@ from dsi2.streamlines.track_math import sphere_around_ijk
 import pymongo
 from bson.binary import Binary
 connection = pymongo.MongoClient()
-db = connection.dsi2
+db = connection.dsi2_test
 
 test_coordinates = sphere_around_ijk(3,(33,54,45))
 test_scan_ids = ["0377A","2843A"]

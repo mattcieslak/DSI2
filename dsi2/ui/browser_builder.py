@@ -3,7 +3,7 @@ import numpy as np
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
-     on_trait_change, Button, Set
+     on_trait_change, Button, Set, File
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
@@ -14,7 +14,7 @@ import sys
 #
 from .ui_extras import colormaps
 from .sphere_browser import SphereBrowser
-from ..database.local_data import local_qsdrdb as local_dsis_trackdb
+#from ..database.local_data import local_qsdrdb as local_dsis_trackdb
 from ..aggregation.clustering_algorithms import QuickBundlesAggregator, FastKMeansAggregator
 #from ..aggregation.region_clusters import RegionAggregator
 from ..aggregation.region_labeled_clusters import RegionLabelAggregator
@@ -22,7 +22,7 @@ from ..streamlines.track_dataset import TrackDataset
 from ..database.traited_query import Scan, Query
 from traitsui.extras.checkbox_column import CheckboxColumn
 
-local_trackdb = local_dsis_trackdb
+#local_trackdb = local_dsis_trackdb
 scan_table = TableEditor(
     columns =
     [   ObjectColumn(name="scan_id",editable=False),
@@ -43,6 +43,7 @@ class BrowserBuilder(HasTraits):
     query_parameters = Instance(Query, ())
     # Where will the data come from
     data_source = Enum("Local Data", "UCSB MongoDB")
+    local_json = File
     # Holds the results from the query
     results = List(Instance(Scan))
     browsers = List(Instance(SphereBrowser))

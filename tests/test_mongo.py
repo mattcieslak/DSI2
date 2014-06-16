@@ -15,7 +15,7 @@ import random
 import pymongo
 from bson.binary import Binary
 connection = pymongo.MongoClient()
-db = connection.dsi2
+db = connection.dsi2_test
 
 from dsi2.ui.local_data_importer import (LocalDataImporter, b0_to_qsdr_map,
                                          create_missing_files)

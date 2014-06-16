@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
 import numpy as np
+import matplotlib
+matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as plt
 
 from traits.api import HasTraits, Instance, Array, Enum, \

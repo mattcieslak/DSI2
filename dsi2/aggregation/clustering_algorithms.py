@@ -88,7 +88,12 @@ class FastKMeansAggregator(ClusterEditor):
         tracks = ttracks.tracks
 
         tep = tracks_to_endpoints(tracks/2).reshape(tracks.shape[0],6)
-        mbk = MiniBatchKMeans(k=self.k)
+        # API change in scikit-learn
+        try:
+            mbk = MiniBatchKMeans(k=self.k)
+        except Exception,e :
+            mbk = MiniBatchKMeans(n_clusters=self.k)
+            
         mbk.fit(tep)
         labels = mbk.labels_
         centers = mbk.cluster_centers_.reshape(self.k,2,3)

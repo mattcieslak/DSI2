@@ -57,6 +57,8 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
 
     # Load the QSDR template volume from DSI studio
     QSDR_vol = os.path.join(dsi2_data,"NTU90_QA.nii.gz")
+    if not os.path.exists(QSDR_vol):
+        raise ValueError(QSDR_vol + " does not exist. check your config")
     QSDR_nim = nib.load(QSDR_vol)
     QSDR_data = QSDR_nim.get_data()
 
