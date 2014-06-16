@@ -21,7 +21,7 @@ connection = pymongo.MongoClient()
 db = connection.dsi2
 
 def dictmatch(qdict,ddict):
-        return all([ ddict.get(key,"") == val for key,val in qdict.iteritems() ] )
+    return all([ ddict.get(key,"") == val for key,val in qdict.iteritems() ] )
 
 class MongoTrackDataSource(HasTraits):
     #  Holds a list of objects sporting
@@ -45,8 +45,8 @@ class MongoTrackDataSource(HasTraits):
         #if not self.track_datasets:
             # Load from a json_source
             #if self.json_source:
-                #self.track_datasets = [ d.get_track_dataset()  for d in \
-                    #get_local_data(self.json_source) ]
+            #self.track_datasets = [ d.get_track_dataset()  for d in \
+                #get_local_data(self.json_source) ]
         # grab the properties from each loaded TrackDataset
         #self.track_dataset_properties = \
             #[tds.properties for tds in self.track_datasets]
@@ -64,7 +64,7 @@ class MongoTrackDataSource(HasTraits):
 
     def build_track_dataset(self,result,tracks,original_track_indices,connections):
         header = pickle.loads(result["header"])
- 
+
         properties = Scan()
         properties.scan_id = result["scan_id"]
         properties.subject_id = result["subject_id"]
@@ -89,7 +89,7 @@ class MongoTrackDataSource(HasTraits):
         properties.trk_space = result["trk_space"]
 
         tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, 
-                properties=properties, connections=connections)
+                           properties=properties, connections=connections)
         tds.render_tracks = self.render_tracks
         return tds
 
@@ -136,7 +136,7 @@ class MongoTrackDataSource(HasTraits):
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
             tds = self.build_track_dataset(result=result[0], tracks=tracks, 
-                    original_track_indices=np.array(streamlines), connections=np.array(connections))
+                                           original_track_indices=np.array(streamlines), connections=np.array(connections))
             datasets.append(tds)
 
         return datasets
@@ -173,18 +173,18 @@ class MongoTrackDataSource(HasTraits):
             connections = []
             if scan in scans:
                 result = db.connections.find( 
-                        { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, 
-                        [ "sl_ids", "con_id" ] )
+                    { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, 
+                    [ "sl_ids", "con_id" ] )
                 sl_cons = {}
                 for rec in result:
                     for sl in rec["sl_ids"]:
                         streamlines.append(sl)
                         sl_cons[sl] = int(rec["con_id"])
                 streamlines = sorted(list(set(streamlines)))
-                
+
                 # downsampling
                 streamlines = streamlines[every-1::every]
-                
+
                 connections = [sl_cons[sl] for sl in streamlines]
 
                 result = db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
@@ -196,7 +196,7 @@ class MongoTrackDataSource(HasTraits):
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
 
             tds = self.build_track_dataset(result=result[0], tracks=tracks, 
-                original_track_indices=np.array(streamlines), connections=np.array(connections))
+                                           original_track_indices=np.array(streamlines), connections=np.array(connections))
             datasets.append(tds)
 
         return datasets
@@ -289,4 +289,3 @@ class MongoTrackDataSource(HasTraits):
 #        width=900,
 #        height=500
 #    )
-
