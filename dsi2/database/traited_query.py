@@ -197,6 +197,8 @@ class Scan(Dataset):
           ),
           orientation="horizontal",
           ),
+          layout="tabbed"
+        ),
         Group(
             Item("track_label_items",editor=scalar_table),
             show_labels=False,
@@ -209,7 +211,7 @@ class Scan(Dataset):
             show_border=True,
             label = "Scalar values"
             ),
-        )
+        
     )
 
     def __init__(self,**traits):
@@ -241,6 +243,33 @@ class Scan(Dataset):
         _trkds.properties = self
         return _trkds
 
+class MongoScan(Scan):
+    mongo_result = Dict({})
+    def __init__(self,**traits):
+        super(Scan,self).__init__(**traits)
+        self.header = pickle.loads(self.mongo_result["header"])    
+        self.scan_id = self.mongo_result["scan_id"]
+        self.subject_id = self.mongo_result["subject_id"]
+        self.scan_gender = self.mongo_result["gender"]
+        self.scan_age = self.mongo_result["age"]
+        self.study = self.mongo_result["study"]
+        self.scan_group = self.mongo_result["group"]
+        self.smoothing = self.mongo_result["smoothing"]
+        self.cutoff_angle = self.mongo_result["cutoff_angle"]
+        self.qa_threshold = self.mongo_result["qa_threshold"]
+        self.gfa_threshold = self.mongo_result["gfa_threshold"]
+        self.length_min = self.mongo_result["length_min"]
+        self.length_max = self.mongo_result["length_max"]
+        self.institution = self.mongo_result["institution"]
+        self.reconstruction = self.mongo_result["reconstruction"]
+        self.scanner = self.mongo_result["scanner"]
+        self.n_directions = self.mongo_result["n_directions"]
+        self.max_b_value = self.mongo_result["max_b_value"]
+        self.bvals = self.mongo_result["bvals"]
+        self.bvecs = self.mongo_result["bvecs"]
+        self.label = self.mongo_result["label"]
+        self.trk_space = self.mongo_result["trk_space"]
+    
 class Query(Dataset):
     def __init__(self,**traits):
         super(Query,self).__init__(**traits)
@@ -274,7 +303,9 @@ class Query(Dataset):
         Item('max_b_value'),
         show_border=True,
         label="Acquisition Parameters",
-        )),
+        ),
+        layout="tabbed"
+        ),
         width=250)
 
     def __check_param(self,paramname,value):
