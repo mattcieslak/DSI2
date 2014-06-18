@@ -86,7 +86,7 @@ class ScalarVolume(HasTraits):
                 self.indices[0],self.indices[1],self.indices[2])
             self.glyph = mlab.pipeline.glyph(
                 self.source, color=static_color, mode="cube" )
-
+            
 
     def _color_map_changed(self):
         self.clear()
@@ -125,6 +125,12 @@ class ScalarVolumes(HasTraits):
     def _scene3d_default(self):
         return MlabSceneModel()
 
+    def render_regions(self):
+        self.scene3d.disable_render = True
+        for volume in self.volumes:
+            volume.render()
+        self.scene3d.disable_render = False
+        
     test_view = View(
         Item("volumes",editor=volume_table),
         Group(
