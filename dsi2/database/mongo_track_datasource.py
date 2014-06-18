@@ -48,6 +48,23 @@ class MongoTrackDataSource(TrackDataSource):
     
     def __init__(self,**traits):
         super(MongoTrackDataSource,self).__init__(**traits)
+        """
+        The critical pieces of information when constructing this class
+        are the scan_ids, client, and db_name.
+        
+        Parameters:
+        -----------
+        scan_ids: list of str
+          The "scan_id" field from the scans that are to be retrieved
+          during the spatial query
+          
+        client:pymongo.MongoClient
+          A connection to the MongoDB instance
+          
+        db_name:str
+          The name of the database to use from ``client``.  Typically
+          this is "dsi2", but for unit tests can be set to "dsi2_test"
+        """
         # if track_datasets is not passed explicitly
         #if not self.track_datasets:
             # Load from a json_source
@@ -64,10 +81,11 @@ class MongoTrackDataSource(TrackDataSource):
     def get_subjects(self):
         """ In this case, the user should supply a set of scan ids
         to be included in the coordinate search."""
-        result = self.db.scans.find(fields=[ "subject_id" ])
-        return sorted(list(set(
-            [rec["subject_id"] for rec in result])))
-
+        #result = self.db.scans.find(fields=[ "subject_id" ])
+        #return sorted(list(set(
+        #    [rec["subject_id"] for rec in result])))
+        return self.scan_ids
+    
     def set_render_tracks(self,visibility):
         self.render_tracks = visibility
 
@@ -75,8 +93,9 @@ class MongoTrackDataSource(TrackDataSource):
         """ Thi should reflect only the scan_ids inside 
         self.scan_ids.  
         """
-        return self.db.scans.count()
-
+        #return self.db.scans.count()
+        return len(self.scan_ids)
+    
     def build_track_dataset(self,result,tracks,original_track_indices,connections):
         header = pickle.loads(result["header"])
 
