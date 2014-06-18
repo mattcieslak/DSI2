@@ -510,6 +510,15 @@ class TrackDataset(HasTraits):
             ((stream,None,None) for stream in self),
             np.array(header)
         )
+        
+    def dump_voxel_track_lookup(self, output,**kwargs):
+        """dumps this TrackDataset with all its lookup tables
+        into a binary pickle file.
+        """
+        self.hash_voxels_to_tracks(**kwargs)
+        fop = open(output,"wb")
+        pickle.dump(self,fop,pickle.HIGHEST_PROTOCOL)
+        fop.close()
 
 
     #====================================================================================
