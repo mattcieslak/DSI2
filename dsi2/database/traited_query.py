@@ -86,10 +86,11 @@ class TrackScalarSource(HasTraits):
     volume_path = File("")
 
     scalars = Array
+    base_dir=File("")
 
-    def load_array(self,base_dir):
+    def load_array(self):
         self.scalars = np.load(
-            os.path.join(base_dir,self.numpy_path)).astype(np.uint64)
+            os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
         return self.scalars
 
 scalar_table = TableEditor(
@@ -219,11 +220,12 @@ class Scan(Dataset):
         Holds the information OF A SINGLE SCAN.
         """
         super(Scan,self).__init__(**traits)
+        
         self.track_label_items = \
-            [TrackScalarSource(**item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
              self.track_labels ]
         self.track_scalar_items = \
-            [TrackScalarSource(**item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir,**item) for item in \
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
