@@ -154,9 +154,49 @@ def upload_coordinate_info(trackds, sc):
 
     return True
 
-def upload_scan_info(sc):
+def upload_scan_info(trackds, sc):
     try:
-        db.scans.insert([sc.original_json])
+        #db.scans.insert([sc.original_json])
+        atlases = []
+        for label in sc.track_label_items:
+            # Does this atlas already exist? If not, add it to the collection.
+            atlas = None
+            result = db.atlases.find( { "name": label.name, "parameters": label.parameters } )
+            if result.count() != 0:
+                atlas = result[0]["_id"]
+            else:
+                atlas = db.atlases.insert( { "name": label.name, "parameters": label.parameters } )
+    
+            atlases.append(atlas)
+        db.scans.insert([
+                {
+                    "scan_id":sc.scan_id,
+                    "subject_id":sc.subject_id,
+                    "gender":sc.scan_gender,
+                    "age":sc.scan_age,
+                    "study":sc.study,
+                    "group":sc.scan_group,
+                    "smoothing":sc.smoothing,
+                    "cutoff_angle":sc.cutoff_angle,
+                    "qa_threshold":sc.qa_threshold,
+                    "gfa_threshold":sc.gfa_threshold,
+                    "length_min":sc.length_min,
+                    "length_max":sc.length_max,
+                    "institution":sc.institution,
+                    "reconstruction":sc.reconstruction,
+                    "scanner":sc.scanner,
+                    "n_directions":sc.n_directions,
+                    "max_b_value":sc.max_b_value,
+                    "bvals":sc.bvals,
+                    "bvecs":sc.bvecs,
+                    "label":sc.label,
+                    "trk_space":sc.trk_space,
+                    "atlases":list(set(atlases)),
+                    "sls": len(trackds.tracks),
+                    "header":Binary(pickle.dumps(trackds.header,protocol=2)),
+                    "original_json":sc.original_json
+                }
+        ])
     except Exception, e:
         print "Failed to upload scan info", e
         return False
@@ -171,19 +211,19 @@ def upload_local_scan(sc):
         print "failed to read pkl file"
         return False, "pkl file corrupt"
 
-    if not upload_atlases(trackds, sc):
-        print "failed to upload atlases"
-        return False, "upload_atlases"
+#    if not upload_atlases(trackds, sc):
+#        print "failed to upload atlases"
+#        return False, "upload_atlases"
+#
+#    if not upload_streamlines(trackds, sc):
+#        print "failed to upload streamlines"
+#        return False, "upload_streamlines"
+#
+#    if not upload_coordinate_info(trackds, sc):
+#        print "failed to upload spatial mapping"
+#        return False, "upload_coordinate_info"
 
-    if not upload_streamlines(trackds, sc):
-        print "failed to upload streamlines"
-        return False, "upload_streamlines"
-
-    if not upload_coordinate_info(trackds, sc):
-        print "failed to upload spatial mapping"
-        return False, "upload_coordinate_info"
-
-    if not upload_scan_info(sc):
+    if not upload_scan_info(trackds, sc):
         print "failed to upload spatial mapping"
         return False, "upload scan info"
 

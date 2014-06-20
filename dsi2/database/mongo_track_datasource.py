@@ -143,7 +143,7 @@ class MongoTrackDataSource(TrackDataSource):
 
                 # If we've already loaded an atlas, build a connections list.
                 if self.atlas_id != None:
-                    connections = self.db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
+                    connections = self.db.streamline_labels.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
                     connections = connections["con_ids"]
                     connections = [connections[sl] for sl in streamlines]
 
@@ -245,7 +245,7 @@ class MongoTrackDataSource(TrackDataSource):
         result = self.db.scans.find(fields=[ "scan_id" ])
         scans = [rec["scan_id"] for rec in result]
         for scan in scans:
-            match = self.db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
+            match = self.db.streamline_labels.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
             if match != None:
                 match = [np.array(match["con_ids"])]
                 new_labels += match
