@@ -87,9 +87,9 @@ class TrackScalarSource(HasTraits):
 
     scalars = Array
 
-    def load_array(self,base_dir):
+    def load_array(self):
         self.scalars = np.load(
-            os.path.join(base_dir,self.numpy_path)).astype(np.uint64)
+            os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
         return self.scalars
 
 scalar_table = TableEditor(
@@ -165,6 +165,7 @@ class Scan(Dataset):
     static_color      = Color
     render_tracks     = Bool(False)
     representation    = Enum("Line", "Tube")
+    original_json     = Dict
 
     import_view = View(
         Group(
@@ -220,10 +221,10 @@ class Scan(Dataset):
         """
         super(Scan,self).__init__(**traits)
         self.track_label_items = \
-            [TrackScalarSource(**item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
              self.track_labels ]
         self.track_scalar_items = \
-            [TrackScalarSource(**item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
@@ -247,28 +248,31 @@ class MongoScan(Scan):
     mongo_result = Dict({})
     def __init__(self,**traits):
         super(Scan,self).__init__(**traits)
-        self.header = pickle.loads(self.mongo_result["header"])    
+        if "header" in self.mongo_result:
+            self.header = pickle.loads(self.mongo_result["header"])    
+        else: 
+            self.header = np.array([0])
         self.scan_id = self.mongo_result["scan_id"]
         self.subject_id = self.mongo_result["subject_id"]
-        self.scan_gender = self.mongo_result["gender"]
-        self.scan_age = self.mongo_result["age"]
+        #self.scan_gender = self.mongo_result["gender"]
+        #self.scan_age = self.mongo_result["age"]
         self.study = self.mongo_result["study"]
-        self.scan_group = self.mongo_result["group"]
-        self.smoothing = self.mongo_result["smoothing"]
-        self.cutoff_angle = self.mongo_result["cutoff_angle"]
-        self.qa_threshold = self.mongo_result["qa_threshold"]
-        self.gfa_threshold = self.mongo_result["gfa_threshold"]
-        self.length_min = self.mongo_result["length_min"]
-        self.length_max = self.mongo_result["length_max"]
-        self.institution = self.mongo_result["institution"]
-        self.reconstruction = self.mongo_result["reconstruction"]
-        self.scanner = self.mongo_result["scanner"]
-        self.n_directions = self.mongo_result["n_directions"]
-        self.max_b_value = self.mongo_result["max_b_value"]
-        self.bvals = self.mongo_result["bvals"]
-        self.bvecs = self.mongo_result["bvecs"]
-        self.label = self.mongo_result["label"]
-        self.trk_space = self.mongo_result["trk_space"]
+        #self.scan_group = self.mongo_result["group"]
+        #self.smoothing = self.mongo_result["smoothing"]
+        #self.cutoff_angle = self.mongo_result["cutoff_angle"]
+        #self.qa_threshold = self.mongo_result["qa_threshold"]
+        #self.gfa_threshold = self.mongo_result["gfa_threshold"]
+        #self.length_min = self.mongo_result["length_min"]
+        #self.length_max = self.mongo_result["length_max"]
+        #self.institution = self.mongo_result["institution"]
+        #self.reconstruction = self.mongo_result["reconstruction"]
+        #self.scanner = self.mongo_result["scanner"]
+        #self.n_directions = self.mongo_result["n_directions"]
+        #self.max_b_value = self.mongo_result["max_b_value"]
+        #self.bvals = self.mongo_result["bvals"]
+        #self.bvecs = self.mongo_result["bvecs"]
+        #self.label = self.mongo_result["label"]
+        #self.trk_space = self.mongo_result["trk_space"]
     
 class Query(Dataset):
     def __init__(self,**traits):

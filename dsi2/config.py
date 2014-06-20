@@ -33,7 +33,7 @@ def loadConfig(force = False):
       
         if (local_trackdb_path == None):
             local_trackdb_path = default_local_trackdb_path
-            logger.warning('%s is not defined', envVar, local_trackdb_path)
+            logger.warning('%s is not defined', envVar )
         else:
             logger.info('using %s from %s', local_trackdb_path, envVar)
 

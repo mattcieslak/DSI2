@@ -48,7 +48,7 @@ class BrowserBuilder(HasTraits):
     local_json = File
     # Connection parameters for mongodb
     client = Instance(pymongo.MongoClient)
-    mongo_host = Str("localhost")
+    mongo_host = Str("127.0.0.1")
     mongo_port = Int(27017)
     db_name=Str("dsi2")
     # Holds the results from the query
@@ -65,15 +65,25 @@ class BrowserBuilder(HasTraits):
             self.local_find_datasets()
             
     def _client_default(self):
-        return pymongo.MongoClient("mongodb://%s:%d/" %(
-            self.mongo_host, self.mongo_port))
+        try:
+            client = pymongo.MongoClient("mongodb://%s:%d/" %(
+                 self.mongo_host, self.mongo_port))
+            return client
+        except Exception, e:
+            print "Constructing vanilla client"
+            return pymongo.MongoClient()
         
     def mongo_find_datasets(self):
         """ Queries a mongodb instance to find scans that match
         the study
         """
         collection = self.client[self.db_name]["scans"]
-        results = list(collection.find({"study":self.query_parameters.study}))
+        if self.query_parameters.study == "":
+            print "querying all items in the database"
+            results = list(collection.find())
+        else:
+            print "searching for", self.query_parameters.study
+            results = list(collection.find({"study":self.query_parameters.study}))
         print "found %d results" % len(results)
         self.results = [
             MongoScan(mongo_result=res) for res in results ]
