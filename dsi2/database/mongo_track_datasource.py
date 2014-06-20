@@ -78,31 +78,33 @@ class MongoTrackDataSource(TrackDataSource):
         return self.db.scans.count()
 
     def build_track_dataset(self,result,tracks,original_track_indices,connections):
-        header = pickle.loads(result["header"])
+        # TODO: Header needs to get fixed 
+        #header = pickle.loads(result["header"])
+        header = {"n_scalars":0}
 
         properties = Scan()
         properties.scan_id = result["scan_id"]
-        properties.subject_id = result["subject_id"]
-        properties.scan_gender = result["gender"]
-        properties.scan_age = result["age"]
+        #properties.subject_id = result["subject_id"]
+        #properties.scan_gender = result["gender"]
+        #properties.scan_age = result["age"]
         properties.study = result["study"]
-        properties.scan_group = result["group"]
-        properties.smoothing = result["smoothing"]
-        properties.cutoff_angle = result["cutoff_angle"]
-        properties.qa_threshold = result["qa_threshold"]
-        properties.gfa_threshold = result["gfa_threshold"]
-        properties.length_min = result["length_min"]
-        properties.length_max = result["length_max"]
-        properties.institution = result["institution"]
-        properties.reconstruction = result["reconstruction"]
-        properties.scanner = result["scanner"]
-        properties.n_directions = result["n_directions"]
-        properties.max_b_value = result["max_b_value"]
-        properties.bvals = result["bvals"]
-        properties.bvecs = result["bvecs"]
-        properties.label = result["label"]
-        properties.trk_space = result["trk_space"]
-
+        #properties.scan_group = result["group"]
+        #properties.smoothing = result["smoothing"]
+        #properties.cutoff_angle = result["cutoff_angle"]
+        #properties.qa_threshold = result["qa_threshold"]
+        #properties.gfa_threshold = result["gfa_threshold"]
+        #properties.length_min = result["length_min"]
+        #properties.length_max = result["length_max"]
+        #properties.institution = result["institution"]
+        #properties.reconstruction = result["reconstruction"]
+        #properties.scanner = result["scanner"]
+        #properties.n_directions = result["n_directions"]
+        #properties.max_b_value = result["max_b_value"]
+        #properties.bvals = result["bvals"]
+        #properties.bvecs = result["bvecs"]
+        #properties.label = result["label"]
+        #properties.trk_space = result["trk_space"]
+        
         tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, 
                            properties=properties, connections=connections)
         tds.render_tracks = self.render_tracks
