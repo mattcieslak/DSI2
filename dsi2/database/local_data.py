@@ -27,7 +27,7 @@ else:
 #fop.close()
 
 
-def get_local_data(json_file):
+def get_local_data(json_file, pkl_dir=pkl_dir):
     fop = open(json_file,"r")
     jdata = json.load(fop)
     fop.close()

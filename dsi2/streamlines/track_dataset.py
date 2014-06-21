@@ -232,6 +232,7 @@ class TrackDataset(HasTraits):
             tracklist = list(tracklist)
 
         if type(tracklist) == list:
+            if not len(tracklist): return
             if type(tracklist[0]) == int:
                 # a list of indices to select from a previously existing tracklist
                 if not hasattr(self,"tracks"):
@@ -243,6 +244,7 @@ class TrackDataset(HasTraits):
                 #print "Setting new tracks from list of tracks"
                 new_tracks = np.array(tracklist,dtype=np.object)
         elif type(tracklist) == np.ndarray:
+            if not tracklist.size: return
             if tracklist.dtype == object:
                 #print "using a numpy object array"
                 new_tracks = tracklist
@@ -563,7 +565,7 @@ class TrackDataset(HasTraits):
             npts += _npts
         # If there are no tracks, set drawn to True and exit
         if len(allpts) == 0:
-            print "\t\t++ Not Tracks to draw"
+            print "\t\t++ No Tracks to draw"
             self.empty = True
             self.tracks_drawn = True
             return

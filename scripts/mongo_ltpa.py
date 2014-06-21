@@ -11,7 +11,7 @@ from scipy.stats import ttest_ind, mannwhitneyu
 import pymongo
 from bson.binary import Binary
 connection = pymongo.MongoClient()
-db = connection.dsi2
+db = connection.dsi2_test
 
 # Here are all the subjects that got successfully loaded into mongo
 # If you want to use just a subset, slice the list
@@ -33,6 +33,9 @@ all_subjects = [ "1005y", "1410c", "2843B", "2843C", "2843A",
                  "1037C", "1037A", "1943p", "3640i", "0377B", 
                  "3997p", "3987z", "0377A", "2268c", "2318e", 
                  "2664w", "0437n", "1415x", "3444h" ]
+
+# For testing purposes
+all_subjects = ["0377A","2843A"]
 
 # Read the MNI brain mask and find where it is nonzero
 wm_mask = MaskDataset(
