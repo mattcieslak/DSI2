@@ -10,6 +10,7 @@ from traitsui.api import View, Item, VGroup, HGroup, Group, \
 from traitsui.group import ShadowGroup
 from ..database.track_datasource import TrackDataSource
 from ..database.mongo_track_datasource import MongoTrackDataSource
+from ..database.local_data import get_local_data
 import sys
 
 #
@@ -46,6 +47,7 @@ class BrowserBuilder(HasTraits):
     # Where will the data come from
     data_source = Enum("Local Data", "MongoDB")
     local_json = File
+    local_scans = List([])
     # Connection parameters for mongodb
     client = Instance(pymongo.MongoClient)
     mongo_host = Str("127.0.0.1")
@@ -90,12 +92,18 @@ class BrowserBuilder(HasTraits):
         
             
     def local_find_datasets(self):
+        self.local_scans = get_local_data(self.local_json)
         matchnum = 1
-        for dataspec in local_trackdb:
+        matches = []
+        if self.query_parameters.study == "":
+            return self.local_scans
+        for dataspec in self.local_scans:
             if self.query_parameters.local_matches(dataspec):
                 dataspec.color_map = colormaps[matchnum]
                 self.results.append(dataspec)
                 matchnum += 1
+                matches.append(dataspec)
+        self.results = matches
 
     def _a_browser_launch_fired(self):
         if self.aggregator == "K Means":
@@ -160,23 +168,24 @@ class BrowserBuilder(HasTraits):
             Item("data_source",label="Data Source"),
             local_file_group,
             mongo_file_group,
-            Item("aggregator",label="Aggregation Algorithm")),
+            ),
                     Group(
             Item("query_parameters", style="custom"),
                 show_labels=False),
             ),
-                VGroup(
-            Item("a_query"),
-            Item("a_browser_launch"),
-            Item(name="results",
+            VGroup(
+                Item("aggregator",label="Aggregation Algorithm"),
+            VGroup(
+                Item("a_query"),
+                Item("a_browser_launch"),
+                Item(name="results",
                  editor=scan_table),
-
-            orientation="vertical",
             show_labels=False
-                )
-        )
+                  )
+            )
+        ),
+        title="Select Data Source"
     )
-
 if __name__=="__main__":
     bb=BrowserBuilder()
     bb.configure_traits()

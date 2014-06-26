@@ -20,12 +20,6 @@ if dsi2_data:
 else:
     raise OSError("DSI2_DATA needs to be set")
 
-# Load the json file describing available data
-#data_json = os.path.join(pkl_dir,"data.json")
-#fop = open(data_json,"r")
-#jdata = json.load(fop)
-#fop.close()
-
 
 def get_local_data(json_file, pkl_dir=pkl_dir):
     fop = open(json_file,"r")
@@ -39,10 +33,3 @@ def get_local_data(json_file, pkl_dir=pkl_dir):
     print "    from %s" % json_file
     print "  " + "=" * 50
     return datasets
-
-# storage of all loadable local_data
-#local_data = get_local_data(data_json)
-
-# legacy
-#local_trackdb = [ d for d in local_data if d.reconstruction == "gqi" ]
-#local_qsdrdb  = [ d for d in local_data if d.reconstruction == "qsdr" ]
