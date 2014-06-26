@@ -282,8 +282,8 @@ class Query(Dataset):
             VGroup(
         Item('scan_id'),
         Item('subject_id'),
-        Item('scan_gender'),#editor=CheckListEditor()),
-        Item('scan_age'),
+        #Item('scan_gender'),#editor=CheckListEditor()),
+        #Item('scan_age'),
         Item('study'),
         Item('scan_group'),
         show_border=True,
@@ -297,6 +297,7 @@ class Query(Dataset):
         Item('gfa_threshold'),
         Item('length_min'),
         Item('length_max'),
+        springy=True,
         show_border=True,
         label="Tractography Parameters",
         ),
