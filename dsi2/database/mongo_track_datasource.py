@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from traits.api import HasTraits, List, Instance, Bool, Str, File, Dict
+from traits.api import HasTraits, List, Instance, Bool, Str, File, Dict, Int
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
@@ -44,7 +44,9 @@ class MongoTrackDataSource(TrackDataSource):
     scan_ids = List
     # A cursor object
     client = Instance(pymongo.MongoClient)
-    db_name = Str("dsi2")
+    mongo_host = Str("127.0.0.1")
+    mongo_port = Int(27017)
+    db_name=Str("dsi2")
     db = Instance(pymongo.database.Database)
     
     def __init__(self,**traits):
@@ -73,6 +75,25 @@ class MongoTrackDataSource(TrackDataSource):
     
     def _db_default(self):
         return self.client[self.db_name]
+    
+    def _client_default(self):
+        return self.__get_client()
+    
+    def __get_client(self):
+        try:
+            client = pymongo.MongoClient("mongodb://%s:%d/" %(
+                 self.mongo_host, self.mongo_port))
+            return client
+        except Exception, e:
+            print "Constructing vanilla client"
+            return pymongo.MongoClient()
+        
+    def new_mongo_connection(self):
+        """
+        To initialize a new connection to mongod, call this function
+        """
+        self.client = self.__get_client()
+        self.db = self._db_default()
 
     def get_subjects(self):
         """ In this case, the user should supply a set of scan ids
@@ -123,7 +144,8 @@ class MongoTrackDataSource(TrackDataSource):
                 qresults[result['_id']] = self.tds_lut[result["_id"]].subset(
                                         result["sl_ids"], every=every)
             print "+ Done."
-            return [qresults[scan] for scan in self.scan_ids]
+            return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
+                       scan in self.scan_ids]
         
         # Build new TrackDatasets with streamlines included
         print "\t+ Querying the streamlines collection"
@@ -157,7 +179,8 @@ class MongoTrackDataSource(TrackDataSource):
                 connections=connections, 
                 original_track_indices=original_track_indices)
 
-        return [qresults[scan] for scan in self.scan_ids]
+        return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
+                   scan in self.scan_ids]
 
     def query_connection_id(self,connection_id,every=0):
         """
@@ -225,28 +248,26 @@ class MongoTrackDataSource(TrackDataSource):
         """
 
         self.atlas_id = None
-        result = self.db.atlases.find( { "name": query_specs["name"] } )
-        match_count = 0
-        for rec in result:
-            atlas_dict = rec["parameters"]
-            atlas_dict["name"] = query_specs["name"]
-            if dictmatch(query_specs, atlas_dict):
-                self.atlas_id = rec["_id"]
-                match_count += 1
+        atlas_name = query_specs["name"]
+        qdict = dict(
+                 [("name", atlas_name)] + 
+                 [("parameters." + k, v) for k,v in query_specs.iteritems() \
+                                     if k != "name"])
 
-        # Mimic TrackDataSource behavior for now.
-        if match_count != 1:
-            raise ValueError("Query did not return exactly one match")
+        result = [rec for rec in self.db.atlases.find( qdict )]
+        if not len(result) == 1:
+            raise ValueError("Query was unable to find a single matching atlas." \
+                             "found %d" %len(result))
+        
+        self.atlas_id = rec["_id"]
 
         print "\t+ Setting new atlas in TrackDataSource"
         new_labels = []
-        result = self.db.scans.find(fields=[ "scan_id" ])
-        scans = [rec["scan_id"] for rec in result]
-        for scan in scans:
+        for scan in self.scan_ids:
             match = self.db.streamline_labels.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
-            if match != None:
-                match = [np.array(match["con_ids"])]
-                new_labels += match
+            match = np.array(match["con_ids"])
+            self.tds_lut[scan].set_connections(match)
+            new_labels.append( match )
 
         return new_labels
 

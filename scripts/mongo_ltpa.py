@@ -35,7 +35,7 @@ all_subjects = [ "1005y", "1410c", "2843B", "2843C", "2843A",
                  "2664w", "0437n", "1415x", "3444h" ]
 
 # For testing purposes
-all_subjects = ["0377A","2843A"]
+#all_subjects = ["0377A","2843A"]
 
 # Read the MNI brain mask and find where it is nonzero
 wm_mask = MaskDataset(
