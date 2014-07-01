@@ -43,11 +43,11 @@ class MongoTrackDataSource(TrackDataSource):
     atlas_id = None
     scan_ids = List
     # A cursor object
-    client = Instance(pymongo.MongoClient)
+    client = Instance(pymongo.MongoClient,transient=True)
     mongo_host = Str("127.0.0.1")
     mongo_port = Int(27017)
     db_name=Str("dsi2")
-    db = Instance(pymongo.database.Database)
+    db = Instance(pymongo.database.Database,transient=True)
     
     def __init__(self,**traits):
         super(MongoTrackDataSource,self).__init__(**traits)

@@ -2,11 +2,19 @@ import os, logging
 import numpy as np
 import multiprocessing
 from functools import partial
+import subprocess
 
 from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
 from dsi2.aggregation import make_aggregator
+import dsi2.funcs
+
+CAN_IPCLUSTER=True
+try:
+    from IPython.parallel import Client
+except ImportError:
+    CAN_IPCLUSTER=False
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,7 +25,12 @@ wm_mask = MaskDataset(
     )
 mni_white_matter = wm_mask.in_mask_voxel_ijk
 
-    
+def save_results(results,original_coords,filename):
+    ec = wm_mask.empty_copy()
+    data = ec.get_data()
+    idx = original_coords.T
+    ec[idx[0], idx[1], idx[2] ] = results
+    ec.to_filename(filename)
 
 def run_ltpa( function, data_source, aggregator_args, 
               radius=0, n_procs=1, search_centers=mni_white_matter ):
@@ -49,14 +62,18 @@ def run_ltpa( function, data_source, aggregator_args,
     search_centers:np.ndarray
       n x 3 matrix with the coordinates to serve as centers for the 
       LTPA search.
-        
+      
+    use_ipcluster:bool
+      Should an existing ipython client be used?
+      
     Returns:
     --------
     results:list
       
     """
-    def process_centers(centers, func = None, data_source = None, 
-                        aggregator_args = None, radius = None):
+    def process_centers(centers, func=function, 
+                        data_source=data_source, 
+                        aggregator_args=aggregator_args, radius=radius):
         if None in (func, data_source, aggregator_args, radius):
             raise ValueError("Must specify all arguments")
         # Create a fresh aggregator for this process
@@ -89,10 +106,12 @@ def run_ltpa( function, data_source, aggregator_args,
     
     # Process normally on this cpu
     if n_procs == 1:
-        results = process_centers(search_centers, function,  
-                                  data_source, aggregator_args, radius)
+        results = process_centers(search_centers)
         return results
 
+    if not CAN_IPCLUSTER:
+        raise OSError("Unable to use multiprocessing, IPython not installed")
+        
     # Using multiple processors
     available_processors = multiprocessing.cpu_count()
     
@@ -102,26 +121,29 @@ def run_ltpa( function, data_source, aggregator_args,
             available_processors, n_procs))
     
     # Split the centers for the different processes
-    center_chunks = np.array_split(centers, n_procs)
-    logger.info("splitting %d coordinates into %d chunks",len(coords), n_procs)
+    center_chunks = np.array_split(search_centers, n_procs)
+    logger.info("splitting %d coordinates into %d chunks",len(search_centers),
+                n_procs)
     
     # Create a pool of workers
     try:
-        pool = multiprocessing.Pool(n_procs)
+        rc = Client()
+        dview = rc[:]
+        n_engines = len(dview)
     except Exception, e:
-        logger.critical("Unable to create a processing pool: %s, e")
+        subprocess.Popen(["ipcluster", "start", "--n=%d"%N_PROC,
+            "--daemonize", "--quiet"])
+        time.sleep(5) #time for the cluster to spin up
+        try:
+            rc = Client()
+            dview = rc[:]
+            n_engines = len(dview)
+        except Exception, e:
+            raise OSError("Unable to connect to ipcluster or start one")
 
-    # run the processes in the pool
-    partial_process_centers = partial(process_centers, func=function,
-            data_source=data_source, aggregator_args=aggregator_args, 
-            radius = radius)
+    #dview.execute("os.environ['MKL_NUM_THREADS']='1'")
+    results = dview.map_sync(process_centers,center_chunks)
+    res = []
+    map(res.extend, results)
     
-    results = pool.map(partial_process_centers, center_chunks)
-    
-    pool.close()
-    
-    return results
-    
-    
-    
-
+    return res
