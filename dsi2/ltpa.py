@@ -130,7 +130,7 @@ def run_ltpa( function, data_source, aggregator_args,
         dview = rc[:]
         n_engines = len(dview)
     except Exception, e:
-        subprocess.Popen(["ipcluster", "start", "--n=%d"%N_PROC,
+        subprocess.Popen(["ipcluster", "start", "--n=%d"%n_procs,
             "--daemonize", "--quiet"])
         time.sleep(5) #time for the cluster to spin up
         try:
