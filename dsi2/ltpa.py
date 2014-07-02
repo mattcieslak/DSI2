@@ -8,7 +8,6 @@ from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
 from dsi2.aggregation import make_aggregator
-import dsi2.funcs
 
 CAN_IPCLUSTER=True
 try:
