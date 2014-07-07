@@ -135,7 +135,7 @@ def run_ltpa( function, data_source, aggregator_args,
         rc = Client()
         dview = rc[:]
         n_engines = len(dview)
-        dview.put(dview_vars)
+        dview.push(dview_vars)
     except Exception, e:
         NEEDS_IPCLUSTER_KILL=True
         subprocess.Popen(["ipcluster", "start", "--n=%d"%n_procs,
