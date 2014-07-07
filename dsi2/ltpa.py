@@ -101,10 +101,10 @@ def run_ltpa( function, data_source, aggregator_args,
             try:
                 result = func(aggregator)
             except Exception, e:
+                # Raise the error to get a debug if desired
+                if fail_on_error:
+                    raise e
                 result = e
-            # Raise the error to get a debug if desired
-            if fail_on_error:
-                raise e
             results.append(result)
         return results
     
