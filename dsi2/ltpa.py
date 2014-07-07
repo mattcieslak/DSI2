@@ -74,7 +74,7 @@ def run_ltpa( function, data_source, aggregator_args,
     def process_centers(centers, func=function, 
                         data_source=data_source, 
                         aggregator_args=aggregator_args, radius=radius, 
-                        fail_on_error=fail_on_error):
+                        fail_on_error=fail_on_error, dview_vars={}):
         if None in (func, data_source, aggregator_args, radius):
             raise ValueError("Must specify all arguments")
         # Create a fresh aggregator for this process
@@ -135,6 +135,7 @@ def run_ltpa( function, data_source, aggregator_args,
         rc = Client()
         dview = rc[:]
         n_engines = len(dview)
+        dview.put(dview_vars)
     except Exception, e:
         NEEDS_IPCLUSTER_KILL=True
         subprocess.Popen(["ipcluster", "start", "--n=%d"%n_procs,
