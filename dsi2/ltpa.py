@@ -33,7 +33,7 @@ def save_results(results,original_coords,filename):
 
 def run_ltpa( function, data_source, aggregator_args, 
               radius=0, n_procs=1, search_centers=mni_white_matter,
-              fail_on_error=False):
+              fail_on_error=False,dview_vars={}):
     """
     Performs a LTPA over a set of voxels
     
@@ -74,7 +74,7 @@ def run_ltpa( function, data_source, aggregator_args,
     def process_centers(centers, func=function, 
                         data_source=data_source, 
                         aggregator_args=aggregator_args, radius=radius, 
-                        fail_on_error=fail_on_error, dview_vars={}):
+                        fail_on_error=fail_on_error):
         if None in (func, data_source, aggregator_args, radius):
             raise ValueError("Must specify all arguments")
         # Create a fresh aggregator for this process
