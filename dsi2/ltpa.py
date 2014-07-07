@@ -3,7 +3,7 @@ import numpy as np
 import multiprocessing
 from functools import partial
 import subprocess
-
+import time
 from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
@@ -28,11 +28,12 @@ def save_results(results,original_coords,filename):
     ec = wm_mask.empty_copy()
     data = ec.get_data()
     idx = original_coords.T
-    ec[idx[0], idx[1], idx[2] ] = results
+    data[idx[0], idx[1], idx[2] ] = results
     ec.to_filename(filename)
 
 def run_ltpa( function, data_source, aggregator_args, 
-              radius=0, n_procs=1, search_centers=mni_white_matter ):
+              radius=0, n_procs=1, search_centers=mni_white_matter,
+              fail_on_error=False):
     """
     Performs a LTPA over a set of voxels
     
@@ -72,7 +73,8 @@ def run_ltpa( function, data_source, aggregator_args,
     """
     def process_centers(centers, func=function, 
                         data_source=data_source, 
-                        aggregator_args=aggregator_args, radius=radius):
+                        aggregator_args=aggregator_args, radius=radius, 
+                        fail_on_error=fail_on_error):
         if None in (func, data_source, aggregator_args, radius):
             raise ValueError("Must specify all arguments")
         # Create a fresh aggregator for this process
@@ -100,6 +102,9 @@ def run_ltpa( function, data_source, aggregator_args,
                 result = func(aggregator)
             except Exception, e:
                 result = e
+            # Raise the error to get a debug if desired
+            if fail_on_error:
+                raise e
             results.append(result)
         return results
     
@@ -125,11 +130,13 @@ def run_ltpa( function, data_source, aggregator_args,
                 n_procs)
     
     # Create a pool of workers
+    NEEDS_IPCLUSTER_KILL=False
     try:
         rc = Client()
         dview = rc[:]
         n_engines = len(dview)
     except Exception, e:
+        NEEDS_IPCLUSTER_KILL=True
         subprocess.Popen(["ipcluster", "start", "--n=%d"%n_procs,
             "--daemonize", "--quiet"])
         time.sleep(5) #time for the cluster to spin up
@@ -141,8 +148,13 @@ def run_ltpa( function, data_source, aggregator_args,
             raise OSError("Unable to connect to ipcluster or start one")
 
     #dview.execute("os.environ['MKL_NUM_THREADS']='1'")
+    # extract all results into a flat list    
     results = dview.map_sync(process_centers,center_chunks)
     res = []
     map(res.extend, results)
     
+    # kill ipcluster if need be
+    if NEEDS_IPCLUSTER_KILL:
+        subprocess.Popen(["ipcluster", "stop"])
+        
     return res
