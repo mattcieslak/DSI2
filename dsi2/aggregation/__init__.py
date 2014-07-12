@@ -10,6 +10,7 @@ def make_aggregator(algorithm = "", **kwargs):
     so this will function provides an interface that will remain stable after
     things get cleaned up.
     
+    
     """
     if algorithm == "region labels":
         if not "data_source" in kwargs:
