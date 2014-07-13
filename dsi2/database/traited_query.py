@@ -166,6 +166,7 @@ class Scan(Dataset):
     static_color      = Color
     render_tracks     = Bool(False)
     representation    = Enum("Line", "Tube")
+    original_json     = Dict
 
     import_view = View(
         Group(
@@ -225,7 +226,7 @@ class Scan(Dataset):
             [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
              self.track_labels ]
         self.track_scalar_items = \
-            [TrackScalarSource(base_dir=self.pkl_dir,**item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
@@ -249,7 +250,10 @@ class MongoScan(Scan):
     mongo_result = Dict({})
     def __init__(self,**traits):
         super(Scan,self).__init__(**traits)
-        self.header = pickle.loads(self.mongo_result["header"])    
+        if "header" in self.mongo_result:
+            self.header = pickle.loads(self.mongo_result["header"])    
+        else: 
+            self.header = np.array([0])
         self.scan_id = self.mongo_result["scan_id"]
         self.subject_id = self.mongo_result["subject_id"]
         self.scan_gender = self.mongo_result["gender"]
@@ -280,8 +284,8 @@ class Query(Dataset):
             VGroup(
         Item('scan_id'),
         Item('subject_id'),
-        Item('scan_gender'),#editor=CheckListEditor()),
-        Item('scan_age'),
+        #Item('scan_gender'),#editor=CheckListEditor()),
+        #Item('scan_age'),
         Item('study'),
         Item('scan_group'),
         show_border=True,
@@ -295,6 +299,7 @@ class Query(Dataset):
         Item('gfa_threshold'),
         Item('length_min'),
         Item('length_max'),
+        springy=True,
         show_border=True,
         label="Tractography Parameters",
         ),
