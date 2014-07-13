@@ -49,7 +49,6 @@ all_subjects = [ "1005y", "1410c", "2843B", "2843C", "2843A",
 # If you want to only do a subset of these, select them here.
 # Otherwise, set test_subject=all_subjects
 test_subjects = all_subjects
-test_subjects = ["0377A", "2843A" ]
 
 
 # Create a data_source
@@ -58,7 +57,7 @@ if SOURCE_TYPE == "mongodb":
         scan_ids = test_subjects,
         mongo_host = "127.0.0.1",
         mongo_port = 27017,
-        db_name="dsi2_test"
+        db_name="dsi2"
     )
 elif SOURCE_TYPE == "local":
     from dsi2.database.local_data import get_local_data
