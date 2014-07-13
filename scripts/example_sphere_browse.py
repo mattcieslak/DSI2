@@ -14,7 +14,7 @@ from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.ui.sphere_browser import SphereBrowser
 
 # Test an atlas or aggregation algorithm?
-#test = "regions"
+test = "regions"
 #test = "clustering"
 
 # If aggregation, which algorithm?

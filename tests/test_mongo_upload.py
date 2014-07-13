@@ -20,7 +20,8 @@ def db():
 
 @pytest.fixture(scope="module")
 def local_scans():
-    return get_local_data(test_output_data + "/example_data.json")
+    return get_local_data(test_output_data + "/example_data.json",
+                          pkl_dir=test_output_data)
 
 def test_mongo_connection(db):
     # Ensure there is an index for fast querying
@@ -30,7 +31,7 @@ def test_mongo_connection(db):
     db.coordinates.ensure_index([("scan_id",pymongo.ASCENDING),("ijk",pymongo.ASCENDING)])
     
     db.connections.ensure_index([("con_id",pymongo.ASCENDING),("scan_id",pymongo.ASCENDING),("atlas_id",pymongo.ASCENDING)])
-    db.connections2.ensure_index([("scan_id",pymongo.ASCENDING),("atlas_id",pymongo.ASCENDING)])
+    db.streamline_labels.ensure_index([("scan_id",pymongo.ASCENDING),("atlas_id",pymongo.ASCENDING)])
     
     db.atlases.ensure_index([("name",pymongo.ASCENDING)])
     
@@ -43,7 +44,7 @@ def test_insertion(db,local_scans):
     
         atlases = []
         for label in trackds.properties.track_label_items:
-            atlas_labels = label.load_array(test_output_data)
+            atlas_labels = label.load_array()
     
             # Does this atlas already exist? If not, add it to the collection.
             atlas = None
@@ -64,7 +65,7 @@ def test_insertion(db,local_scans):
                     }
                     )
     
-            db.connections2.insert(inserts)
+            db.streamline_labels.insert(inserts)
     
             #trackds.set_connections(atlas_labels)
     

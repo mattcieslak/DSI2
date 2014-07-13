@@ -135,6 +135,9 @@ def sphere_around_ijk(radius,ijk):
 
 def tracks_to_endpoints(lines,pairs=True, LPS_sort=False,
                              fake_midpoints=False):
+    if not lines.size:
+        print "no endpoints for empty array"
+        return np.array([])
     if not fake_midpoints:
         if pairs:
             return np.vstack([[[line[0],line[-1]]] for line in lines])

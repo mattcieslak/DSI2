@@ -220,6 +220,7 @@ class LocalDataImporter(HasTraits):
     json_file = File()
     datasets = List(Instance(Scan))
     save = Button()
+    upload_to_mongodb = Button()
     input_directory = File()
     output_directory = File()
 
@@ -245,13 +246,16 @@ class LocalDataImporter(HasTraits):
                 ),
             Group(
                 Item("save"),
-                orientation="horizontal"
+                Item("upload_to_mongodb"),
+                orientation="horizontal",
+                show_labels=False
                 ),
             orientation="vertical"
         ),
         resizable=True,
         width=900,
-        height=500
+        height=500,
+        title="Import Tractography Data"
 
     )
 

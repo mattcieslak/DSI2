@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-from traits.api import HasTraits, List, Instance, Bool, Str, File, Dict
+from traits.api import HasTraits, List, Instance, Bool, Str, File, Dict, Int
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
 from ..streamlines.track_dataset import TrackDataset
+from ..database.traited_query import MongoScan
 from .track_datasource import TrackDataSource
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from .traited_query import Scan
@@ -42,9 +43,11 @@ class MongoTrackDataSource(TrackDataSource):
     atlas_id = None
     scan_ids = List
     # A cursor object
-    client = Instance(pymongo.MongoClient)
-    db_name = Str("dsi2")
-    db = Instance(pymongo.database.Database)
+    client = Instance(pymongo.MongoClient,transient=True)
+    mongo_host = Str("127.0.0.1")
+    mongo_port = Int(27017)
+    db_name=Str("dsi2")
+    db = Instance(pymongo.database.Database,transient=True)
     
     def __init__(self,**traits):
         super(MongoTrackDataSource,self).__init__(**traits)
@@ -57,44 +60,62 @@ class MongoTrackDataSource(TrackDataSource):
         scan_ids: list of str
           The "scan_id" field from the scans that are to be retrieved
           during the spatial query
-          
-        client:pymongo.MongoClient
-          A connection to the MongoDB instance
+        host:str
+          Hostname for mongodb instance
           
         db_name:str
           The name of the database to use from ``client``.  Typically
           this is "dsi2", but for unit tests can be set to "dsi2_test"
         """
         # if track_datasets is not passed explicitly
-        #if not self.track_datasets:
-            # Load from a json_source
-            #if self.json_source:
-            #self.track_datasets = [ d.get_track_dataset()  for d in \
-                #get_local_data(self.json_source) ]
-        # grab the properties from each loaded TrackDataset
-        #self.track_dataset_properties = \
-            #[tds.properties for tds in self.track_datasets]
+        """
+        Creates TrackDatasets that have no .tracks or .connections.
+        """
+        properties = []
+        for scan_id in self.scan_ids:
+            results = list(self.db.scans.find({"scan_id":scan_id}))
+            if len(results) != 1:
+                raise ValueError("scans collection does not contain exactly 1 " + scan+id)
+            result = results[0]
+            properties.append(MongoScan(mongo_result=result))
+        self.track_dataset_properties = properties
+        self.track_datasets = [
+          TrackDataset(properties=props,header=props.header, 
+                       connections=np.array([]),tracks=np.array([])) \
+           for props in self.track_dataset_properties
+        ]
+        # A mapping to quickly assign stuff to TrackDataSets based on scan_id
+        self.tds_lut = dict([
+            (tds.properties.scan_id,tds) for tds in self.track_datasets ]
+        )
     
     def _db_default(self):
         return self.client[self.db_name]
+    
+    def _client_default(self):
+        return self.__get_client()
+    
+    def __get_client(self):
+        try:
+            client = pymongo.MongoClient("mongodb://%s:%d/" %(
+                 self.mongo_host, self.mongo_port))
+            return client
+        except Exception, e:
+            print "Constructing vanilla client"
+            return pymongo.MongoClient()
+        
+    def new_mongo_connection(self):
+        """
+        To initialize a new connection to mongod, call this function
+        """
+        self.client = self.__get_client()
+        self.db = self._db_default()
 
     def get_subjects(self):
         """ In this case, the user should supply a set of scan ids
         to be included in the coordinate search."""
-        #result = self.db.scans.find(fields=[ "subject_id" ])
-        #return sorted(list(set(
-        #    [rec["subject_id"] for rec in result])))
         return self.scan_ids
     
-    def set_render_tracks(self,visibility):
-        self.render_tracks = visibility
-
-    def __len__(self):
-        """ Thi should reflect only the scan_ids inside 
-        self.scan_ids.  
-        """
-        #return self.db.scans.count()
-        return len(self.scan_ids)
     
     def build_track_dataset(self,result,tracks,original_track_indices,connections):
         header = pickle.loads(result["header"])
@@ -127,7 +148,7 @@ class MongoTrackDataSource(TrackDataSource):
         tds.render_tracks = self.render_tracks
         return tds
 
-    def query_ijk(self,ijk,every=0):
+    def query_ijk(self, ijk, every=0, fetch_streamlines=True):
         if every < 0:
             raise ValueError("every must be >= 0.")
 
@@ -136,47 +157,75 @@ class MongoTrackDataSource(TrackDataSource):
 
         # Get the scan_ids that contain these coordinates
         coords = [str(c) for c in ijk]
-        result = self.db.coordinates.find( { "ijk": { "$in": coords },
-                                        "scan_id":{"$in":self.scan_ids}
-                                       }, 
-                                      [ "scan_id" ] )
-        scans = set([rec["scan_id"] for rec in result])
-
-        # Get the streamlines for each scan and build a list of TrackDatasets
-        # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
-        datasets = []
-        result = self.db.scans.find( fields=[ "scan_id" ] )
-        all_scans = [rec["scan_id"] for rec in result]
-        for scan in all_scans:
-            tracks = None
+        print "Query"
+        print "======"        
+        print "\t+ searching %d coordinates" % len(coords)
+        coord_query = self.db.coordinates.aggregate( 
+            # Find the coordinates for each subject
+            [
+                {
+                  "$match":{
+                    "scan_id":{"$in":self.scan_ids},
+                    "ijk":{"$in":coords}
+                  }
+                },
+                {"$project":{"scan_id":1,"sl_id":1}},
+                {"$unwind":"$sl_id"},
+                {"$group":{"_id":"$scan_id", "sl_ids":{"$addToSet":"$sl_id"}}}
+            ]
+        )
+        
+        # If the search failed, do nothing and exit
+        if not coord_query["ok"] == 1.:
+            print "\t+ WARNING: Coordinate query failed"
+            return []
+        
+        # If we don't need streamlines, just return the
+        # subsetted TrackDatasets that presumably have .connections
+        if not fetch_streamlines:
+            print "\t+ Streamlines are not required, so subsetting .connections"
+            qresults = {}
+            for result in coord_query['result']:
+                qresults[result['_id']] = self.tds_lut[result["_id"]].subset(
+                                        result["sl_ids"], every=every)
+            print "+ Done."
+            return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
+                       scan in self.scan_ids]
+        
+        # Build new TrackDatasets with streamlines included
+        print "\t+ Querying the streamlines collection"
+        qresults = {}
+        for sl_id_result in coord_query["result"]:
+            scan_id = sl_id_result['_id']
+            sl_ids = sl_id_result["sl_ids"]
+            print "\t\t++ %s has %s streamlines" % (scan_id, len(sl_ids))
+            original_track_dataset = self.tds_lut[scan_id]
+            
+            # Collect these with a simple .find() and loop through
+            # the reslts to preserve the data and sl_id pairs. Someday,
+            # accomplish this with the aggregate framework
             streamlines = []
-            connections = []
-            if scan in scans:
-                result = self.db.coordinates.find( { "ijk": { "$in": coords }, "scan_id": scan }, [ "sl_id" ] )
-                streamlines = sorted(list(set(reduce(operator.add, [rec["sl_id"] for rec in result]))))
+            found_sl_ids = []
+            for sl in self.db.streamlines.find(
+                {"scan_id":scan_id, "sl_id":{"$in":sl_ids}}):
+                streamlines.append(sl['data'])
+                found_sl_ids.append(sl["sl_id"])
+            tracks = np.array([pickle.loads(s) for s in streamlines])
+            print "\t\t+++ query returned %d streamlines" % len(tracks)
+            original_track_indices=np.array(found_sl_ids)
+            survivors = tracks[every-1::every] if tracks.size > 0 else None
+            connections = original_track_dataset.connections[original_track_indices][every-1::every] \
+                if original_track_dataset.connections.size > 0 else np.array([])
+                
+            qresults[scan_id] = TrackDataset(
+                tracks=survivors, 
+                header=original_track_dataset.header,
+                properties=original_track_dataset.properties, 
+                connections=connections, 
+                original_track_indices=original_track_indices)
 
-                # downsampling
-                streamlines = streamlines[every-1::every]
-
-                # If we've already loaded an atlas, build a connections list.
-                if self.atlas_id != None:
-                    connections = self.db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
-                    connections = connections["con_ids"]
-                    connections = [connections[sl] for sl in streamlines]
-
-                result = self.db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
-                tracks = [pickle.loads(rec["data"]) for rec in result]
-
-            result = self.db.scans.find( { "scan_id": scan } )
-
-            if result.count() > 1:
-                logger.warning("Multiple records found for scan %s. Using first record.", scan)
-
-            tds = self.build_track_dataset(result=result[0], tracks=tracks, 
-                                           original_track_indices=np.array(streamlines), connections=np.array(connections))
-            datasets.append(tds)
-
-        return datasets
+        return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
+                   scan in self.scan_ids]
 
     def query_connection_id(self,connection_id,every=0):
         """
@@ -227,7 +276,7 @@ class MongoTrackDataSource(TrackDataSource):
                 result = self.db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
                 tracks = [pickle.loads(rec["data"]) for rec in result]
 
-            result = db.scans.find( { "scan_id": scan } )
+            result = self.db.scans.find( { "scan_id": scan } )
 
             if result.count() > 1:
                 logger.warning("Multiple records found for scan %s. Using first record.", scan)
@@ -244,28 +293,26 @@ class MongoTrackDataSource(TrackDataSource):
         """
 
         self.atlas_id = None
-        result = self.db.atlases.find( { "name": query_specs["name"] } )
-        match_count = 0
-        for rec in result:
-            atlas_dict = rec["parameters"]
-            atlas_dict["name"] = query_specs["name"]
-            if dictmatch(query_specs, atlas_dict):
-                self.atlas_id = rec["_id"]
-                match_count += 1
+        atlas_name = query_specs["name"]
+        qdict = dict(
+                 [("name", atlas_name)] + 
+                 [("parameters." + k, v) for k,v in query_specs.iteritems() \
+                                     if k != "name"])
 
-        # Mimic TrackDataSource behavior for now.
-        if match_count != 1:
-            raise ValueError("Query did not return exactly one match")
+        result = [rec for rec in self.db.atlases.find( qdict )]
+        if not len(result) == 1:
+            raise ValueError("Query was unable to find a single matching atlas." \
+                             "found %d" %len(result))
+        
+        self.atlas_id = rec["_id"]
 
         print "\t+ Setting new atlas in TrackDataSource"
         new_labels = []
-        result = self.db.scans.find(fields=[ "scan_id" ])
-        scans = [rec["scan_id"] for rec in result]
-        for scan in scans:
-            match = self.db.connections2.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
-            if match != None:
-                match = [np.array(match["con_ids"])]
-                new_labels += match
+        for scan in self.scan_ids:
+            match = self.db.streamline_labels.find_one( { "scan_id": scan, "atlas_id": self.atlas_id }, [ "con_ids" ] )
+            match = np.array(match["con_ids"])
+            self.tds_lut[scan].set_connections(match)
+            new_labels.append( match )
 
         return new_labels
 
@@ -299,30 +346,4 @@ class MongoTrackDataSource(TrackDataSource):
                 if len(propvals) <= 1: continue
                 varying_properties[atlas_name][propname] = sorted(list(propvals))
         print varying_properties
-
-        # Make sure all the graphml paths are the same and
-        #self.graphml_cache = {}
-        #for atlas, vary_props in varying_properties.iteritems():
-        #    self.graphml_cache[atlas] = {}
-        #    for vprop,possible_values in vary_props.iteritems():
-        #        self.graphml_cache[atlas][
-        #        if not prop in self.graphml_cache[atlas].keys():
-        #            self.graphml_cache[atlas][prop] =
-
         return varying_properties
-
-# TODO: this causes problems, need to fix
-#    traits_view = View(
-#        Group(
-#            Item("json_source"),
-#            Group(
-#                Item("track_datasets", editor=track_dataset_table),
-#                orientation="horizontal",
-#                show_labels=False
-#                ),
-#            orientation="vertical"
-#        ),
-#        resizable=True,
-#        width=900,
-#        height=500
-#    )
