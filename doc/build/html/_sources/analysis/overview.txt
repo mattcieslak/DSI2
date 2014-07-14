@@ -1,34 +1,6 @@
-Analysis of local termination patterns
-======================================
-
-.. toctree::
-   :hidden:
-
-.. warning::
-   These 
-
-Here we describe how to write a script that runs LTPA on a group
-of tractography datasets.
-
-Setting up your environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``dsi2`` requires some environment variables to be set so it can find
-resources in your file system. On a \*nix system these are set using the
-``export`` command.
-
- * ``DSI2_DATA`` is the path to the ``example_data`` directory that 
-    is provided on this website (**NOTE: upload the example data**).
-    This is data that dsi2 needs internally (such as standard atlas 
-    labels and the MNI 152 volume).
- * ``LOCAL_TRACKDB`` is the path to your directory containing your 
-    locally stored .pkl files. If this variable is not set, dsi2 will
-    check your home directory for a ``local_trackdb`` directory. If you 
-    have downloaded example_trackdb.tar.gz, the location of its extracted
-    directory 
-
-
 Organizing your local datasource
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=================================
+
 Data for LTPA has two parts: the .pkl file containing the streamline mapping for
 a single subject and the corresponding metadata. The streamline mapping is a 
 pickled :py:class:`~dsi2.streamlines.track_dataset.TrackDataset` object. It 
@@ -69,7 +41,7 @@ Here is an example ``local_data.json``
         },
         "pkl_path": "subj1/subj1.Louvain.nsm.MNI.pkl",
         "trk_file": "subj1/QSDR.100000.nsm.trk",
-        "software": "DSI Studio"
+        "software": "DSI Studio",
         "track_scalars": [],
         "track_labels": [
             {
@@ -198,81 +170,3 @@ nii files exist, it will create the pkl files and produce numpy files for
 each atlas in the "track_labels" list. Alternatively, you could call the 
 ``edit_traits()`` method on ``ldi`` and check your configuration visually.
 
-Searching your local datasource
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Once the necessary streamline labels and pickle files are in their specified 
-locations, we can begin to search the database. ::
-
-  from dsi2.database.local_data import get_local_data
-  from dsi2.database.track_datasource import TrackDataSource
-
-  # Load the json file to a list of Scan objects
-  scans = get_local_data("path/to/file.json")
-
-``scans`` will be a list of objects that can be used to select only the data 
-you want for this analysis. It does **not** load the pkl into memory until 
-you call its :py:meth:`~dsi2.database.traited_query.Scan.get_track_dataset()` function.
-Let's select only scans from the "example" study and load them into memory.::
-
-  example_scans = [ scan for scan in scans if scan.study_id == "example study ]
-  # Use them to build a queryable data source
-  trk_src = TrackDataSource(track_datasets = [scan.get_track_dataset() for scan in scans])
-
-``trk_src`` provides an interface to a searchable MNI space. Raw streamlines 
-aren't particularly useful, so we will create an object that uses this interface
-to search through and aggregate streamlines.
-
-Aggregating streamlines based on termination regions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To apply perform the analysis from [1]_ we need to create an *aggregator*. An 
-aggregator 
-  
-  * Subclasses :py:class:`~dsi2.aggregation.cluster_ui.ClusterEditor`
-  * Overrides the ``aggregate`` method 
-  * operates on a :py:class:`~dsi2.database.track_datasource.TrackDataSource` 
-
-For a region-based LTPA, we can create a :py:class:`~dsi2.aggregation.region_labeled_clusters.RegionLabelAggregator`
-that will provide some methods for easily analyzing these streamlines resulting from the
-search. Suppose we'd like to search a set of coordinates around :math:`(33,54,45)`.::
-  
-  from dsi2.aggregation.region_labeled_clusters import RegionLabelAggregator
-  from dsi2.streamlines.track_math import sphere_around_ijk
-
-  region_agg = RegionLabelAggregator()
-  # give the aggregator access to the TrackDataSource
-  region_agg.set_track_source(trk_src)
-  
-  # create a set of search coordinates
-  sphere_radius = 2                  # voxels
-  center_coordinate = (33,54,45)     # in MNI152 i,j,k coordinates
-  search_coords = sphere_around_ijk(sphere_radius, center_coordinate)
-
-  # Put the coordinates to use:
-  region_agg.query_track_source_with_coords(search_coords)
-  region_agg.update_clusters()
-
-  # which regions pairs were found and how many streamlines to each?
-  conn_ids, connection_vectors = region_agg.connection_vector_matrix()
-
-  # if running an interactive ipython session, plot it
-  region_agg.plot_connection_vector_lines(connection_vectors,conn_ids)
-
-``conn_ids`` is a list of connections (regionA, regionB) found that pass through
-the search coordinates. If there are :math:`n` individuals in the :py:class:`~dsi2.database.track_datasource.TrackDataSource`
-and :math:`m` elements in ``conn_ids``, then ``connection_vectors`` will be an
-:math:`n \times m` matrix where row :math:`i` column :math:`j` contains the streamline
-count connection region pair math:`j` in subject :math:`i`\'s data.
-
-
-Running a whole-brain LTPA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-
-References
-~~~~~~~~~~~
-
-.. [1] Cieslak, M., & Grafton, S.T. Local termination pattern analysis:
-    a tool for comparing white matter morphology. Brain Imaging Behav, DOI 10.1007/s11682-013-9254-z (2013).

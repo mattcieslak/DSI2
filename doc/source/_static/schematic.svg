@@ -1,0 +1,1024 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="schematic.svg"
+   inkscape:export-filename="/home/matt/Dropbox/DSI2/doc/source/_static/schematic.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.979899"
+     inkscape:cx="201.41907"
+     inkscape:cy="826.73259"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1678"
+     inkscape:window-height="1025"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <defs
+     id="defs4">
+    <marker
+       style="overflow:visible;"
+       id="Arrow1Lend"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path3888" />
+    </marker>
+  </defs>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2.6290338;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m 320.50824,591.03001 c -21.43508,0 -38.87876,17.22408 -39.7635,38.79529 -10.14799,7.34069 -16.79349,19.39285 -16.79349,33.01939 0,7.04302 1.76455,13.66167 4.87445,19.43103 -2.42917,5.23544 -3.77268,11.08838 -3.77268,17.2609 0,11.55878 4.74714,21.96789 12.38644,29.34686 -2.07025,4.90011 -3.23851,10.28769 -3.23851,15.95882 0,22.36743 17.86291,40.498 39.86366,40.498 9.11668,0 17.49184,-3.10845 24.20532,-8.34666 6.81731,5.54992 15.46014,8.88085 24.87306,8.88085 22.00075,0 39.83026,-18.13058 39.83026,-40.49801 0,-7.46826 -1.97422,-14.45931 -5.44201,-20.46601 5.76432,-7.0247 9.24809,-16.07785 9.24809,-25.94142 0,-1.49126 -0.1126,-2.95756 -0.26709,-4.40704 7.77811,-7.39136 12.65354,-17.90233 12.65354,-29.58057 0,-11.86566 -5.02326,-22.54052 -13.02079,-29.94782 0.0466,-0.80186 0.0668,-1.62349 0.0668,-2.43723 0,-22.36743 -17.82952,-40.49801 -39.83027,-40.49801 -8.20792,0 -15.8302,2.55179 -22.16874,6.87765 -6.62302,-4.99177 -14.82681,-7.94602 -23.70451,-7.94602 z"
+       id="path6792"
+       inkscape:connector-curvature="0" />
+    <g
+       transform="matrix(0.65326778,0,0,0.65326778,-11.347375,216.68168)"
+       id="g3786">
+      <path
+         style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:1.39488256;stroke-miterlimit:4;stroke-opacity:1"
+         d="m 78.705359,63.17869 c -15.02649,0 -27.21027,13.73269 -27.21027,30.66395 0,10.99054 5.14709,20.62511 12.85907,26.03669 -9.21497,4.45833 -15.54154,13.8866 -15.54154,24.84635 l 0,54.42054 c 0,15.28546 12.31041,27.59587 27.59588,27.59587 l 4.59372,0 c 15.28546,0 27.595881,-12.31041 27.595881,-27.59587 l 0,-54.42054 c 0,-10.95446 -6.31705,-20.38537 -15.524781,-24.84635 7.711981,-5.41158 12.842311,-15.04615 12.842311,-26.03669 0,-16.93126 -12.183771,-30.66395 -27.210271,-30.66395 z"
+         id="rect3775"
+         inkscape:connector-curvature="0" />
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="53.571426"
+         y="167.36218"
+         id="text3782"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan3784"
+           x="53.571426"
+           y="167.36218"
+           style="font-size:22px">User</tspan></text>
+    </g>
+    <g
+       transform="matrix(0.76765049,0,0,0.76765049,-124.5586,-23.265936)"
+       id="g4467">
+      <g
+         id="g3770"
+         transform="matrix(0.56822116,0,0,0.56822116,266.80503,-15.161907)">
+        <rect
+           style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:1.17741609;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           id="rect3759"
+           width="280.15265"
+           height="123.65961"
+           x="393.5264"
+           y="94.508026" />
+        <text
+           xml:space="preserve"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="397.13837"
+           y="136.6479"
+           id="text3761"
+           sodipodi:linespacing="125%"><tspan
+             style="font-size:32px"
+             sodipodi:role="line"
+             id="tspan3763"
+             x="397.13837"
+             y="136.6479">TrackDataSource</tspan></text>
+      </g>
+      <g
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,109.12134)"
+         id="g3837">
+        <rect
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           id="rect3839"
+           width="223.92851"
+           height="67.830719"
+           x="510.78452"
+           y="94.305435" />
+        <text
+           xml:space="preserve"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="562.52179"
+           y="116.04272"
+           id="text3841"
+           sodipodi:linespacing="125%"><tspan
+             style="font-size:18.18307686px"
+             sodipodi:role="line"
+             id="tspan3843"
+             x="562.52179"
+             y="116.04272">TrackDataSet</tspan></text>
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 516.69303,125.04215 199.56349,0"
+           id="path3845"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cc" />
+        <text
+           xml:space="preserve"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="520.29272"
+           y="145.65131"
+           id="text3847"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan3849"
+             x="520.29272"
+             y="145.65131"
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         id="g3851"
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,153.7365)">
+        <rect
+           y="94.305435"
+           x="510.78452"
+           height="67.830719"
+           width="223.92851"
+           id="rect3853"
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text3855"
+           y="116.04272"
+           x="562.52179"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="116.04272"
+             x="562.52179"
+             id="tspan3857"
+             sodipodi:role="line"
+             style="font-size:18.18307686px">TrackDataSet</tspan></text>
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path3859"
+           d="m 516.69303,125.04215 199.56349,0"
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text3861"
+           y="145.65131"
+           x="520.29272"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+             y="145.65131"
+             x="520.29272"
+             id="tspan3863"
+             sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,218.35154)"
+         id="g3865">
+        <rect
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           id="rect3867"
+           width="223.92851"
+           height="67.830719"
+           x="510.78452"
+           y="94.305435" />
+        <text
+           xml:space="preserve"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="562.52179"
+           y="116.04272"
+           id="text3869"
+           sodipodi:linespacing="125%"><tspan
+             style="font-size:18.18307686px"
+             sodipodi:role="line"
+             id="tspan3871"
+             x="562.52179"
+             y="116.04272">TrackDataSet</tspan></text>
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 516.69303,125.04215 199.56349,0"
+           id="path3873"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cc" />
+        <text
+           xml:space="preserve"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="520.29272"
+           y="145.65131"
+           id="text3875"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan3877"
+             x="520.29272"
+             y="145.65131"
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         id="g4353">
+        <path
+           sodipodi:nodetypes="ccc"
+           inkscape:connector-curvature="0"
+           id="path3879"
+           d="m 500.02551,108.39493 0,25.23351 25.25381,0"
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)"
+           d="m 500.02551,130.39493 0,47.23351 25.25381,0"
+           id="path4327"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccc" />
+        <path
+           sodipodi:nodetypes="ccc"
+           inkscape:connector-curvature="0"
+           id="path4329"
+           d="m 500.02551,174.39493 0,47.23351 25.25381,0"
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)"
+           d="m 500.02551,218.39493 0,67.23351 25.25381,0"
+           id="path4331"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccc" />
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="567.11945"
+         y="258.36197"
+         id="text4333"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4335"
+           x="567.11945"
+           y="258.36197">...</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 496.52079,70.090357 146.97719,0"
+         id="path4337"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="cc" />
+      <g
+         id="g4390">
+        <rect
+           y="115.88339"
+           x="527.03015"
+           height="36.511433"
+           width="120.53464"
+           id="rect4368"
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:0.58349711;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4370"
+           y="127.58398"
+           x="554.87891"
+           style="font-size:12.23432064px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="127.58398"
+             x="554.87891"
+             id="tspan4372"
+             sodipodi:role="line"
+             style="font-size:9.78745651px">TrackDataSet</tspan></text>
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path4374"
+           d="m 530.21054,132.42813 107.41961,0"
+           style="fill:none;stroke:#000000;stroke-width:0.53827286px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4376"
+           y="143.52148"
+           x="532.14813"
+           style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             style="font-size:8.61236572px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+             y="143.52148"
+             x="532.14813"
+             id="tspan4378"
+             sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+    </g>
+    <rect
+       y="274.83551"
+       x="164.50325"
+       height="79.194794"
+       width="222.23491"
+       id="rect2985"
+       style="fill:#00f1ff;fill-opacity:1;stroke:#000000;stroke-width:0.58652079;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3755"
+       y="295.59952"
+       x="220.13571"
+       style="font-size:19.7125988px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="295.59952"
+         x="220.13571"
+         id="tspan3757"
+         sodipodi:role="line">Aggregator</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.00000012px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 174.23363,301.2209 202.77414,0"
+       id="path4339"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="195.49741"
+       y="311.11395"
+       id="text4386"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4388"
+         x="195.49741"
+         y="311.11395"
+         style="font-size:9px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold">set_track_source(track_source)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4398"
+       y="325.20227"
+       x="193.96513"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:8.61236572px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         y="325.20227"
+         x="193.96513"
+         id="tspan4400"
+         sodipodi:role="line">query_track_source_with_ijk(ijk)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="232.77335"
+       y="339.11395"
+       id="text4402"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4404"
+         x="232.77335"
+         y="339.11395"
+         style="font-size:8.61236572px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">update_clusters()</tspan></text>
+    <g
+       id="g4427"
+       transform="matrix(0.65326778,0,0,0.65326778,-4.5214108,473.43374)">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4429"
+         d="m 78.705359,63.17869 c -15.02649,0 -27.21027,13.73269 -27.21027,30.66395 0,10.99054 5.14709,20.62511 12.85907,26.03669 -9.21497,4.45833 -15.54154,13.8866 -15.54154,24.84635 l 0,54.42054 c 0,15.28546 12.31041,27.59587 27.59588,27.59587 l 4.59372,0 c 15.28546,0 27.595881,-12.31041 27.595881,-27.59587 l 0,-54.42054 c 0,-10.95446 -6.31705,-20.38537 -15.524781,-24.84635 7.711981,-5.41158 12.842311,-15.04615 12.842311,-26.03669 0,-16.93126 -12.183771,-30.66395 -27.210271,-30.66395 z"
+         style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:1.39488256;stroke-miterlimit:4;stroke-opacity:1" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text4431"
+         y="167.36218"
+         x="53.571426"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:22px"
+           y="167.36218"
+           x="53.571426"
+           id="tspan4433"
+           sodipodi:role="line">User</tspan></text>
+    </g>
+    <path
+       style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:0.91123182;stroke-miterlimit:4;stroke-opacity:1"
+       d="m 34.0683,55.09714 c -9.816322,0 -17.775593,8.971123 -17.775593,20.03177 0,7.179766 3.362429,13.47372 8.400417,17.008931 -6.019843,2.912483 -10.152788,9.071669 -10.152788,16.231319 l 0,35.55119 c 0,9.98549 8.041994,18.02749 18.0275,18.02749 l 3.000929,0 c 9.985498,0 18.0275,-8.042 18.0275,-18.02749 l 0,-35.55119 c 0,-7.1562 -4.126726,-13.317105 -10.14184,-16.231319 5.037989,-3.535211 8.389468,-9.829165 8.389468,-17.008931 0,-11.060647 -7.959265,-20.03177 -17.775593,-20.03177 z"
+       id="path4461"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-size:26.1307106px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="17.649113"
+       y="123.15686"
+       id="text4463"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4465"
+         x="17.649113"
+         y="123.15686"
+         style="font-size:14.37189102px">User</tspan></text>
+    <path
+       sodipodi:nodetypes="cccc"
+       inkscape:connector-curvature="0"
+       id="path4509"
+       d="m 55.714286,118.79075 183.482604,-0.50508 0,-84.999993 12.34192,0"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4703"
+       y="76.296654"
+       x="57.521435"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         y="76.296654"
+         x="57.521435"
+         id="tspan4705"
+         sodipodi:role="line">load_local_data(</tspan><tspan
+         id="tspan4730"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         y="91.296654"
+         x="57.521435"
+         sodipodi:role="line">     &quot;path/to/data.json&quot;)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="67.016357"
+       y="136.41847"
+       id="text4719"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4721"
+         x="67.016357"
+         y="136.41847"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">connect_to_mongo(</tspan><tspan
+         id="tspan4732"
+         sodipodi:role="line"
+         x="67.016357"
+         y="151.41847"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">  &quot;collection_name&quot;,</tspan><tspan
+         id="tspan4736"
+         sodipodi:role="line"
+         x="67.016357"
+         y="166.41847"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">  {&quot;study&quot;:&quot;my_study&quot;,</tspan><tspan
+         id="tspan4738"
+         sodipodi:role="line"
+         x="67.016357"
+         y="181.41847"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">   ...}</tspan><tspan
+         id="tspan4734"
+         sodipodi:role="line"
+         x="67.016357"
+         y="196.41847"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4726"
+       y="116.59341"
+       x="131.69482"
+       style="font-size:26.1307106px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:14.37189102px"
+         y="116.59341"
+         x="131.69482"
+         id="tspan4728"
+         sodipodi:role="line">OR</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path4759"
+       d="m 60.609153,327.07266 102.025407,0"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)" />
+    <text
+       xml:space="preserve"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="67.622963"
+       y="311.6622"
+       id="text4943"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="67.622963"
+         y="311.6622"
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         id="tspan4947">Aggregator()</tspan></text>
+    <g
+       id="g4961"
+       transform="matrix(0.76765049,0,0,0.76765049,31.509968,211.08945)">
+      <g
+         transform="matrix(0.56822116,0,0,0.56822116,266.80503,-15.161907)"
+         id="g4963">
+        <rect
+           y="94.508026"
+           x="393.5264"
+           height="123.65961"
+           width="280.15265"
+           id="rect4965"
+           style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:1.17741609;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4967"
+           y="136.6479"
+           x="397.13837"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="136.6479"
+             x="397.13837"
+             id="tspan4969"
+             sodipodi:role="line"
+             style="font-size:32px">TrackDataSource</tspan></text>
+      </g>
+      <g
+         id="g4971"
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,109.12134)">
+        <rect
+           y="94.305435"
+           x="510.78452"
+           height="67.830719"
+           width="223.92851"
+           id="rect4973"
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4975"
+           y="116.04272"
+           x="562.52179"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="116.04272"
+             x="562.52179"
+             id="tspan4977"
+             sodipodi:role="line"
+             style="font-size:18.18307686px">TrackDataSet</tspan></text>
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path4979"
+           d="m 516.69303,125.04215 199.56349,0"
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4981"
+           y="145.65131"
+           x="520.29272"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+             y="145.65131"
+             x="520.29272"
+             id="tspan4983"
+             sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,153.7365)"
+         id="g4985">
+        <rect
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           id="rect4987"
+           width="223.92851"
+           height="67.830719"
+           x="510.78452"
+           y="94.305435" />
+        <text
+           xml:space="preserve"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="562.52179"
+           y="116.04272"
+           id="text4989"
+           sodipodi:linespacing="125%"><tspan
+             style="font-size:18.18307686px"
+             sodipodi:role="line"
+             id="tspan4991"
+             x="562.52179"
+             y="116.04272">TrackDataSet</tspan></text>
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 516.69303,125.04215 199.56349,0"
+           id="path4993"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cc" />
+        <text
+           xml:space="preserve"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="520.29272"
+           y="145.65131"
+           id="text4995"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan4997"
+             x="520.29272"
+             y="145.65131"
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         id="g4999"
+         transform="matrix(0.53827284,0,0,0.53827284,252.08872,218.35154)">
+        <rect
+           y="94.305435"
+           x="510.78452"
+           height="67.830719"
+           width="223.92851"
+           id="rect5001"
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:1.0840174;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text5003"
+           y="116.04272"
+           x="562.52179"
+           style="font-size:22.7288456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="116.04272"
+             x="562.52179"
+             id="tspan5005"
+             sodipodi:role="line"
+             style="font-size:18.18307686px">TrackDataSet</tspan></text>
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path5007"
+           d="m 516.69303,125.04215 199.56349,0"
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text5009"
+           y="145.65131"
+           x="520.29272"
+           style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+             y="145.65131"
+             x="520.29272"
+             id="tspan5011"
+             sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+      <g
+         id="g5013">
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)"
+           d="m 500.02551,108.39493 0,25.23351 25.25381,0"
+           id="path5015"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccc" />
+        <path
+           sodipodi:nodetypes="ccc"
+           inkscape:connector-curvature="0"
+           id="path5017"
+           d="m 500.02551,130.39493 0,47.23351 25.25381,0"
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
+        <path
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)"
+           d="m 500.02551,174.39493 0,47.23351 25.25381,0"
+           id="path5019"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccc" />
+        <path
+           sodipodi:nodetypes="ccc"
+           inkscape:connector-curvature="0"
+           id="path5021"
+           d="m 500.02551,218.39493 0,67.23351 25.25381,0"
+           style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#Arrow1Lend)" />
+      </g>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5023"
+         y="258.36197"
+         x="567.11945"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="258.36197"
+           x="567.11945"
+           id="tspan5025"
+           sodipodi:role="line">...</tspan></text>
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path5027"
+         d="m 496.52079,70.090357 146.97719,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <g
+         id="g5029">
+        <rect
+           style="fill:#00ffdd;fill-opacity:1;stroke:#000000;stroke-width:0.58349711;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           id="rect5031"
+           width="120.53464"
+           height="36.511433"
+           x="527.03015"
+           y="115.88339" />
+        <text
+           xml:space="preserve"
+           style="font-size:12.23432064px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="554.87891"
+           y="127.58398"
+           id="text5033"
+           sodipodi:linespacing="125%"><tspan
+             style="font-size:9.78745651px"
+             sodipodi:role="line"
+             id="tspan5035"
+             x="554.87891"
+             y="127.58398">TrackDataSet</tspan></text>
+        <path
+           style="fill:none;stroke:#000000;stroke-width:0.53827286px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 530.21054,132.42813 107.41961,0"
+           id="path5037"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cc" />
+        <text
+           xml:space="preserve"
+           style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           x="532.14813"
+           y="143.52148"
+           id="text5039"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan5041"
+             x="532.14813"
+             y="143.52148"
+             style="font-size:8.61236572px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New">get_tracks_at_ijk(ijk)</tspan></text>
+      </g>
+    </g>
+    <path
+       sodipodi:nodetypes="cccc"
+       inkscape:connector-curvature="0"
+       id="path5043"
+       d="m 409.11178,270.75665 -12.12183,0 0,38.63834 -36.74874,0"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)" />
+    <rect
+       style="fill:#00f1ff;fill-opacity:1;stroke:#000000;stroke-width:0.58652079;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5227"
+       width="222.23491"
+       height="79.194794"
+       x="101.67846"
+       y="508.18076" />
+    <text
+       xml:space="preserve"
+       style="font-size:19.7125988px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="155.99101"
+       y="528.94476"
+       id="text5229"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5231"
+         x="155.99101"
+         y="528.94476">Aggregator</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path5233"
+       d="m 110.08894,534.56615 202.77414,0"
+       style="fill:none;stroke:#000000;stroke-width:1.00000012px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text5235"
+       y="544.45923"
+       x="131.35272"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:9px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         y="544.45923"
+         x="131.35272"
+         id="tspan5237"
+         sodipodi:role="line">set_track_source(track_source)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="103.16553"
+       y="558.54755"
+       id="text5239"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5241"
+         x="103.16553"
+         y="558.54755"
+         style="font-size:9px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold">query_track_source_with_ijk(track_source)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text5243"
+       y="572.45923"
+       x="168.62865"
+       style="font-size:21.53091431px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:8.61236572px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New"
+         y="572.45923"
+         x="168.62865"
+         id="tspan5245"
+         sodipodi:role="line">update_clusters()</tspan></text>
+    <rect
+       style="fill:#fcff00;fill-opacity:1;stroke:#000000;stroke-width:0.44792184000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5259"
+       width="92.528473"
+       height="28.028021"
+       x="293.65344"
+       y="645.96118" />
+    <text
+       xml:space="preserve"
+       style="font-size:9.39168167px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="315.03156"
+       y="654.94312"
+       id="text5261"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:7.51334572px"
+         sodipodi:role="line"
+         id="tspan5263"
+         x="315.03156"
+         y="654.94312">TrackDataSet</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.41320542px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 296.09485,658.66173 82.46071,0"
+       id="path5265"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:16.52821732px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="297.58228"
+       y="667.17755"
+       id="text5267"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5269"
+         x="297.58228"
+         y="667.17755"
+         style="font-size:6.61128664px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold">get_tracks_at_ijk(ijk)</tspan></text>
+    <rect
+       y="680.21002"
+       x="293.65344"
+       height="28.028021"
+       width="92.528473"
+       id="rect5273"
+       style="fill:#fcff00;fill-opacity:1;stroke:#000000;stroke-width:0.44792184000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text5275"
+       y="689.19196"
+       x="315.03156"
+       style="font-size:9.39168167px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="689.19196"
+         x="315.03156"
+         id="tspan5277"
+         sodipodi:role="line"
+         style="font-size:7.51334572px">TrackDataSet</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path5279"
+       d="m 296.09485,692.91058 82.46071,0"
+       style="fill:none;stroke:#000000;stroke-width:0.41320542px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text5281"
+       y="701.42639"
+       x="297.58228"
+       style="font-size:16.52821732px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:6.61128664px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold"
+         y="701.42639"
+         x="297.58228"
+         id="tspan5283"
+         sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+    <rect
+       style="fill:#fcff00;fill-opacity:1;stroke:#000000;stroke-width:0.44792184000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect5287"
+       width="92.528473"
+       height="28.028021"
+       x="293.65344"
+       y="729.81177" />
+    <text
+       xml:space="preserve"
+       style="font-size:9.39168167px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="315.03156"
+       y="738.79376"
+       id="text5289"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:7.51334572px"
+         sodipodi:role="line"
+         id="tspan5291"
+         x="315.03156"
+         y="738.79376">TrackDataSet</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.41320542px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 296.09485,742.51235 82.46071,0"
+       id="path5293"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:16.52821732px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="297.58228"
+       y="751.02814"
+       id="text5295"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5297"
+         x="297.58228"
+         y="751.02814"
+         style="font-size:6.61128664px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold">get_tracks_at_ijk(ijk)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text5309"
+       y="721.55829"
+       x="324.42798"
+       style="font-size:30.70602036px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="721.55829"
+         x="324.42798"
+         id="tspan5311"
+         sodipodi:role="line">...</tspan></text>
+    <g
+       transform="translate(0.50507627,39.901026)"
+       id="g6330">
+      <rect
+         y="481.09067"
+         x="382.21844"
+         height="53.939732"
+         width="122.20126"
+         id="rect5251"
+         style="fill:#007bff;fill-opacity:1;stroke:#000000;stroke-width:0.5135833;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5253"
+         y="499.47186"
+         x="383.79395"
+         style="font-size:17.44780922px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="499.47186"
+           x="383.79395"
+           id="tspan5255"
+           sodipodi:role="line"
+           style="font-size:13.95824814px">TrackDataSource</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.76765049px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 386.90551,505.31066 112.82711,0"
+         id="path5313"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="cc" />
+    </g>
+    <rect
+       y="612.18451"
+       x="293.65341"
+       height="28.028019"
+       width="92.528473"
+       id="rect5317"
+       style="fill:#fcff00;fill-opacity:1;stroke:#000000;stroke-width:0.44792184000000002;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text5319"
+       y="621.1665"
+       x="315.03152"
+       style="font-size:9.39168262px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="621.1665"
+         x="315.03152"
+         id="tspan5321"
+         sodipodi:role="line"
+         style="font-size:7.51334572px">TrackDataSet</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path5323"
+       d="m 296.09484,624.88511 82.46072,0"
+       style="fill:none;stroke:#000000;stroke-width:0.41320542px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text5325"
+       y="633.40094"
+       x="297.58224"
+       style="font-size:16.52821732px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:6.61128664px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Courier New;-inkscape-font-specification:Courier New Bold"
+         y="633.40094"
+         x="297.58224"
+         id="tspan5327"
+         sodipodi:role="line">get_tracks_at_ijk(ijk)</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       id="path5331"
+       d="M 68.185297,574.56003 99.500026,558.39759"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)" />
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path5517"
+       d="m 324.25897,556.37728 57.07361,0"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 457.5991,575.06511 -47.47717,62.12438"
+       id="path3155"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="M 263.14474,661.93823 208.5965,588.70217"
+       id="path4115"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>

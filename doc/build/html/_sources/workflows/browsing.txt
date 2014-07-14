@@ -1,9 +1,6 @@
 Browsing the Streamline Database
 ======================================
 
-.. toctree::
-   :hidden:
-
 The goal of this workflow is to load some data into the VoxelBrowser GUI 
 and be able to interactively query and cluster streamlines. This process
 requires two steps: 
