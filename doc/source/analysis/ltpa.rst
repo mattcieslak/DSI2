@@ -61,11 +61,12 @@ that will provide some methods for easily analyzing these streamlines resulting 
 search. Suppose we'd like to search a set of coordinates around :math:`(33,54,45)`.::
   
   from dsi2.ltpa import mni_white_matter, run_ltpa
-  from dsi2.aggregation.region_labeled_clusters import RegionLabelAggregator
+  from dsi2.aggregation import make_aggregator
   from dsi2.streamlines.track_math import sphere_around_ijk
 
-  region_agg = RegionLabelAggregator()
-  # give the aggregator access to the TrackDataSource
+  region_agg = make_aggregator( algorithm="region labels",
+                                atlas_name="Lausanne2008",
+                                atlas_scale=60)
   region_agg.set_track_source(data_source)
   
   # create a set of search coordinates
