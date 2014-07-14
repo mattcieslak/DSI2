@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Accessing and analyzing your data &mdash; dsi2 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dsi2 0.0.1 documentation" href="../index.html" />
+    <link rel="next" title="Browsing the Streamline Database" href="../workflows/browsing.html" />
+    <link rel="prev" title="Organizing your local datasource" href="overview.html" /> 
+  </head>
+  <body>
+    <div class="header-wrapper">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">dsi2 0.0.1 documentation</a></div>
+        <div class="rel">
+          <a href="overview.html" title="Organizing your local datasource"
+             accesskey="P">previous</a> |
+          <a href="../workflows/browsing.html" title="Browsing the Streamline Database"
+             accesskey="N">next</a> |
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="accessing-and-analyzing-your-data">
+<h1>Accessing and analyzing your data<a class="headerlink" href="#accessing-and-analyzing-your-data" title="Permalink to this headline">¶</a></h1>
+<p>Once your data has been organized either into a MongoDB or local file format, you can
+access streamline and label data to perform all sorts of analyses.</p>
+<div class="section" id="searching-your-local-datasource">
+<h2>Searching your local datasource<a class="headerlink" href="#searching-your-local-datasource" title="Permalink to this headline">¶</a></h2>
+<p>Once the necessary streamline labels and pickle files are in their specified
+locations, we can begin to search the database.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.database.track_datasource</span> <span class="kn">import</span> <span class="n">TrackDataSource</span>
+
+<span class="c"># Load the json file to a list of Scan objects</span>
+<span class="n">scans</span> <span class="o">=</span> <span class="n">get_local_data</span><span class="p">(</span><span class="s">&quot;path/to/file.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">scans</span></tt> will be a list of objects that can be used to select only the data
+you want for this analysis. It does <strong>not</strong> load the pkl into memory until
+you call its <tt class="xref py py-meth docutils literal"><span class="pre">get_track_dataset()</span></tt> function.
+Let&#8217;s select only scans from the &#8220;example&#8221; study and load them into memory.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">example_scans</span> <span class="o">=</span> <span class="p">[</span> <span class="n">scan</span> <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="n">scans</span> <span class="k">if</span> <span class="n">scan</span><span class="o">.</span><span class="n">study_id</span> <span class="o">==</span> <span class="s">&quot;example_study&quot;</span> <span class="p">]</span>
+<span class="c"># Use them to build a queryable data source</span>
+<span class="n">data_source</span> <span class="o">=</span> <span class="n">TrackDataSource</span><span class="p">(</span><span class="n">track_datasets</span> <span class="o">=</span> <span class="p">[</span><span class="n">scan</span><span class="o">.</span><span class="n">get_track_dataset</span><span class="p">()</span> <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="n">scans</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">data_source</span></tt> provides an interface to a searchable MNI space. Raw streamlines
+aren&#8217;t particularly useful, so we will create an object that uses this interface
+to search through and aggregate streamlines.</p>
+</div>
+<div class="section" id="searching-your-mongodb-datasource">
+<h2>Searching your MongoDB Datasource<a class="headerlink" href="#searching-your-mongodb-datasource" title="Permalink to this headline">¶</a></h2>
+<p>If you&#8217;re using the unit testing data, you can access the <tt class="docutils literal"><span class="pre">dsi2_test</span></tt> database
+after making sure <tt class="docutils literal"><span class="pre">mongod</span></tt> is properly configured and running</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.database.mongo_track_datasource</span> <span class="kn">import</span> <span class="n">MongoTrackDataSource</span>
+<span class="n">data_source</span> <span class="o">=</span> <span class="n">MongoTrackDataSource</span><span class="p">(</span>
+      <span class="n">scan_ids</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;0377A&quot;</span><span class="p">,</span> <span class="s">&quot;2843A&quot;</span> <span class="p">],</span>
+      <span class="n">mongo_host</span> <span class="o">=</span> <span class="s">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+      <span class="n">mongo_port</span> <span class="o">=</span> <span class="mi">27017</span><span class="p">,</span>
+      <span class="n">db_name</span><span class="o">=</span><span class="s">&quot;dsi2&quot;</span>
+  <span class="p">)</span>
+</pre></div>
+</div>
+<p>The MongoDB version has a number of advantages. Primarily, it makes concurrency easier
+and scales much better than the pickle approach.  The
+<tt class="xref py py-class docutils literal"><span class="pre">MongoTrackDataSource</span></tt> class has all the
+same methods as the pickle version.</p>
+</div>
+<div class="section" id="aggregating-streamlines-based-on-termination-regions">
+<h2>Aggregating streamlines based on termination regions<a class="headerlink" href="#aggregating-streamlines-based-on-termination-regions" title="Permalink to this headline">¶</a></h2>
+<p>To apply perform the analysis from <a class="footnote-reference" href="#id2" id="id1">[1]</a> we need to create an <em>aggregator</em>. An
+aggregator</p>
+<blockquote>
+<div><ul class="simple">
+<li>Subclasses <tt class="xref py py-class docutils literal"><span class="pre">ClusterEditor</span></tt></li>
+<li>Overrides the <tt class="docutils literal"><span class="pre">aggregate</span></tt> method</li>
+<li>operates on a <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt></li>
+</ul>
+</div></blockquote>
+<p>For a region-based LTPA, we can create a <tt class="xref py py-class docutils literal"><span class="pre">RegionLabelAggregator</span></tt>
+that will provide some methods for easily analyzing these streamlines resulting from the
+search. Suppose we&#8217;d like to search a set of coordinates around <span class="math">\((33,54,45)\)</span>.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dsi2.ltpa</span> <span class="kn">import</span> <span class="n">mni_white_matter</span><span class="p">,</span> <span class="n">run_ltpa</span>
+<span class="kn">from</span> <span class="nn">dsi2.aggregation.region_labeled_clusters</span> <span class="kn">import</span> <span class="n">RegionLabelAggregator</span>
+<span class="kn">from</span> <span class="nn">dsi2.streamlines.track_math</span> <span class="kn">import</span> <span class="n">sphere_around_ijk</span>
+
+<span class="n">region_agg</span> <span class="o">=</span> <span class="n">RegionLabelAggregator</span><span class="p">()</span>
+<span class="c"># give the aggregator access to the TrackDataSource</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">set_track_source</span><span class="p">(</span><span class="n">data_source</span><span class="p">)</span>
+
+<span class="c"># create a set of search coordinates</span>
+<span class="n">sphere_radius</span> <span class="o">=</span> <span class="mi">2</span>                  <span class="c"># voxels</span>
+<span class="n">center_coordinate</span> <span class="o">=</span> <span class="p">(</span><span class="mi">33</span><span class="p">,</span><span class="mi">54</span><span class="p">,</span><span class="mi">45</span><span class="p">)</span>     <span class="c"># in MNI152 i,j,k coordinates</span>
+<span class="n">search_coords</span> <span class="o">=</span> <span class="n">sphere_around_ijk</span><span class="p">(</span><span class="n">sphere_radius</span><span class="p">,</span> <span class="n">center_coordinate</span><span class="p">)</span>
+
+<span class="c"># Put the coordinates to use:</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">query_track_source_with_coords</span><span class="p">(</span><span class="n">search_coords</span><span class="p">)</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">update_clusters</span><span class="p">()</span>
+
+<span class="c"># which regions pairs were found and how many streamlines to each?</span>
+<span class="n">conn_ids</span><span class="p">,</span> <span class="n">connection_vectors</span> <span class="o">=</span> <span class="n">region_agg</span><span class="o">.</span><span class="n">connection_vector_matrix</span><span class="p">()</span>
+
+<span class="c"># if running an interactive ipython session, plot it</span>
+<span class="n">region_agg</span><span class="o">.</span><span class="n">plot_connection_vector_lines</span><span class="p">(</span><span class="n">connection_vectors</span><span class="p">,</span><span class="n">conn_ids</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">conn_ids</span></tt> is a list of connections (regionA, regionB) found that pass through
+the search coordinates. If there are <span class="math">\(n\)</span> individuals in the <tt class="xref py py-class docutils literal"><span class="pre">TrackDataSource</span></tt>
+and <span class="math">\(m\)</span> elements in <tt class="docutils literal"><span class="pre">conn_ids</span></tt>, then <tt class="docutils literal"><span class="pre">connection_vectors</span></tt> will be an
+<span class="math">\(n \times m\)</span> matrix where row <span class="math">\(i\)</span> column <span class="math">\(j\)</span> contains the streamline
+count connection region pair math:<cite>j</cite> in subject <span class="math">\(i\)</span>&#8216;s data.</p>
+</div>
+<div class="section" id="running-a-whole-brain-ltpa">
+<h2>Running a whole-brain LTPA<a class="headerlink" href="#running-a-whole-brain-ltpa" title="Permalink to this headline">¶</a></h2>
+<p>The code above is tedious and would take a long time to loop over the whole brain.
+It is much more convenient to use the <tt class="xref py py-meth docutils literal"><span class="pre">run_ltpa()</span></tt> function. Here
+is an example script that performs a simple whole-brain ltpa.  It requires a description
+of an aggregator.</p>
+<p>Create a dictionary containing all the information necessary to construct
+an aggregator for your analysis function. It works this way instead of
+by directly creating an Aggregator object because run_ltpa constructs a new
+Aggregator inside each independent process it launches.</p>
+<p>The dictionary must contain at least the key &#8220;algorithm&#8221;, which can be one of
+{ &#8220;region labels&#8221;, &#8220;k-means&#8221;, &#8220;quickbundles&#8221;}. The rest of the keys are sent
+as keyword arguments to <tt class="xref py py-meth docutils literal"><span class="pre">make_aggregator()</span></tt>.</p>
+<p>When run_ltpa is looping over coordinates, result of a apatial query is sent
+to an instance of the aggregator.  The aggregator&#8217;s <tt class="docutils literal"><span class="pre">aggregate()</span></tt> method
+is called for each TrackDataset returned from the query, then the aggregator
+is sent to whichever function you provided to run_ltpa.</p>
+<p>NOTE: If you select the &#8220;region labels&#8221; aggregator, then you won&#8217;t have access
+to the streamline objects. To access streamlines, choose &#8220;k-means&#8221; or
+&#8220;quickbundles&#8221;.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">agg_args</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="s">&quot;algorithm&quot;</span><span class="p">:</span><span class="s">&quot;region labels&quot;</span><span class="p">,</span>
+          <span class="s">&quot;atlas_name&quot;</span><span class="p">:</span><span class="s">&quot;Lausanne2008&quot;</span><span class="p">,</span>
+          <span class="s">&quot;atlas_scale&quot;</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span>
+          <span class="s">&quot;data_source&quot;</span><span class="p">:</span><span class="n">data_source</span>
+          <span class="p">}</span>
+</pre></div>
+</div>
+<p>You will also need to define a function that will extract the information you care about
+from the aggregator.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_n_streamlines</span><span class="p">(</span><span class="n">aggregator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function should be replaced with a function that accepts a single argument,</span>
+<span class="sd">    does something, then returns the results you care about.</span>
+
+<span class="sd">    This particular function calculates the mean number of streamlines observed</span>
+<span class="sd">    in each subject and returns this value and its standard deviation across all</span>
+<span class="sd">    subjects.  We used this to calculate how many streamlines pass through each voxel</span>
+<span class="sd">    then compared this number to how many real axons are known to pass through a voxel</span>
+<span class="sd">    (based on electron microscopy).</span>
+
+<span class="sd">    NOTE: you can access streamlines directly by the aggregator&#39;s ``track_sets``</span>
+<span class="sd">    attribute, which is a list of TrackDataset objects.  Each will have a ``.tracks``</span>
+<span class="sd">    attribute containing the numpy array of streamline coordinates.  Again, in this</span>
+<span class="sd">    case ``.tracks`` will be empty because we are using a region label aggregator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn_ids</span><span class="p">,</span> <span class="n">cvec_mat</span> <span class="o">=</span> <span class="n">aggregator</span><span class="o">.</span><span class="n">connection_vector_matrix</span><span class="p">()</span>
+    <span class="c"># The &quot;region labels&quot; aggregator has a ``connection_vector_matrix()``</span>
+    <span class="c"># function, which returns a list of all connections observed going through</span>
+    <span class="c"># the query coordinates (``conn_ids``) and a matrix where each row is a</span>
+    <span class="c"># subject and column is ea connection.</span>
+    <span class="n">sl_counts</span> <span class="o">=</span> <span class="n">cvec_mat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c"># Sums across all connections for each subject</span>
+    <span class="k">return</span> <span class="n">sl_counts</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">sl_counts</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The variable <tt class="docutils literal"><span class="pre">mni_white_matter</span></tt> contains the coordinates inside of FSL&#8217;s MNI 2mm
+white matter mask.  We can split up these coordinates across a number of processes.
+Here we use two processors.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">results</span> <span class="o">=</span> <span class="n">run_ltpa</span><span class="p">(</span><span class="n">get_n_streamlines</span><span class="p">,</span> <span class="n">data_source</span><span class="o">=</span><span class="n">data_source</span><span class="p">,</span>
+                   <span class="n">aggregator_args</span><span class="o">=</span><span class="n">agg_args</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                   <span class="n">n_procs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">search_centers</span><span class="o">=</span><span class="n">mni_white_matter</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For each coordinate in <tt class="docutils literal"><span class="pre">mni_white_matter</span></tt> a tuple is stored in <tt class="docutils literal"><span class="pre">results</span></tt> that contains
+the mean streamline count and its standard deviation.  You can make the analysis function
+return as much data as you&#8217;d like. It will always contain results in the same order as the
+coordinates specified in <tt class="docutils literal"><span class="pre">search_centers</span></tt>.</p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Cieslak, M., &amp; Grafton, S.T. Local termination pattern analysis:
+a tool for comparing white matter morphology. Brain Imaging Behav, DOI 10.1007/s11682-013-9254-z (2013).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing DSI2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../preprocessing/preproc.html">Preparing data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Organizing your local datasource</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Accessing and analyzing your data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#searching-your-local-datasource">Searching your local datasource</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#searching-your-mongodb-datasource">Searching your MongoDB Datasource</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#aggregating-streamlines-based-on-termination-regions">Aggregating streamlines based on termination regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-a-whole-brain-ltpa">Running a whole-brain LTPA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html">Browsing the Streamline Database</a></li>
+</ul>
+
+          <h3 style="margin-top: 1.5em;">Search</h3>
+          <form class="search" action="../search.html" method="get">
+            <input type="text" name="q" />
+            <input type="submit" value="Go" />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
+          <p class="searchtip" style="font-size: 90%">
+            Enter search terms or a module, class or function name.
+          </p>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <a href="overview.html" title="Organizing your local datasource"
+             >previous</a> |
+          <a href="../workflows/browsing.html" title="Browsing the Streamline Database"
+             >next</a> |
+          <a href="../genindex.html" title="General Index"
+             >index</a>
+            <br/>
+            <a href="../_sources/analysis/ltpa.txt"
+               rel="nofollow">Show Source</a>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer">
+        &copy; Copyright 2013, Matt Cieslak.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

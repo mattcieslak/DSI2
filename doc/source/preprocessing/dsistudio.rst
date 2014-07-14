@@ -51,8 +51,3 @@ to tune the parameters appropriately.
 These parameters work well for data from a Siemens Tim Trio 3T
 scaner. Your mileage may vary.
 
-.. toctree::
-   :hidden:
-
-
-

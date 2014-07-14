@@ -48,6 +48,9 @@ following distribution of streamline counts:
 Getting Started
 ===============
 
+:doc:`installation`
+--------------------
+
 :doc:`preprocessing/preproc`
 ----------------------------
   Use DSI Studio and ``connectome_mapper`` to prepare data
@@ -57,10 +60,11 @@ Getting Started
   An overview of possible analyses and pitfalls to beware of.
 
 .. toctree::
-   :hidden:
 
+   installation
    preprocessing/preproc
    analysis/overview
+   analysis/ltpa
    workflows/browsing
 
 References
