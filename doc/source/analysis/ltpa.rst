@@ -66,9 +66,8 @@ search. Suppose we'd like to search a set of coordinates around :math:`(33,54,45
 
   region_agg = make_aggregator( algorithm="region labels",
                                 atlas_name="Lausanne2008",
-                                atlas_scale=60)
-  region_agg.set_track_source(data_source)
-  
+                                atlas_scale=60,
+								data_source=data_source)
   # create a set of search coordinates
   sphere_radius = 2                  # voxels
   center_coordinate = (33,54,45)     # in MNI152 i,j,k coordinates
