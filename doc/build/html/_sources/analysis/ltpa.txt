@@ -66,15 +66,17 @@ search. Suppose we'd like to search a set of coordinates around :math:`(33,54,45
 
   region_agg = make_aggregator( algorithm="region labels",
                                 atlas_name="Lausanne2008",
-                                atlas_scale=60,
-								data_source=data_source)
+                                atlas_scale=60, data_source=data_source)
   # create a set of search coordinates
   sphere_radius = 2                  # voxels
   center_coordinate = (33,54,45)     # in MNI152 i,j,k coordinates
   search_coords = sphere_around_ijk(sphere_radius, center_coordinate)
 
-  # Put the coordinates to use:
-  region_agg.query_track_source_with_coords(search_coords)
+  # Query the data source with the coordinates, get new TrackDatasets
+  query_tracks = data_source.query_ijk(search_coords, fetch_streamlines=False)
+
+  # Feed the query results to the aggregator
+  region_agg.set_track_sets(query_tracks)
   region_agg.update_clusters()
 
   # which regions pairs were found and how many streamlines to each?
