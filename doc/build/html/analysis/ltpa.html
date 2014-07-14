@@ -117,9 +117,8 @@ search. Suppose we&#8217;d like to search a set of coordinates around <span clas
 
 <span class="n">region_agg</span> <span class="o">=</span> <span class="n">make_aggregator</span><span class="p">(</span> <span class="n">algorithm</span><span class="o">=</span><span class="s">&quot;region labels&quot;</span><span class="p">,</span>
                               <span class="n">atlas_name</span><span class="o">=</span><span class="s">&quot;Lausanne2008&quot;</span><span class="p">,</span>
-                              <span class="n">atlas_scale</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-<span class="n">region_agg</span><span class="o">.</span><span class="n">set_track_source</span><span class="p">(</span><span class="n">data_source</span><span class="p">)</span>
-
+                              <span class="n">atlas_scale</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+                                                              <span class="n">data_source</span><span class="o">=</span><span class="n">data_source</span><span class="p">)</span>
 <span class="c"># create a set of search coordinates</span>
 <span class="n">sphere_radius</span> <span class="o">=</span> <span class="mi">2</span>                  <span class="c"># voxels</span>
 <span class="n">center_coordinate</span> <span class="o">=</span> <span class="p">(</span><span class="mi">33</span><span class="p">,</span><span class="mi">54</span><span class="p">,</span><span class="mi">45</span><span class="p">)</span>     <span class="c"># in MNI152 i,j,k coordinates</span>
