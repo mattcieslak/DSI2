@@ -116,37 +116,6 @@ class MongoTrackDataSource(TrackDataSource):
         to be included in the coordinate search."""
         return self.scan_ids
     
-    
-    def build_track_dataset(self,result,tracks,original_track_indices,connections):
-        header = pickle.loads(result["header"])
-
-        properties = Scan()
-        properties.scan_id = result["scan_id"]
-        properties.subject_id = result["subject_id"]
-        properties.scan_gender = result["gender"]
-        properties.scan_age = result["age"]
-        properties.study = result["study"]
-        properties.scan_group = result["group"]
-        properties.smoothing = result["smoothing"]
-        properties.cutoff_angle = result["cutoff_angle"]
-        properties.qa_threshold = result["qa_threshold"]
-        properties.gfa_threshold = result["gfa_threshold"]
-        properties.length_min = result["length_min"]
-        properties.length_max = result["length_max"]
-        properties.institution = result["institution"]
-        properties.reconstruction = result["reconstruction"]
-        properties.scanner = result["scanner"]
-        properties.n_directions = result["n_directions"]
-        properties.max_b_value = result["max_b_value"]
-        properties.bvals = result["bvals"]
-        properties.bvecs = result["bvecs"]
-        properties.label = result["label"]
-        properties.trk_space = result["trk_space"]
-
-        tds = TrackDataset(tracks=tracks, header=header, original_track_indices=original_track_indices, 
-                           properties=properties, connections=connections)
-        tds.render_tracks = self.render_tracks
-        return tds
 
     def query_ijk(self, ijk, every=0, fetch_streamlines=True):
         if every < 0:
@@ -192,41 +161,86 @@ class MongoTrackDataSource(TrackDataSource):
             return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
                        scan in self.scan_ids]
         
+        # This gives a list of dictionaries. make a regular dictionary
+        subject_sl_ids = dict([ (res["_id"], res["sl_ids"]) for res in coord_query["result"] ])
+        return self.__datasets_from_connection_ids( subject_sl_ids )
+
+    def __datasets_from_connection_ids(self, subj2id_map,every=1):
+        """ takes a dictionary {subject_id:list of streamline_ids,...} and 
+        returns a list of TrackDatasets in the correct order
+        """
         # Build new TrackDatasets with streamlines included
         print "\t+ Querying the streamlines collection"
-        qresults = {}
-        for sl_id_result in coord_query["result"]:
-            scan_id = sl_id_result['_id']
-            sl_ids = sl_id_result["sl_ids"]
-            print "\t\t++ %s has %s streamlines" % (scan_id, len(sl_ids))
+        query = {"$or":[ {"scan_id":scan_id, "sl_id":{"$in":sl_ids }} \
+                         for scan_id,sl_ids in subj2id_map.iteritems() ]}
+        print query
+        
+        # Collect a list of binary data streamlines from each subject
+        strln_query = self.db.streamlines.aggregate(
+            [
+                {"$match":query},
+                {"$group":
+                  {
+                   "_id":"$scan_id",
+                   "sl_data":{"$push":"$data"}, 
+                   "sl_ids":{"$push":"$sl_id"}
+                  }
+                }
+            ]
+        )
+        # This gives a list of dictionaries. make a regular dictionary
+        subject_strlns = dict([ (res["_id"], res) for res in strln_query["result"] ])
+
+        qresults = []
+        for scan_id in self.scan_ids:
             original_track_dataset = self.tds_lut[scan_id]
+            # If the scan is not included in the results:
+            if not scan_id in subject_strlns:
+                qresults.append( 
+                    TrackDataset(
+                        tracks=np.array([]),
+                        header=original_track_dataset.header,
+                        properties=original_track_dataset.properties, 
+                        connections=np.array([]), 
+                        original_track_indices=np.array([]))
+                )
+                print "\t\t++ %s has %s streamlines" % (scan_id, len(sl_ids))
+                continue
             
-            # Collect these with a simple .find() and loop through
-            # the reslts to preserve the data and sl_id pairs. Someday,
-            # accomplish this with the aggregate framework
-            streamlines = []
-            found_sl_ids = []
-            for sl in self.db.streamlines.find(
-                {"scan_id":scan_id, "sl_id":{"$in":sl_ids}}):
-                streamlines.append(sl['data'])
-                found_sl_ids.append(sl["sl_id"])
-            tracks = np.array([pickle.loads(s) for s in streamlines])
+            # If the scan is included in the results
+            subject_result = subject_strlns[scan_id]
+            scan_id = subject_result['_id']
+            sl_ids = subject_result["sl_ids"]
+            print "\t\t++ %s has %s streamlines" % (scan_id, len(sl_ids))
+            # get data from the result for this subject
+            streamlines = subject_result["sl_data"]
+            found_sl_ids = subject_result["sl_ids"]
+            # If user requests downsampling, do it now
+            if every > 1:
+                streamlines = streamlines[::every]
+                found_sl_ids = found_sl_ids[::every]
+            # de-serialize the streamline data
+            tracks = np.array([pickle.loads(s) for s in subject_result["sl_data"]])
             print "\t\t+++ query returned %d streamlines" % len(tracks)
             original_track_indices=np.array(found_sl_ids)
-            survivors = tracks[every-1::every] if tracks.size > 0 else None
-            connections = original_track_dataset.connections[original_track_indices][every-1::every] \
+            connections = original_track_dataset.connections[original_track_indices] \
                 if original_track_dataset.connections.size > 0 else np.array([])
                 
-            qresults[scan_id] = TrackDataset(
-                tracks=survivors, 
-                header=original_track_dataset.header,
-                properties=original_track_dataset.properties, 
-                connections=connections, 
-                original_track_indices=original_track_indices)
+            qresults.append( 
+                TrackDataset(
+                    tracks=tracks,
+                    header=original_track_dataset.header,
+                    properties=original_track_dataset.properties, 
+                    connections=connections, 
+                    original_track_indices=original_track_indices)
+            )
+            
+        # Check that all scans are accounted for
+        assert len(qresults) == len(self.scan_ids)
+        
+        return qresults
 
-        return [qresults[scan] if scan in qresults else self.tds_lut[scan].subset([]) for \
-                   scan in self.scan_ids]
-
+        
     def query_connection_id(self,connection_id,every=0):
         """
         Subsets the track datasets so that only streamlines labeled as
@@ -242,50 +256,14 @@ class MongoTrackDataSource(TrackDataSource):
             connection_id = np.array([connection_id])
         elif type(connection_id) != np.ndarray:
             connection_id = np.array(connection_id)
+        
+        region_indices = {}
+        for scan_id in self.scan_ids:
+            original_track_dataset = self.tds_lut[scan_id]
+            region_indices[scan_id] = np.flatnonzero(
+                np.in1d(original_track_dataset.connections,connection_id)).tolist()
 
-        # Get the scan_ids that contain these connections
-        cons = [str(c) for c in connection_id]
-        result = self.db.connections.find( { "con_id": { "$in": cons }, "atlas_id": self.atlas_id }, [ "scan_id" ] )
-        scans = set([rec["scan_id"] for rec in result])
-
-        # Get the streamlines for each scan and build a list of TrackDatasets
-        # TrackDataSource returns a TrackDataset for each scan, even if there are no matching tracks, so do the same here.
-        datasets = []
-        result = self.db.scans.find( fields=[ "scan_id" ] )
-        all_scans = [rec["scan_id"] for rec in result]
-        for scan in all_scans:
-            tracks = None
-            streamlines = []
-            connections = []
-            if scan in scans:
-                result = self.db.connections.find( 
-                    { "con_id": { "$in": cons }, "scan_id": scan, "atlas_id": self.atlas_id }, 
-                    [ "sl_ids", "con_id" ] )
-                sl_cons = {}
-                for rec in result:
-                    for sl in rec["sl_ids"]:
-                        streamlines.append(sl)
-                        sl_cons[sl] = int(rec["con_id"])
-                streamlines = sorted(list(set(streamlines)))
-
-                # downsampling
-                streamlines = streamlines[every-1::every]
-
-                connections = [sl_cons[sl] for sl in streamlines]
-
-                result = self.db.streamlines.find( { "sl_id": { "$in": streamlines }, "scan_id": scan }, [ "data" ] )
-                tracks = [pickle.loads(rec["data"]) for rec in result]
-
-            result = self.db.scans.find( { "scan_id": scan } )
-
-            if result.count() > 1:
-                logger.warning("Multiple records found for scan %s. Using first record.", scan)
-
-            tds = self.build_track_dataset(result=result[0], tracks=tracks, 
-                                           original_track_indices=np.array(streamlines), connections=np.array(connections))
-            datasets.append(tds)
-
-        return datasets
+        return self.__datasets_from_connection_ids(region_indices)
 
     def change_atlas(self, query_specs):
         """ Sets the .connections for each TrackDataset to be loaded from the path
