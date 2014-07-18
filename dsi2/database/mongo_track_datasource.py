@@ -173,7 +173,9 @@ class MongoTrackDataSource(TrackDataSource):
         print "\t+ Querying the streamlines collection"
         query = {"$or":[ {"scan_id":scan_id, "sl_id":{"$in":sl_ids }} \
                          for scan_id,sl_ids in subj2id_map.iteritems() ]}
-        print query
+        #print query
+
+
         
         # Collect a list of binary data streamlines from each subject
         strln_query = self.db.streamlines.aggregate(
@@ -183,13 +185,16 @@ class MongoTrackDataSource(TrackDataSource):
                   {
                    "_id":"$scan_id",
                    "sl_data":{"$push":"$data"}, 
-                   "sl_ids":{"$push":"$sl_id"}
+                   "sl_ids":{"$push":"$sl_id"},
+
                   }
-                }
-            ]
+                },
+                {"$out":"tmp_sl"}
+            ],
+            allowDiskUse=True
         )
         # This gives a list of dictionaries. make a regular dictionary
-        subject_strlns = dict([ (res["_id"], res) for res in strln_query["result"] ])
+        subject_strlns = dict([ (res["_id"], res) for res in self.db.tmp_sl.find() ])
 
         qresults = []
         for scan_id in self.scan_ids:
