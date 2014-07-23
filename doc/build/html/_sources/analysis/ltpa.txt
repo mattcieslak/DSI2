@@ -109,7 +109,7 @@ The dictionary must contain at least the key "algorithm", which can be one of
 { "region labels", "k-means", "quickbundles"}. The rest of the keys are sent
 as keyword arguments to :py:meth:`~dsi2.aggregation.make_aggregator`. 
 
-When run_ltpa is looping over coordinates, result of a apatial query is sent
+When run_ltpa is looping over coordinates, result of a spatial query is sent
 to an instance of the aggregator.  The aggregator's ``aggregate()`` method 
 is called for each TrackDataset returned from the query, then the aggregator
 is sent to whichever function you provided to run_ltpa.

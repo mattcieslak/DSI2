@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -13,7 +15,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     '0.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -93,24 +95,16 @@ Otherwise you will need to install the following packages:</p>
 resources in your file system. On a *nix system these are set using the
 <tt class="docutils literal"><span class="pre">export</span></tt> command.</p>
 <blockquote>
-<div><ul>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">DSI2_DATA</span></tt> is the path to the <tt class="docutils literal"><span class="pre">example_data</span></tt> directory that</dt>
-<dd><p class="first last">is provided on this website (<strong>NOTE: upload the example data</strong>).
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">DSI2_DATA</span></tt> is the path to the <tt class="docutils literal"><span class="pre">example_data</span></tt> directory that
+is provided on this website (<strong>NOTE: upload the example data</strong>).
 This is data that dsi2 needs internally (such as standard atlas
-labels and the MNI 152 volume).</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">LOCAL_TRACKDB</span></tt> is the path to your directory containing your</dt>
-<dd><p class="first last">locally stored .pkl files. If this variable is not set, dsi2 will
+labels and the MNI 152 volume).</li>
+<li><tt class="docutils literal"><span class="pre">LOCAL_TRACKDB</span></tt> is the path to your directory containing your
+locally stored .pkl files. If this variable is not set, dsi2 will
 check your home directory for a <tt class="docutils literal"><span class="pre">local_trackdb</span></tt> directory. If you
 have downloaded example_trackdb.tar.gz, the location of its extracted
-directory</p>
-</dd>
-</dl>
-</li>
+directory</li>
 </ul>
 </div></blockquote>
 <div class="section" id="starting-mongodb">
@@ -185,7 +179,7 @@ remember to pass a <tt class="docutils literal"><span class="pre">--bind_ip</spa
           
     <div class="footer">
         &copy; Copyright 2013, Matt Cieslak.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
         </div>
         <div class="clearer"></div>
