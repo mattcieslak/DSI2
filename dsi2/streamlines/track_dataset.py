@@ -67,6 +67,7 @@ class Cluster(HasTraits):
     id_number   = Int
     start_coordinate = Array(shape=(3,))
     end_coordinate   = Array(shape=(3,))
+    prototype = Array
     indices          = Array
     cluster_type     = "POINT"
 
@@ -84,6 +85,7 @@ class TrackDataset(HasTraits):
     # Holds original data: Never changes
     tracks = Array
     scalars = Array
+    labels = Array
     connections = Array
     offsets=Array
     properties = Any
@@ -102,6 +104,7 @@ class TrackDataset(HasTraits):
     dynamic_color_clusters=DelegatesTo('properties')
     static_color = DelegatesTo('properties')
     color_map  = DelegatesTo('properties')
+    unlabeled_track_style = DelegatesTo('properties')
 
     def _static_color_changed(self):
         if not self.dynamic_color_clusters:
@@ -201,6 +204,7 @@ class TrackDataset(HasTraits):
     def __iter__(self):
         for trk in self.tracks:
             yield trk
+            
     def set_connections(self,connections):
         """ directly set connections with a numpy array"""
         # TODO: remove the hasattr check
@@ -550,11 +554,19 @@ class TrackDataset(HasTraits):
             print "\t\t tracks drawn, FORCING re-drawing to tracks"
             self.remove_glyphs()
 
-        self.offsets = np.cumsum(np.array([0] + [ trk.shape[0] for trk in self.tracks ]))
+        if self.unlabeled_track_style == "Invisible":
+            if not self.labels.size:
+                print "\t\t special coloring requested but no labels present"
+                return
+            tracks = [ trk for trk,label in zip(self.tracks,self.labels) if label > 0 ]
+        else:
+            tracks = self.tracks
+        self.offsets = np.cumsum(np.array([0] + [ trk.shape[0] for trk in tracks ]))
         connect = []
         allpts = []
         npts = 0
-        for line in self.tracks:
+        
+        for line in tracks:
             allpts.append(line)
             # Number of points in the line
             _npts = line.shape[0]
@@ -739,7 +751,10 @@ class TrackDataset(HasTraits):
     def paint_clusters(self):
         print "\t\t\t+++ painting", len(self.clusters), "clusters to previously drawn glyphs"
         self.scalars = np.zeros(len(self.x))
-        # update the internal array of scalars
+        # If there are no labels set, then we can't paint the clusters
+        if not self.labels.size: return
+        labels = np.unique(self.labels)
+        
         for clust in self.clusters:
             for idx in clust.indices:
                 try:

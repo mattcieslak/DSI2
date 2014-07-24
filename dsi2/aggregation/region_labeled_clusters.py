@@ -5,7 +5,6 @@ from ..streamlines.track_dataset import RegionCluster, TrackDataset
 from .cluster_ui import ClusterEditor, ClusterAdapter
 from ..streamlines.track_math import tracks_to_endpoints
 from ..database.track_datasource import TrackDataSource
-from .region_dynamic_clusters import RegionAggregator
 from ..database.local_data import dsi2_data
 from traitsui.editors.tabular_editor import TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
@@ -22,11 +21,6 @@ from ..streamlines.track_math import region_pair_dict_from_roi_list
 import networkx as nx
 
 
-"""
-NOTE: this class is a kludge. Some sophistication needs to be added so that graphml
-is actually loaded from the JSON files. Until that happens the paths will be loaded
-from the dict below.
-"""
 lausanne_scale_lookup = {
                   33:os.path.join(dsi2_data,"lausanne2008/resolution83/resolution83.graphml"),
                   60:os.path.join(dsi2_data,"lausanne2008/resolution150/resolution150.graphml"),
@@ -65,7 +59,27 @@ class RegionPair(HasTraits):
             buttons=[OKButton,CancelButton]
             )
 
-class RegionLabelAggregator(RegionAggregator):
+class RegionLabelAggregator(ClusterEditor):
+    track_source = Instance(TrackDataSource)
+    # Maps roi integer to a name
+    region_labels = Dict
+    # Maps pairs of roi integers to an index
+    region_pairs_to_index  = Dict
+    index_to_region_pairs  = Dict
+    regions = Array
+    # will a connection be allowed if it appears in ANY or ALL subjects?
+    across_subject_comparison_operation = Enum("Union","Intersection")
+    parameters = ["min_tracks"]
+    min_tracks = Range(low=0,high=100,value=1, auto_set=False,name="min_tracks",
+                          desc="A cluster label must be assigned to at least this many tracks",
+                          label="Minimum tracks",
+                          parameter=True
+                          )
+    atlas_name       = Str("None",parameter=True)
+
+    # Previously from "Atlas"
+    possible_atlases = List
+    atlas_parameters = Dict
     # Buttons for the algorithm_widgets
     b_plot_connection_vector = Button(label="Connection Vectors")
     connection_vector_plot_type = Enum("lines","imshow")
@@ -79,6 +93,16 @@ class RegionLabelAggregator(RegionAggregator):
     atlas_graphml    = File
     graphml_cache    = Dict
 
+    def set_track_source(self,tsource):
+        """
+        Overwriting the
+        """
+        self.track_source = tsource
+        self.track_source.set_render_tracks(self.render_tracks)
+        # The track source contains label data, NOTE the track_source will
+        # cache the label vectors for each subject
+        self.atlas_parameters = self.track_source.load_label_data()
+        
     def _b_plot_connection_vector_fired(self):
         """Listen for button clicks"""
         self.plot_connection_vectors()
@@ -139,6 +163,21 @@ class RegionLabelAggregator(RegionAggregator):
 
         print "\t++ region labels updated"
 
+    @on_trait_change('+parameter')
+    def clustering_param_changed(self,obj, name, old, new):
+        print "\t+ %s parameter on clusterer changed" % name
+        if not name in self.parameters:
+            print "\t\t++ not in self.parameters"
+            return
+        if name.startswith(self.atlas_name):
+            print "\t\t++ parameter is applicable to current atlas"
+            self.update_atlas()
+        else:
+            print "\t\t++ param not applicable to current atlas"
+        # Update clusters either way
+        if self.auto_aggregate:
+            self.update_clusters()
+            
     def _load_graphml(self,scale_number):
         atlas_graphml = lausanne_scale_lookup[scale_number]
         print "\t\t+ loading regions from", atlas_graphml
@@ -192,10 +231,6 @@ class RegionLabelAggregator(RegionAggregator):
         ## First-pass: collect all the termination patterns
         _clusters = []
         self.label_lookup = []
-        # If we're not supposed to query tracks, clear the clusters and do nothing
-        #if not self.render_tracks:
-        #    self.clusters = _clusters
-        #    return
 
         if not len(self.track_sets):
             print "\t+ No query results to apply aggregation to"
@@ -206,6 +241,7 @@ class RegionLabelAggregator(RegionAggregator):
             self.label_lookup.append(connection_id_map)
             tds.set_clusters(clusts,
                              update_glyphs=(self.filter_operation=="None"))
+            tds.labels = clusts
             _clusters += tds.clusters # collect the colorized version
         self.clusters = _clusters
         self.pre_filter_connections, self.pre_filter_matrix = self.connection_vector_matrix()
@@ -236,40 +272,6 @@ class RegionLabelAggregator(RegionAggregator):
         self.post_filter_connections, self.post_filter_matrix = \
                                    self.connection_vector_matrix()
         
-    def query_track_source_with_region_pair(self, region_id):
-        """ User has quered a coordinates.
-        1) Query the datasource for new streamlines
-        2) Send them to the aggregator for aggregation
-        3) Disable mayavi rendering
-        4) Remove previous streamlines from the engine
-        5) Add new streamlines to the engine
-           -- if we're aggregation, then paint the streamlines
-        6) re-enable mayavi rendering
-        """
-        if len(self.track_source) == 0:
-            print "\t+ No datasets in the track_source"
-            return
-        # Set the pre-filtered tracks
-        if self.scene3d:
-            #print "\t+ disabling rendering"
-            self.scene3d.disable_render = True
-        #print "\t+ creating ``track_sets`` from results ..."
-        self.set_track_sets(
-            self.track_source.query_connection_id(region_id))
-                                                 # every=self.downsample))
-
-        # Apply aggregation to the new ``track_sets`` if requested
-        if self.auto_aggregate:
-            #print "\t++ Applying aggregation to them ..."
-            self.update_clusters()
-        # Render their glyphs if the user wants
-        if self.render_tracks:
-            #print "\t++ Rendering the new tracks."
-            self.draw_tracks()
-        #print "\t++ Done"
-        if self.scene3d:
-            self.scene3d.disable_render = False
-            print "\t+ Re-enabling rendering"
             
     def aggregate(self, ttracks):
         """

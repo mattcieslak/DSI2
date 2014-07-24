@@ -18,8 +18,8 @@ test = "regions"
 #test = "clustering"
 
 # If aggregation, which algorithm?
-#aggregator = "dipy"
-aggregator = "kmeans"
+aggregator = "dipy"
+#aggregator = "kmeans"
 
 # Want to load multiple subjects?
 #TEST_MULTISUBJECTS = True
