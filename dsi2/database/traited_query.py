@@ -166,6 +166,8 @@ class Scan(Dataset):
     static_color      = Color
     render_tracks     = Bool(False)
     representation    = Enum("Line", "Tube")
+    unlabeled_track_style  = Enum(["Colored","Invisible","White"])
+    # raw data from the user
     original_json     = Dict
 
     import_view = View(

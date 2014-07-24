@@ -91,6 +91,7 @@ cluster_editor_group = \
 class ClusterEditor(HasTraits):
     # Options for track aggregation
     auto_aggregate     = Bool(False)
+    compute_prototypes = Bool(False)
     # XXX: this should be True for non-interactive use
     render_tracks       = Bool(False)
     tracks_drawn        = Bool(False)
@@ -101,9 +102,7 @@ class ClusterEditor(HasTraits):
     parameters          = []
 
     # Data
-    track_source = Instance(TrackDataSource)
     track_sets = List(Instance(TrackDataset))
-    track_datasets = DelegatesTo("track_source")
     pre_filter_matrix = Array
     pre_filter_connections = Array
     post_filter_matrix = Array
@@ -145,44 +144,6 @@ class ClusterEditor(HasTraits):
         if self.auto_aggregate:
             self.update_clusters()
 
-    def query_track_source_with_coords(self,list_of_coord_tuples,downsample=0):
-        """ User has changed the query coordinates.
-        1) Query the datasource for new streamlines
-        2) Send them to the aggregator for aggregation
-        3) Disable mayavi rendering
-        4) Remove previous streamlines from the engine
-        5) Add new streamlines to the engine
-           -- if we're aggregation, then paint the streamlines
-        6) re-enable mayavi rendering
-        """
-        #print "+ Queried track sources with %i coordinates" % len(list_of_coord_tuples)
-        #print "============================================"
-        if len(self.track_source) == 0:
-            print "\t+ No datasets in the track_source"
-            return
-        # Set the pre-filtered tracks
-        if self.scene3d:
-            #print "\t+ disabling rendering"
-            self.scene3d.disable_render = True
-        #print "\t+ creating ``track_sets`` from results ..."
-        self.set_track_sets( # Note to self, this calls clear_tracks()
-            self.track_source.query_ijk(list_of_coord_tuples,
-                                        every=downsample))
-
-
-        # Apply aggregation to the new ``track_sets`` if requested
-        if self.auto_aggregate:
-            #print "\t++ Applying aggregation to them ..."
-            self.update_clusters()
-        # Render their glyphs if the user wants
-        if self.render_tracks:
-            #print "\t++ Rendering the new tracks."
-            self.draw_tracks()
-        #print "\t++ Done"
-        if self.scene3d:
-            self.scene3d.disable_render = False
-            print "\t+ Re-enabling rendering"
-
     def set_track_sets(self,tsets):
         """
         The entry point for streamline data to the aggregator.
@@ -198,8 +159,7 @@ class ClusterEditor(HasTraits):
             self.draw_tracks()
 
     def set_track_source(self,tsource):
-        self.track_source = tsource
-        self.track_source.set_render_tracks(self.render_tracks)
+        pass
 
 
     def _render_tracks_changed(self):
@@ -211,9 +171,13 @@ class ClusterEditor(HasTraits):
         Additionally, the visibility of already-existing streamlines
         will get toggled.
         """
+        # Apply the new "render_tracks" to 
+        for tds in self.track_sets:
+            tds.render_tracks = self.render_tracks
+            
         print "+ render_tracks changed to", self.render_tracks
-        print "\t+ setting track_source's render_tracks attribute"
-        self.track_source.set_render_tracks(self.render_tracks)
+        #print "\t+ setting track_source's render_tracks attribute"
+        #self.track_source.set_render_tracks(self.render_tracks)
         self.scene3d.disable_render = True
         # Tracks are drawn
         if self.tracks_drawn:
@@ -233,6 +197,33 @@ class ClusterEditor(HasTraits):
             tds.set_cluster_visibility(self.render_clusters)
         self.scene3d.disable_render = False
 
+    #def update_clusters(self):
+        #""" Creates new clusters when a aggregation parameter has been
+        #changed. Will CREATE MayaVi objects if ``self.interactive``
+        #and ``self.render_clusters`` are true.
+        #"""
+
+        #print "+ Updating cluster assignments."
+        #_clusters = []
+        #self.label_lookup = []
+        ## If interactive, convert the tds to something that can render
+        ##if self.render_tracks:
+        ##    print "\t++ rendering tracks"
+        ##    self.draw_tracks()
+        ## Update the clusters in each TrackDataset through self.aggregate()
+        ## NOTE: Someday this could be parallelized
+        #for tnum, tds in enumerate(self.track_sets):
+            #print "\t+ cluster %d of %d" % (tnum+1, len(self.track_sets))
+            #clusts = self.aggregate(tds)
+            #tds.set_clusters(clusts)
+            #_clusters += tds.clusters # collect the colorized version
+        #self.clusters = _clusters
+        ## Take care of the graphics
+        #if self.render_clusters:
+            #print "\t++ rendering tracks"
+            #self.draw_clusters()
+        #print "+ Aggregation Complete"
+
     def update_clusters(self):
         """ Creates new clusters when a aggregation parameter has been
         changed. Will CREATE MayaVi objects if ``self.interactive``
@@ -242,15 +233,28 @@ class ClusterEditor(HasTraits):
         print "+ Updating cluster assignments."
         _clusters = []
         self.label_lookup = []
-        # If interactive, convert the tds to something that can render
-        #if self.render_tracks:
-        #    print "\t++ rendering tracks"
-        #    self.draw_tracks()
-        # Update the clusters in each TrackDataset through self.aggregate()
-        # NOTE: Someday this could be parallelized
         for tnum, tds in enumerate(self.track_sets):
-            print "\t+ cluster %d of %d" % (tnum+1, len(self.track_sets))
-            clusts = self.aggregate(tds)
+            labels = self.aggregate(tds)
+            tds.labels = labels
+            clusts = []
+            # -----------------------------------------------------
+            # Convert the labels array to a list of Cluster objects
+            labels, occurrences = np.unique(labels,return_inverse=True)
+            for labelnum, label in enumerate(labels):
+                indices = np.flatnonzero(occurrences==labelnum)
+                if self.compute_prototypes:
+                    prototype = self.make_prototype(tds.tracks[indices])
+                else: prototype = None
+                
+                clusts.append(
+                    Cluster(
+                        ntracks = len(indices),
+                        id_number = label,
+                        indices=indices,
+                        scan_id = tds.scan_id
+                        )
+                    )
+            # This grabs the colors from the rendered streamlines
             tds.set_clusters(clusts)
             _clusters += tds.clusters # collect the colorized version
         self.clusters = _clusters
@@ -259,9 +263,13 @@ class ClusterEditor(HasTraits):
             print "\t++ rendering tracks"
             self.draw_clusters()
         print "+ Aggregation Complete"
-
+        
+        
     ## Must be overwritten by a subclass
     def aggregate(self,track_datasets):
+        raise NotImplementedError()
+    
+    def make_prototype(self,tracks):
         raise NotImplementedError()
 
     def draw_tracks(self):
@@ -321,7 +329,7 @@ class ClusterEditor(HasTraits):
     objects_view = View(
         Group(
             Group(
-                Item("track_datasets",
+                Item("track_sets",
                       editor=track_dataset_source_table),
                 orientation="horizontal",
                 show_labels=False,

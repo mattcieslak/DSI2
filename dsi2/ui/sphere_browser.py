@@ -15,6 +15,7 @@ from ..aggregation.clustering_algorithms import QuickBundlesAggregator, FastKMea
 from ..aggregation.region_clusters import RegionAggregator, RegionPair
 from ..database.track_datasource import TrackDataSource
 from ..aggregation.cluster_evaluator import AggregationEvaluator, flat_tep
+from ..aggregation.region_labeled_clusters import RegionLabelAggregator
 from ..volumes.roi import ROI
 from ..volumes.scalar_volume import ScalarVolumes
 from ..database.traited_query import Scan
@@ -151,9 +152,30 @@ class SphereBrowser(HasTraits):
 
         """
         self.aggregator.clear_clusters()
-        self.aggregator.query_track_source_with_coords(
+        
+        #print "============================================"
+        if len(self.track_source) == 0:
+            print "\t+ No datasets in the track_source"
+            return
+        self.scene3d.disable_render = True
+        
+        # Query the track source with our search coordinates
+        new_tracks = self.track_source.query_ijk(
                          map(tuple,self.vslicer.sphere_coords),
-                                   downsample=self.downsample)
+                                   every=self.downsample)
+        self.aggregator.set_track_sets(new_tracks)
+
+        # Apply aggregation to the new ``track_sets`` if requested
+        if self.aggregator.auto_aggregate:
+            #print "\t++ Applying aggregation to them ..."
+            self.aggregator.update_clusters()
+        # Render their glyphs if the user wants
+        if self.aggregator.render_tracks:
+            #print "\t++ Rendering the new tracks."
+            self.aggregator.draw_tracks()
+        #print "\t++ Done"
+        self.scene3d.disable_render = False
+        print "\t+ Re-enabling rendering"
         self.save_name = "query.x%i.y%i.z%i.r%i"%(
                                    self.vslicer.sphere_x,
                                    self.vslicer.sphere_y,
@@ -192,7 +214,7 @@ class SphereBrowser(HasTraits):
         if len(self.track_source) == 0: return
         # If using a region aggregator, figure out which atlases are available
         # to label the streamlines.
-        if type(self.aggregator) == RegionAggregator:
+        if type(self.aggregator) == RegionLabelAggregator:
             possible_atlases = set(
                 self.track_source.track_datasets[0].properties.atlases.keys())
             if len(self.track_source) > 1:
