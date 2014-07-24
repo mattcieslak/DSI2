@@ -59,10 +59,39 @@
 <h1>MongoDB Backend<a class="headerlink" href="#mongodb-backend" title="Permalink to this headline">¶</a></h1>
 <p>MongoDB can be downloaded from mongodb.org. DSI2 uses PyMongo to connect
 to mongodb.</p>
+<div class="section" id="access">
+<h2>Access<a class="headerlink" href="#access" title="Permalink to this headline">¶</a></h2>
+<p>You can access the mongodb using the mongoshell:</p>
+<div class="highlight-python"><pre>mongo dsi2</pre>
+</div>
+<p>The output should look like:</p>
+<div class="highlight-python"><pre>MongoDB shell version: 2.X.X
+connecting to: dsi2
+&gt;</pre>
+</div>
+</div>
 <div class="section" id="mongodb-organization">
 <h2>MongoDB Organization<a class="headerlink" href="#mongodb-organization" title="Permalink to this headline">¶</a></h2>
 <p><tt class="docutils literal"><span class="pre">dsi2</span></tt> relies on a database called &#8220;dsi2&#8221; in your mongodb instance.  There are a number
 of collections inside dsi2 that are used.</p>
+<p>To get the list of collections in the database:</p>
+<div class="highlight-python"><pre>&gt; db.getCollectionNames()
+[
+      "atlases",
+      "connections",
+      "coordinates",
+      "my_collection_keys",
+      "scans",
+      "streamline_labels",
+      "streamlines",
+      "system.indexes",
+      "tmp_sl"
+]
+&gt;</pre>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <dl class="docutils">
 <dt>&#8220;dsi2.scans&#8221;</dt>
 <dd>This collection holds non-identifiable information about the individuals in the database.
@@ -79,17 +108,37 @@ other collections such as atlases and streamlines</dd>
 You can search a streamline id from a specific subject and get its spatial trajectory.</dd>
 <dt>&#8220;dsi2.atlases&#8221;</dt>
 <dd>This contains the unique atlases that have been used to label streamlines.</dd>
-<dt>&#8220;dsi2.connections2&#8221;</dt>
-<dd><strong>Needs a better name!!</strong> This collection contains the lists of connection ids for
-each streamline in a dataset.  This is useful because the connection ids are ints
-and small, so upon loading a dataset, one can simply query that atlas&#8217;s connection
-ids for a scan and hold them in memory instead of performing repeated joins in the
-mongo client.</dd>
+<dt>&#8220;dsi2.streamline_labels&#8221;</dt>
+<dd>This collection contains the lists of connection ids for each
+streamline in a dataset.  This is useful because the connection ids
+are ints and small, so upon loading a dataset, one can simply query
+that atlas&#8217;s connection ids for a scan and hold them in memory
+instead of performing repeated joins in the mongo client.</dd>
 <dt>&#8220;dsi2.connections&#8221;:</dt>
 <dd>To query a specific connection (a pair of regions from a specific atlas) you
 query this database with a subject id and connection id from the atlas. The
 streamline ids connecting that region pair are returned.</dd>
 </dl>
+</div>
+<div class="section" id="local-access">
+<h2>Local Access<a class="headerlink" href="#local-access" title="Permalink to this headline">¶</a></h2>
+<p>In case you want to connect to a remote mongodb server behind a NAT
+that only offers ssh access you can use ssh tunnelling:</p>
+<p>From your local machine:</p>
+<div class="highlight-python"><pre>ssh -f uname@remote_mongo_machine -L 10000:localhost:27017 -N</pre>
+</div>
+<p>Where 27017 is the default mongodb port assumed on the remote server,
+and 10000 is the local port from which all connections will be
+forwarded to. The above command will run in background and return
+immediately.</p>
+<p>Then, from your local machine, assuming you have mongoshell installed:</p>
+<div class="highlight-python"><pre>mongo --port 10000 dsi2</pre>
+</div>
+<p>Should give you:</p>
+<div class="highlight-python"><pre>MongoDB shell version: 2.X.X
+connecting to: 127.0.0.1:10000/dsi2
+&gt;</pre>
+</div>
 </div>
 </div>
 
@@ -109,7 +158,9 @@ streamline ids connecting that region pair are returned.</dd>
 <li class="toctree-l3"><a class="reference internal" href="dsistudio.html">DSI Studio</a></li>
 <li class="toctree-l3"><a class="reference internal" href="connectomemapper.html">Connectome Mapping Toolkit</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="">MongoDB Backend</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#access">Access</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#mongodb-organization">MongoDB Organization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#local-access">Local Access</a></li>
 </ul>
 </li>
 </ul>
