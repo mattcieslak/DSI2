@@ -1,0 +1,60 @@
+ DS12 Version 0.1
+
+    Copyright (C) 2014 Matthew Cieslak, Scott Grafton, and Matthew Jaswa
+
+ 
+
+    This program is free software: you can redistribute it and/or modify
+
+    it under the terms of the GNU General Public License as published by
+
+    the Free Software Foundation, either version 3 of the License, or
+
+    (at your option) any later version.
+
+ 
+
+    This program is distributed in the hope that it will be useful,
+
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+    GNU General Public License for more details.
+
+ 
+
+    You should have received a copy of the GNU General Public License
+
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ 
+
+Copyright (C) 2009-2011, Ecole Polytechnique Fédérale de Lausanne (EPFL) and
+
+Hospital Center and University of Lausanne (UNIL-CHUV), Switzerland
+
+All rights reserved.
+
+ 
+
+MIT License
+
+Copyright (c) 2009-2011 Matthew Brett <matthew.brett@gmail.com>
+
+Copyright (c) 2010-2011 Stephan Gerhard <git@unidesign.ch>
+
+Copyright (c) 2006-2010 Michael Hanke <michael.hanke@gmail.com>
+
+Copyright (c) 2011 Christian Haselgrove <christian.haselgrove@umassmed.edu>
+
+Copyright (c) 2010-2011 Jarrod Millman <jarrod.millman@gmail.com>
+
+Copyright (c) 2011-2012 Yaroslav Halchenko <debian@onerussian.com>
+
+ 
+
+“The project described was supported by Award Number P01NS044393 from the National 
+Institute of Neurological Disorders and Stroke.  The content is solely the responsibility 
+of the authors and does not necessarily represent the official views of the National 
+Institute of Neurological Disorders and Stroke or the National Institutes of Health.”  
