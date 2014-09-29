@@ -11,8 +11,9 @@ trackset.py
 sphere_tracks.py
 Icon*
 *.npy
+dist
+*egg-info
 *.csv
-example_data
 roger_data
 *~
 .*.swp

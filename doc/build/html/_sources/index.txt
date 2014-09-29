@@ -65,6 +65,7 @@ Getting Started
    preprocessing/preproc
    analysis/overview
    analysis/ltpa
+   analysis/aggregation
    workflows/browsing
 
 References

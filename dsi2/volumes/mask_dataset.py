@@ -3,7 +3,7 @@ import os, re, sys
 import numpy as np
 import nibabel as nib
 import subprocess
-#from mvpa.datasets.nifti import NiftiDataset
+from pkg_resources import Requirement, resource_filename
 
 class MaskDataset(object):
     def __init__(self, fpath, label_table=None,secondary_msk=None):
@@ -92,3 +92,9 @@ class MaskDataset(object):
         """Returns an n_rois x 3 ndarray of ROi centers"""
         return np.row_stack(
            [np.array(self.get_roi_ijk(roi)).mean(axis=0) for roi in self.roi_ids])
+
+def get_MNI_wm_mask():
+    return MaskDataset(resource_filename(
+                   Requirement.parse("dsi2"),
+                   "example_data/MNI_BRAIN_MASK_FLOAT.nii.gz")
+            )

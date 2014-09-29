@@ -150,8 +150,3 @@ class ScalarVolumes(HasTraits):
 
 
 
-if __name__ == "__main__":
-    vpth = "../../scripts/pws_volumes/Left-Putamen.ctrl.MNI.nii.gz"
-    vol = [ScalarVolume(filepath=vpth)]
-    vols = ScalarVolumes(volumes=vol)
-    vols.edit_traits(view="test_view")

@@ -8,6 +8,8 @@ from dsi2.streamlines.track_math import sphere_around_ijk
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.database.mongo_track_datasource import MongoTrackDataSource
 from dsi2.aggregation import make_aggregator
+from pkg_resources import Requirement, resource_filename
+from dsi2.volumes.mask_dataset import get_MNI_wm_mask
 
 CAN_IPCLUSTER=True
 try:
@@ -19,9 +21,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Load the standard MNI white matter mask and get its coordinates
-wm_mask = MaskDataset(
-    os.path.join(os.getenv("DSI2_DATA"),"MNI152_T1_2mm_brain_mask.nii.gz")
-    )
+wm_mask = get_MNI_wm_mask()
+
 mni_white_matter = wm_mask.in_mask_voxel_ijk
 
 def save_results(results,original_coords,filename):
