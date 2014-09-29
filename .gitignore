@@ -4,11 +4,8 @@
 *.trk
 *.fib.gz
 *.wpr
-*.nii*
 ./*.png
 *.pkl
-trackset.py
-sphere_tracks.py
 Icon*
 *.npy
 dist
