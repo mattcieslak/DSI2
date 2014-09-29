@@ -162,6 +162,7 @@ if __name__ == "__main__":
     import nibabel as nib
     import numpy as np
     import os
-    nim = nib.load(os.getenv("DSI2_DATA") + "/MNI152_T1_2mm.nii.gz")
+    from dsi2.volumes import get_MNI152
+    nim = get_MNI152()
     sl = Slices(volume_data=nim.get_data())
     sl.configure_traits()

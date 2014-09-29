@@ -24,9 +24,11 @@ from ..streamlines.track_math import sphere_around_ijk
 from ..volumes.scalar_volume import ScalarVolume
 from .chaco_slice import Slices
 import os
+from ..volumes import get_MNI152
+
 
 # -- MNI152@2mm LAS --
-nim = nib.load(os.getenv("DSI2_DATA") + "/MNI152_T1_2mm.nii.gz")
+nim = get_MNI152()
 extents = nim.get_header().get_data_shape()
 
 

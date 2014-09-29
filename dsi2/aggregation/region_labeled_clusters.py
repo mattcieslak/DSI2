@@ -5,7 +5,6 @@ from ..streamlines.track_dataset import RegionCluster, TrackDataset
 from .cluster_ui import ClusterEditor, ClusterAdapter
 from ..streamlines.track_math import tracks_to_endpoints
 from ..database.track_datasource import TrackDataSource
-from ..database.local_data import dsi2_data
 from traitsui.editors.tabular_editor import TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 import matplotlib.pyplot as plt
@@ -19,14 +18,19 @@ from traits.api import HasTraits, Instance, Array, Enum, \
 from traitsui.api import View, Group, Item, RangeEditor, EnumEditor, OKButton, CancelButton
 from ..streamlines.track_math import region_pair_dict_from_roi_list
 import networkx as nx
-
+from pkg_resources import Requirement, resource_filename
 
 lausanne_scale_lookup = {
-                  33:os.path.join(dsi2_data,"lausanne2008/resolution83/resolution83.graphml"),
-                  60:os.path.join(dsi2_data,"lausanne2008/resolution150/resolution150.graphml"),
-                  125:os.path.join(dsi2_data,"lausanne2008/resolution258/resolution258.graphml"),
-                  250:os.path.join(dsi2_data,"lausanne2008/resolution500/resolution500.graphml"),
-                  500:os.path.join(dsi2_data,"lausanne2008/resolution1015/resolution1015.graphml")
+                  33:resource_filename(Requirement.parse("dsi2"),
+                    "example_data/lausanne2008/resolution83/resolution83.graphml"),
+                  60:resource_filename(Requirement.parse("dsi2"),
+                    "example_data/lausanne2008/resolution150/resolution150.graphml"),
+                  125:resource_filename(Requirement.parse("dsi2"),
+                    "example_data/lausanne2008/resolution258/resolution258.graphml"),
+                  250:resource_filename(Requirement.parse("dsi2"),
+                    "example_data/lausanne2008/resolution500/resolution500.graphml"),
+                  500:resource_filename(Requirement.parse("dsi2"),
+                    "example_data/lausanne2008/resolution1015/resolution1015.graphml")
                   }
 
 
