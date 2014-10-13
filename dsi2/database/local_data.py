@@ -1,10 +1,14 @@
 import sys, os
 from .traited_query import Scan
 import json
+from pkg_resources import Requirement, resource_filename
 
 import dsi2.config
 
-dsi2_data = dsi2.config.dsi2_data_path
+dsi2_data = resource_filename(
+                   Requirement.parse("dsi2"),
+                   "example_data")
+
 local_tdb_var = dsi2.config.local_trackdb_path
 
 home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
@@ -14,11 +18,6 @@ if local_tdb_var:
 elif os.path.exists(home_pkl):
     pkl_dir = home_pkl
     print "Using local_trackdb in home directory for data"
-if dsi2_data:
-    dsi2_data = dsi2_data
-    print "Using $DSI2_DATA environment variable"
-else:
-    raise OSError("DSI2_DATA needs to be set")
 
 
 def get_local_data(json_file, pkl_dir=pkl_dir):
