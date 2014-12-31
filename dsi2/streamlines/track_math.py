@@ -45,6 +45,7 @@ Functions that involve both a track dataset AND a mask dataset
 """
 
 def region_pair_dict_from_roi_list(roi_list):
+    #TODO: MAKE THIS pairnum+1 so that it doesn't start at 0
     roi_ids = np.array(roi_list)
     return dict(
       [((roi_ids[index1], roi_ids[index2]),pairnum ) for \

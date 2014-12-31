@@ -472,33 +472,20 @@ class RegionLabelAggregator(ClusterEditor):
         fig.show()
         return fig
 
-    def get_R_dat(self,subject_ids,roi_name):
+    def get_R_dat(self):
         """
-        Saves a tab-delimited text file of the Termination Patterns found.
-        Parameters
-        ----------
-        subject_ids:list
-          subject names corresponding to the rows returned by `self.connection_vector_matrix()`
-        roi_name:str
-          name of the ROI to be saved in the ROI column of the dat file
-
-        Returns
-        -------
-        results:list
-          a string row for each subject
+        Creates a csv 
         """
         conn_ids, cvec = self.connection_vector_matrix()
-        region_pairs = ["%s.%s" % self.index_to_region_pairs[conn] \
-             for conn in conn_ids ]
-        header = "\t".join(
-            ["subject","roi", "region.pair", "count"])
-        results = [ header ]
-        for subject_id,subject_data in zip(subject_ids,cvec):
-            for pair_id, pair_count in zip(region_pairs,subject_data):
-                results.append( "\t".join(
-                    ['"s%s"'%subject_id, roi_name, pair_id, "%.2f"%pair_count ]
-                    ))
-        return results
+        # if only a single subject
+        if cvec.ndim < 2:
+            cvec = cvec.reshape(1,-1)
+        out = [ "subject, regionA, regionB, streamline_count" ]
+        for subj, arr in zip(self.track_source.get_subjects(),cvec):
+            for sl_count, reg_pair in zip(arr,conn_ids):
+                regA, regB = self.index_to_region_pairs[ reg_pair ]
+                out.append("%s, %s, %s, %d" % (subj, regA, regB, sl_count) )
+        return "\n".join(out)
 
     # widgets for editing algorithm parameters
     algorithm_widgets = Group(
