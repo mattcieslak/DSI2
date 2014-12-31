@@ -25,6 +25,7 @@ from mayavi.core.ui.api import SceneEditor
 
 from traitsui.editors.tabular_editor import TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
+from traitsui.file_dialog import save_file
 from tvtk.pyface.scene import Scene
 from tvtk.api import tvtk
 
@@ -272,8 +273,22 @@ class SphereBrowser(HasTraits):
                       file_prefix=os.path.join(self.save_path,self.save_name)
         )
         saver.edit_traits()
-    a_save_streamlines = Action( name = "Save visible streamlines",
+    a_save_streamlines = Action( name = "Save visible streamlines (trk)",
                                  action = "save_streamlines")
+    
+    def save_csv(self):
+        if not hasattr(self.aggregator, "get_R_dat"):
+            print "Not implemented for this kind of aggregator"
+            return
+        
+        r_txt = self.aggregator.get_R_dat()
+        fpath = save_file()
+        fop = open(fpath, "w")
+        fop.write(r_txt)
+        fop.close()
+        
+    a_save_csv = Action( name = "Save visible streamlines (csv)",
+                                 action = "save_csv")
 
     def edit_scene3d(self):
         self.scene3d.edit_traits()
@@ -308,6 +323,7 @@ class SphereBrowser(HasTraits):
                           name = "Graphics"
                         ),
                      Menu(a_save_streamlines,
+                          a_save_csv,
                           name="Streamlines"
                           )
                      ),
