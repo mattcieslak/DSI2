@@ -64,6 +64,7 @@ Getting Started
    installation
    preprocessing/preproc
    analysis/overview
+   analysis/import_gui
    analysis/ltpa
    analysis/aggregation
    workflows/browsing

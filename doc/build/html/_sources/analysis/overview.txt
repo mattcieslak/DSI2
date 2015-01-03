@@ -1,5 +1,5 @@
-Organizing your local datasource
-=================================
+Organizing your local datasource (Hard way)
+============================================
 
 Data for LTPA has two parts: the .pkl file containing the streamline mapping for
 a single subject and the corresponding metadata. The streamline mapping is a 

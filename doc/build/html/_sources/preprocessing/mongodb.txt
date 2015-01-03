@@ -40,7 +40,8 @@ To get the list of collections in the database::
 	"tmp_sl"
   ]
   > 
-| 
+
+
 "dsi2.scans"
   This collection holds non-identifiable information about the individuals in the database.
   Information such as which experiment they were a part of, age, gender, etc. is included
