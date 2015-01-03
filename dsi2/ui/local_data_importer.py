@@ -87,7 +87,7 @@ def create_missing_files(scan,input_dir, output_dir):
 
     """
 
-    # Ensure that the path where pkls are to be stored exists
+    ## Ensure that the path where pkls are to be stored exists
     abs_pkl_file = os.path.join(output_dir,scan.pkl_path)
     pkl_directory = os.path.split(abs_pkl_file)[0]
     if not os.path.exists(pkl_directory):
@@ -236,6 +236,17 @@ class LocalDataImporter(HasTraits):
         self.datasets = [
           Scan(pkl_dir=self.output_directory,
                data_dir=dsi2_data, **d) for d in jdata]
+        
+    def _save_fired(self):
+        print "Saving"
+        pass
+    
+    def _process_inputs_fired(self):
+        print "Processing input data"
+        for scan in self.datasets:
+            create_missing_files(scan,"","")
+        print "Finished!"
+    
 
     # UI definition for the local db
     traits_view = View(
