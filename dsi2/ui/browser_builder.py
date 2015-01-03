@@ -72,8 +72,11 @@ class BrowserBuilder(HasTraits):
                  self.mongo_host, self.mongo_port))
             return client
         except Exception, e:
-            print "Constructing vanilla client"
-            return pymongo.MongoClient()
+            try:
+                print "Constructing vanilla client"
+                return pymongo.MongoClient()
+            except:
+                return
         
     def mongo_find_datasets(self):
         """ Queries a mongodb instance to find scans that match
@@ -112,7 +115,6 @@ class BrowserBuilder(HasTraits):
             cl = QuickBundlesAggregator()
         elif self.aggregator == "Region Labels":
             cl = RegionLabelAggregator()
-        sb = SphereBrowser(aggregator=cl)
         
         # Create a track source
         if self.data_source == "MongoDB":
@@ -125,7 +127,8 @@ class BrowserBuilder(HasTraits):
             return wxc[0]/255.,wxc[1]/255.,wxc[2]/255.
         if all([not d.dynamic_color_clusters for d in track_source.track_dataset_properties]):
             cl.subject_colors = [wx_color_convert(c.static_color) for c in track_source.track_dataset_properties]
-        sb.set_track_source(track_source)
+        
+        sb = SphereBrowser(aggregator=cl,track_source=track_source)
         sb.configure_traits()
         self.browsers.append(sb)
         
