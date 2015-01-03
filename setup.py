@@ -8,7 +8,7 @@ with open(path.join(here,'README.md')) as f:
     long_description = f.read()
 
 setup(  name='DSI2',
-        version='0.1.0',
+        version='0.2.0',
         description='DSI2 Toolbox',
         author='Matthew Cieslak',
         author_email='mattcieslak@gmail.com',
@@ -30,12 +30,11 @@ setup(  name='DSI2',
                 "example_data/NTU90_QA.nii.gz"
             ]
         },
-        scripts = [
-            "scripts/launch_browser_builder.py"
+        entry_points = {
+            'gui_scripts':[
+                'dsi2_browse = dsi2.app_launch:browser_builder',
+                'dsi2_import = dsi2.app_launch:import_data'
             ]
-            #'gui_scripts':[
-            #    'dsi2_browse=scripts:broswer_builder'
-            #]
-        #}
+        }
 )
 

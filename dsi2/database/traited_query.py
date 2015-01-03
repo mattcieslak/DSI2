@@ -84,6 +84,8 @@ class TrackScalarSource(HasTraits):
     numpy_path = File("")
     graphml_path = File("")
     volume_path = File("")
+    b0_volume_path = File("")
+    qsdr_volume_path = File("")
 
     scalars = Array
     base_dir=File("")
@@ -92,15 +94,39 @@ class TrackScalarSource(HasTraits):
         self.scalars = np.load(
             os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
         return self.scalars
+# ------- Custom column colorizers based on whether the thing will exist 
+# ------- after processing 
 
+class b0VolumeColumn(ObjectColumn):
+    def get_cell_color(self,object):
+        if os.path.exists(
+            os.path.join(object.base_dir, object.b0_volume_path)):
+            return "white"
+        return "red"
+    
+class NumpyPathColumn(ObjectColumn):
+    def get_cell_color(self,object):
+        if os.path.exists(
+            os.path.join(object.base_dir, object.numpy_path)):
+            return "white"
+        return "lightblue"
+    
+class QSDRVolumeColumn(ObjectColumn):
+    def get_cell_color(self,object):
+        if os.path.exists(
+            os.path.join(object.base_dir, object.qsdr_volume_path)):
+            return "white"
+        elif not os.path.exists(
+            os.path.join(object.base_dir, object.parent.fib_file)):
+            return "red"
+        return "lightblue"
+    
 scalar_table = TableEditor(
     columns =
     [   ObjectColumn(name="name"),
-        ObjectColumn(name="numpy_path"),
-        ObjectColumn(name="qsdr_volume_path"),
-        ObjectColumn(name="b0_volume_path"),
-        ObjectColumn(name="qsdr_volume_path"),
-        ObjectColumn(name="graphml_path"),
+        b0VolumeColumn(name="b0_volume_path"),
+        QSDRVolumeColumn(name="qsdr_volume_path"),
+        NumpyPathColumn(name="numpy_path"),
         ObjectColumn(name="description")
     ],
     deletable  = True,
@@ -180,6 +206,7 @@ class Scan(Dataset):
                 Item("scan_age"),
                 Item("study"),
                 Item("scan_group"),
+                Item("fib_file"),
                 orientation="vertical",
                 show_border=True,
                 label="Subject Information"
@@ -225,10 +252,10 @@ class Scan(Dataset):
         super(Scan,self).__init__(**traits)
         
         self.track_label_items = \
-            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
              self.track_labels ]
         self.track_scalar_items = \
-            [TrackScalarSource(base_dir=self.pkl_dir, **item) for item in \
+            [TrackScalarSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
@@ -247,6 +274,8 @@ class Scan(Dataset):
         _trkds = pickle.load(fop)
         _trkds.properties = self
         return _trkds
+    
+TrackScalarSource.add_class_trait("parent",Instance(Scan))
 
 class MongoScan(Scan):
     mongo_result = Dict({})

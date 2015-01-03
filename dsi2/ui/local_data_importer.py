@@ -30,10 +30,10 @@ pkl_dir = dsi2.config.local_trackdb_path
 #    pkl_dir = home_pkl
 #    print "Using local_trackdb in home directory for data"
 
-if dsi2_data:
-    print "Using $DSI2_DATA environment variable",
-else:
-    raise OSError("DSI2_DATA needs to be set")
+#if dsi2_data:
+#    print "Using $DSI2_DATA environment variable",
+#else:
+#    raise OSError("DSI2_DATA needs to be set")
 
 def __get_region_ints_from_graphml(graphml):
     """
@@ -195,6 +195,7 @@ def create_missing_files(scan,input_dir, output_dir):
     print "\t+ Dumping MNI152 hash table"
     tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
 
+
 scan_table = TableEditor(
     columns =
     [   ObjectColumn(name="scan_id",editable=True),
@@ -221,6 +222,7 @@ class LocalDataImporter(HasTraits):
     datasets = List(Instance(Scan))
     save = Button()
     upload_to_mongodb = Button()
+    process_inputs = Button()
     input_directory = File()
     output_directory = File()
 
@@ -245,6 +247,7 @@ class LocalDataImporter(HasTraits):
                 show_labels=False
                 ),
             Group(
+                Item("process_inputs"),
                 Item("save"),
                 Item("upload_to_mongodb"),
                 orientation="horizontal",
