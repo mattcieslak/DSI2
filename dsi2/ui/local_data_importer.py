@@ -11,6 +11,7 @@ from ..database.traited_query import Scan
 from ..streamlines.track_dataset import TrackDataset
 from ..streamlines.track_math import connection_ids_from_tracks
 from ..volumes.mask_dataset import MaskDataset
+from ..volumes import get_NTU90, graphml_from_label_source
 import networkx as nx
 import numpy as np
 import nibabel as nib
@@ -18,22 +19,8 @@ import gzip
 from scipy.io.matlab import loadmat
 
 import dsi2.config
+#pkl_dir = dsi2.config.local_trackdb_path
 
-dsi2_data = dsi2.config.dsi2_data_path
-pkl_dir = dsi2.config.local_trackdb_path
-
-#home_pkl  = os.path.join(os.getenv("HOME"),"local_trackdb")
-#if local_tdb_var:
-#    pkl_dir = local_tdb_var
-#    print "Using $LOCAL_TRACKDB environment variable",
-#elif os.path.exists(home_pkl):
-#    pkl_dir = home_pkl
-#    print "Using local_trackdb in home directory for data"
-
-#if dsi2_data:
-#    print "Using $DSI2_DATA environment variable",
-#else:
-#    raise OSError("DSI2_DATA needs to be set")
 
 def __get_region_ints_from_graphml(graphml):
     """
@@ -56,17 +43,26 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     mz = m['mz'].squeeze().astype(int)
 
     # Load the QSDR template volume from DSI studio
-    QSDR_vol = os.path.join(dsi2_data,"NTU90_QA.nii.gz")
-    if not os.path.exists(QSDR_vol):
-        raise ValueError(QSDR_vol + " does not exist. check your config")
-    QSDR_nim = nib.load(QSDR_vol)
+    QSDR_nim = get_NTU90()
     QSDR_data = QSDR_nim.get_data()
 
     # Labels in b0 space
-    old_atlas = nib.load(b0_atlas).get_data()
-
-    # Fill up the output atlas with labels from b0,collected through the fib mappings
-    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
+    _old_atlas = nib.load(b0_atlas)
+    old_atlas = _old_atlas.get_data()
+    old_aff = _old_atlas.get_affine()
+    # QSDR maps from RAS+ space.  Force the input volume to conform
+    if old_aff[0,0] < 0:
+        print "\t\t+++ Flipping X axis"
+        old_atlas = old_atlas[::-1,:,:]
+    if old_aff[1,1] < 0:
+        print "\t\t+++ Flipping Y axis"
+        old_atlas = old_atlas[:, ::-1, :]
+    if old_aff[2,2] < 0:
+        print "\t\t+++ Flipping Z axis"
+        old_atlas = old_atlas[:, :, ::-1]
+    
+    # Fill up the output atlas with labels from b0, collected through the fib mappings
+    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="C")
     aff = QSDR_nim.get_affine()
     aff[(0,1,2),(0,1,2)]*=2
     onim = nib.Nifti1Image(new_atlas,aff)
@@ -153,15 +149,15 @@ def create_missing_files(scan,input_dir, output_dir):
         print "\t\t++ Loading volume %d/%d:\n\t\t\t %s" % (
                 lnum, n_labels, abs_qsdr_path )
         mds = MaskDataset(abs_qsdr_path)
-
+        
         # Get the region labels from the parcellation
-        abs_graphml_path = os.path.join(dsi2_data,label_source.graphml_path)
-        if label_source.graphml_path == "":
+        graphml = graphml_from_label_source(label_source)
+        if graphml is None:
             print "\t\t++ No graphml exists: using unique region labels"
             regions = mds.roi_ids
         else:
-            print "\t\t++ Using graphml regions",abs_graphml_path
-            regions = __get_region_ints_from_graphml(abs_graphml_path)
+            print "\t\t++ Recognized atlas name, using Lausanne2008 atlas", graphml
+            regions = __get_region_ints_from_graphml(graphml)
 
         # Save it.
         conn_ids = connection_ids_from_tracks(mds, tds,
@@ -169,8 +165,8 @@ def create_missing_files(scan,input_dir, output_dir):
               scale_coords=tds.header['voxel_size'],
               region_ints=regions)
         print "\t\t++ Saved %s" % npy_path
-        print "\t\t\t*** %.2f streamlines not accounted for by regions"%(
-                np.sum(conn_ids==0)/float(len(conn_ids)))
+        print "\t\t\t*** %.2f\% streamlines not accounted for by regions"%(
+                np.sum(conn_ids==0)/len(conn_ids)*100.)
 
     # =========================================================
     # Loop over the track scalars, creating .npy files as needed
@@ -235,10 +231,13 @@ class LocalDataImporter(HasTraits):
         fop.close()
         self.datasets = [
           Scan(pkl_dir=self.output_directory,
-               data_dir=dsi2_data, **d) for d in jdata]
+               data_dir="", **d) for d in jdata]
         
     def _save_fired(self):
-        print "Saving"
+        json_data = [scan.to_json() for scan in self.datasets]
+        with open(self.json_file,"w") as outfile:
+            json.dump(json_data,outfile,indent=4)
+        print "Saved", self.json_file
         pass
     
     def _process_inputs_fired(self):
