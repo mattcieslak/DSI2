@@ -88,36 +88,45 @@ class TrackScalarSource(HasTraits):
     qsdr_volume_path = File("")
 
     scalars = Array
-    base_dir=File("")
 
     def load_array(self):
         self.scalars = np.load(
             os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
         return self.scalars
+    
+    def to_json(self):
+        return {
+            "name" : self.name,
+            "description" : self.description,
+            "parameters" : self.parameters,
+            "numpy_path" : self.numpy_path,
+            "graphml_path" : self.graphml_path,
+            "b0_volume_path" : self.b0_volume_path,
+            "qsdr_volume_path" : self.qsdr_volume_path
+        }
+    
 # ------- Custom column colorizers based on whether the thing will exist 
 # ------- after processing 
 
 class b0VolumeColumn(ObjectColumn):
     def get_cell_color(self,object):
-        if os.path.exists(
-            os.path.join(object.base_dir, object.b0_volume_path)):
+        if os.path.exists(object.b0_volume_path):
             return "white"
         return "red"
     
 class NumpyPathColumn(ObjectColumn):
     def get_cell_color(self,object):
-        if os.path.exists(
-            os.path.join(object.base_dir, object.numpy_path)):
+        if os.path.exists(object.numpy_path):
             return "white"
         return "lightblue"
     
 class QSDRVolumeColumn(ObjectColumn):
     def get_cell_color(self,object):
-        if os.path.exists(
-            os.path.join(object.base_dir, object.qsdr_volume_path)):
+        if os.path.exists(object.qsdr_volume_path):
             return "white"
-        elif not os.path.exists(
-            os.path.join(object.base_dir, object.parent.fib_file)):
+        if object.parent is None:
+            return "red"
+        elif not os.path.exists(object.parent.fib_file):
             return "red"
         return "lightblue"
     
@@ -164,8 +173,6 @@ class Dataset(HasTraits):
         super(Dataset,self).__init__(**traits)
 
 
-_empty_dataset = Dataset()
-
 class Scan(Dataset):
     scan_gender     = Str("")
     software        = Str("")
@@ -176,8 +183,8 @@ class Scan(Dataset):
     pkl_trk_path    = File("") # corresponding trk file to check.
     atlases         = Dict({})
     label           = Int
-    data_dir        = File("") # Data used by dsi2 package
-    pkl_dir         = File("") # data root for pickle files
+    #data_dir        = File("") # Data used by dsi2 package
+    #pkl_dir         = File("") # data root for pickle files
     trk_file        = File("") # path to the trk file
     fib_file        = File("") # path to the DSI Studio's .fib.gz
     trk_space       = Enum("qsdr", "mni") # Which space is it in?
@@ -259,21 +266,59 @@ class Scan(Dataset):
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
-               {  "graphml_path":
-                    os.path.join(self.data_dir,d['graphml_path']),
-                  "numpy_path":
-                    os.path.join(self.pkl_dir,d['numpy_path']),
-                  "volume_path": d.get('volume_path',"")
+               {  "graphml_path":d['graphml_path'],
+                  "numpy_path":d['numpy_path'],
                 } )\
                for d in self.track_labels ])
 
+    @on_trait_change("track_scalar_items,track_label_items")
+    def make_me_parent(self):
+        #print "\t\t+++setting parent to ", self
+        for tli in self.track_label_items:
+            tli.parent = self
+        for tsi in self.track_scalar_items:
+            tsi.parent = self
+            
     def get_track_dataset(self):
-        pkl_file = os.path.join(self.pkl_dir,self.pkl_path)
+        pkl_file = self.pkl_path
         print "load:", pkl_file
         fop = open(pkl_file, "rb")
         _trkds = pickle.load(fop)
         _trkds.properties = self
         return _trkds
+    
+    def to_json(self):
+        track_labels = [tl.to_json() for tl in self.track_label_items]
+        track_scalars = [ts.to_json() for ts in self.track_scalar_items]
+        return {
+            "scan_id": self.scan_id, 
+            "subject_id": self.subject_id,
+            "scan_gender": self.scan_gender,
+            "scan_age": self.scan_age,
+            "study": self.study,
+            "scan_group": self.scan_group,
+            "smoothing": self.smoothing,
+            "cutoff_angle": self.cutoff_angle,
+            "qa_threshold": self.qa_threshold,
+            "gfa_threshold": self.gfa_threshold,
+            "length_min": self.length_min,
+            "length_max": self.length_max,
+            "institution": self.institution,
+            "reconstruction": self.reconstruction,
+            "scanner": self.scanner,
+            "n_directions": self.n_directions,
+            "max_b_value": self.max_b_value,
+            "bvals": self.bvals,
+            "bvecs": self.bvecs,
+            "label": self.label,
+            "trk_space": self.trk_space,
+            "pkl_trk_path":self.pkl_trk_path,
+            "pkl_path":self.pkl_path,
+            "trk_file":self.trk_file,
+            "fib_file":self.fib_file,
+            "track_labels": track_labels,
+            "track_scalars": track_scalars
+        }
     
 TrackScalarSource.add_class_trait("parent",Instance(Scan))
 

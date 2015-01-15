@@ -45,10 +45,17 @@ Functions that involve both a track dataset AND a mask dataset
 """
 
 def region_pair_dict_from_roi_list(roi_list):
-    #TODO: MAKE THIS pairnum+1 so that it doesn't start at 0
+    #WARNING: MADE THIS pairnum+1 so that it doesn't start at 0
+    # This breaks backwards compatibility with previous versions
+    # to use the old numbering set 
+    import os
+    if os.getenv["DSI2_CONN_START_AT_0"]:
+        inc = 0
+    else:
+        inc = 1
     roi_ids = np.array(roi_list)
     return dict(
-      [((roi_ids[index1], roi_ids[index2]),pairnum ) for \
+      [((roi_ids[index1], roi_ids[index2]),pairnum + inc ) for \
          pairnum, (index1,index2) in enumerate(
           np.array(np.triu_indices(len(roi_ids))).T) ]
        )
