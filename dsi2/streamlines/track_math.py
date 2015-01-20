@@ -49,7 +49,7 @@ def region_pair_dict_from_roi_list(roi_list):
     # This breaks backwards compatibility with previous versions
     # to use the old numbering set 
     import os
-    if os.getenv["DSI2_CONN_START_AT_0"]:
+    if os.getenv("DSI2_CONN_START_AT_0"):
         inc = 0
     else:
         inc = 1
