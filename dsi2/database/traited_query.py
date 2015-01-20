@@ -353,43 +353,119 @@ class MongoScan(Scan):
         self.trk_space = self.mongo_result["trk_space"]
     
 class Query(Dataset):
+    scan_age_min = Int()
+    scan_age_max = Int()
+    specify_scan_age = Bool() #checkbox	
+    use_female = Bool(True)
+    use_male = Bool(True)	
     def __init__(self,**traits):
         super(Query,self).__init__(**traits)
     traits_view = View(
         Group(
             VGroup(
-        Item('scan_id'),
-        Item('subject_id'),
-        #Item('scan_gender'),#editor=CheckListEditor()),
-        #Item('scan_age'),
-        Item('study'),
-        Item('scan_group'),
-        show_border=True,
-        label="Study Information",
-        ),
+                Item('scan_id'),
+                Item('subject_id'),
+                Item('scan_age_min'),
+                Item('scan_age_max'),
+                Item('specify_scan_age'),
+                Item('use_female'),
+                Item('use_male'),
+                #Item('scan_gender'),#editor=CheckListEditor()), female/male use bool 
+                Item('scan_age'),
+                Item('study'),
+                Item('scan_group'),
+                #Item('attribute'),####################
+                show_border=True,
+                label="Study Information",
+                ),
             VGroup(
-        Item('software'),
-        Item('smoothing'),
-        Item('cutoff_angle'),
-        Item('qa_threshold'),
-        Item('gfa_threshold'),
-        Item('length_min'),
-        Item('length_max'),
-        springy=True,
-        show_border=True,
-        label="Tractography Parameters",
-        ),
+                Item('software'),
+                Item('smoothing'),
+                Item('cutoff_angle'),
+                Item('qa_threshold'),
+                Item('gfa_threshold'),
+                Item('length_min'),
+                Item('length_max'),
+                springy=True,
+                show_border=True,
+                label="Tractography Parameters",
+                ),
             VGroup(
-        Item('institution'),#editor=CheckListEditor()),
-        Item('scanner'),
-        Item('n_directions'),
-        Item('max_b_value'),
-        show_border=True,
-        label="Acquisition Parameters",
-        ),
-        layout="tabbed"
-        ),
+                Item('institution'),#editor=CheckListEditor()),
+                Item('scanner'),
+                Item('n_directions'),
+                Item('max_b_value'),
+                show_border=True,
+                label="Acquisition Parameters",
+                ),
+            layout="tabbed"
+            ),
         width=250)
+
+    def error_checking(self):
+        #check scan_age_min and scan_age_max is a number less than 0
+        if scan_age_min <= 0:
+            print "Min age needs to be greater than 0"
+        elif scan_age_max <= 0:
+            print "Max age needs to be greater than 0"
+
+        #if no number is entered in scan_age_min and scan_age_max
+        if scan_age_min == "":
+            print "Please enter an age in min age"
+        elif scan_age_max == "":
+            print "Please enter an age in max age"
+
+    #include number and letters 
+    #be careful about $
+
+    def str_query(self,parameter):
+        query = {}
+        str_array = []
+        str= parameter
+        str = re.sub(r'\W+', ' ', str)
+        str_array = str.split()
+        query = {1:str_array[0]}
+        for i in range(1,len(str_array)):
+            dic = {i+1:str_array[i]}
+            query.update(dic)
+        return query
+
+    def mongo_query(self):
+        query = {}
+        #scan age
+        if self.specify_scan_age:
+            query["scan_age_range"] = {"$gt":self.scan_age_min, "$lt":self.scan_age_max}
+        #scan id
+        if self.scan_id != "" and re.sub(r'\W+', '', self.scan_id.strip()) != "":
+            query["scan_id"] = self.str_query(self.scan_id)
+        else:
+            print "Please enter valid scan id"
+        #subject id
+        if self.subject_id != "" and re.sub(r'\W+', '', self.subject_id.strip()) != "":
+            query["subject_id"] = self.str_query(self.subject_id)
+        else:
+            print "Please enter valid subject id"
+        #study
+        if self.study != "" and re.sub(r'\W+', '', self.study.strip()) != "":
+            query["study"] = self.str_query(self.study)
+        else:
+            print "Please enter valid study"
+        #scan group
+        if self.scan_group != "" and re.sub(r'\W+', '', self.scan_group.strip()) != "":
+            query["scan_group"] = self.str_query(self.scan_group)
+        else:
+            print "Please enter valid scan group"
+        #attribute				################
+        #if self.attribute != "" and re.sub(r'\W+', '', self.attribute.strip()) != "":
+        #    query["attribute"] = self.str_query(self.attribute)
+        #else:
+        #    print "Please enter valid attribute"
+        #scan age
+        if self.scan_age > 0:
+            query["scan_age"] = {"$in": self.scan_age}
+        else:
+            print "Please enter age greater than 0"
+        return query
 
     def __check_param(self,paramname,value):
         if getattr(self,paramname) \
