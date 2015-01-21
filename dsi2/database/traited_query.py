@@ -12,6 +12,7 @@ from traitsui.extras.checkbox_column import CheckboxColumn
 #
 from ..ui.ui_extras import colormaps
 import cPickle as pickle
+import re
 
 
 """
@@ -352,6 +353,18 @@ class MongoScan(Scan):
         self.label = self.mongo_result["label"]
         self.trk_space = self.mongo_result["trk_space"]
     
+        
+        
+def potential_multi_query(instr):
+    if not instr:
+        return None
+    # String from gui that may request multiple things
+    cleaned = re.split("[,\s]+",instr)
+    if len(cleaned) == 1:
+        return cleaned[0]
+    return {"$in":cleaned}
+
+
 class Query(Dataset):
     scan_age_min = Int()
     scan_age_max = Int()
@@ -415,56 +428,34 @@ class Query(Dataset):
         elif scan_age_max == "":
             print "Please enter an age in max age"
 
-    #include number and letters 
-    #be careful about $
-
-    def str_query(self,parameter):
-        query = {}
-        str_array = []
-        str= parameter
-        str = re.sub(r'\W+', ' ', str)
-        str_array = str.split()
-        query = {1:str_array[0]}
-        for i in range(1,len(str_array)):
-            dic = {i+1:str_array[i]}
-            query.update(dic)
-        return query
-
     def mongo_query(self):
         query = {}
+        
         #scan age
         if self.specify_scan_age:
             query["scan_age_range"] = {"$gt":self.scan_age_min, "$lt":self.scan_age_max}
+            
         #scan id
-        if self.scan_id != "" and re.sub(r'\W+', '', self.scan_id.strip()) != "":
-            query["scan_id"] = self.str_query(self.scan_id)
-        else:
-            print "Please enter valid scan id"
+        scan_id_query = potential_multi_query(self.scan_id)
+        if not scan_id_query is None:
+            query["scan_id"] = scan_id_query
+            
         #subject id
-        if self.subject_id != "" and re.sub(r'\W+', '', self.subject_id.strip()) != "":
-            query["subject_id"] = self.str_query(self.subject_id)
-        else:
-            print "Please enter valid subject id"
+        subject_id_query = potential_multi_query(self.subject_id)
+        if not subject_id_query is None:
+            query["subject_id"] = subject_id_query
+            
         #study
-        if self.study != "" and re.sub(r'\W+', '', self.study.strip()) != "":
-            query["study"] = self.str_query(self.study)
-        else:
-            print "Please enter valid study"
+        study_query = potential_multi_query(self.study)
+        if not study_query is None:
+            query["study"] = study_query
+            
         #scan group
-        if self.scan_group != "" and re.sub(r'\W+', '', self.scan_group.strip()) != "":
-            query["scan_group"] = self.str_query(self.scan_group)
-        else:
-            print "Please enter valid scan group"
-        #attribute				################
-        #if self.attribute != "" and re.sub(r'\W+', '', self.attribute.strip()) != "":
-        #    query["attribute"] = self.str_query(self.attribute)
-        #else:
-        #    print "Please enter valid attribute"
-        #scan age
-        if self.scan_age > 0:
-            query["scan_age"] = {"$in": self.scan_age}
-        else:
-            print "Please enter age greater than 0"
+        scan_group_query = potential_multi_query(self.scan_group)
+        if not scan_group_query is None:
+            query["scan_group"] = scan_group_query
+            
+        print query
         return query
 
     def __check_param(self,paramname,value):

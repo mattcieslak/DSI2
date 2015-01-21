@@ -197,7 +197,7 @@ class RegionLabelAggregator(ClusterEditor):
 
         graphml_data['region_pairs_to_index'] = region_pair_dict_from_roi_list(
                                                            graphml_data['regions'])
-
+        
         # Which regionpairs map to which unique id in this dataset?
         graphml_data['index_to_region_pairs'] = dict(
             [

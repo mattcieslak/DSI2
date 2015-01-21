@@ -23,6 +23,7 @@ import pymongo
 from bson.binary import Binary
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
+import re
 
 def init_db(db):
     """
@@ -383,8 +384,7 @@ def create_missing_files(scan,input_dir, output_dir):
               scale_coords=tds.header['voxel_size'],
               region_ints=regions)
         print "\t\t++ Saved %s" % npy_path
-        print "\t\t\t*** %.2f\% streamlines not accounted for by regions"%(
-                np.sum(conn_ids==0)/len(conn_ids)*100.)
+        print "\t\t\t*** %.2f percent streamlines not accounted for by regions"%( 100. * np.sum(conn_ids==0)/len(conn_ids) )
 
     # =========================================================
     # Loop over the track scalars, creating .npy files as needed
