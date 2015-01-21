@@ -25,7 +25,6 @@ from ..database.traited_query import Scan, MongoScan, Query
 from traitsui.extras.checkbox_column import CheckboxColumn
 import pymongo
 
-#local_trackdb = local_dsis_trackdb
 scan_table = TableEditor(
     columns =
     [   ObjectColumn(name="scan_id",editable=False),
@@ -83,12 +82,8 @@ class BrowserBuilder(HasTraits):
         the study
         """
         collection = self.client[self.db_name]["scans"]
-        if self.query_parameters.study == "":
-            print "querying all items in the database"
-            results = list(collection.find())
-        else:
-            print "searching for", self.query_parameters.study
-            results = list(collection.find({"study":self.query_parameters.study}))
+        query = self.query_parameters.mongo_query()
+        results = list(collection.find(query))
         print "found %d results" % len(results)
         self.results = [
             MongoScan(mongo_result=res) for res in results ]
