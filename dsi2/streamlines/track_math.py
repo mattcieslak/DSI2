@@ -55,7 +55,7 @@ def region_pair_dict_from_roi_list(roi_list):
         inc = 1
     roi_ids = np.array(roi_list)
     return dict(
-      [((roi_ids[index1], roi_ids[index2]),pairnum + inc ) for \
+      [((roi_ids[index1], roi_ids[index2]), pairnum + inc ) for \
          pairnum, (index1,index2) in enumerate(
           np.array(np.triu_indices(len(roi_ids))).T) ]
        )
