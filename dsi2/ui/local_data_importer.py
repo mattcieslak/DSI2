@@ -270,18 +270,18 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     old_atlas = _old_atlas.get_data()
     old_aff = _old_atlas.get_affine()
     # QSDR maps from RAS+ space.  Force the input volume to conform
-    if old_aff[0,0] < 0:
-        print "\t\t+++ Flipping X axis"
+    if old_aff[0,0] > 0:
+        print "\t\t+++ Flipping X"
         old_atlas = old_atlas[::-1,:,:]
-    if old_aff[1,1] < 0:
-        print "\t\t+++ Flipping Y axis"
-        old_atlas = old_atlas[:, ::-1, :]
+    if old_aff[1,1] > 0:
+        print "\t\t+++ Flipping Y"
+        old_atlas = old_atlas[:,::-1,:]
     if old_aff[2,2] < 0:
-        print "\t\t+++ Flipping Z axis"
-        old_atlas = old_atlas[:, :, ::-1]
+        print "\t\t+++ Flipping Z"
+        old_atlas = old_atlas[:,:,::-1]
     
     # Fill up the output atlas with labels from b0, collected through the fib mappings
-    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="C")
+    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
     aff = QSDR_nim.get_affine()
     aff[(0,1,2),(0,1,2)]*=2
     onim = nib.Nifti1Image(new_atlas,aff)
