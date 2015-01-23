@@ -105,17 +105,30 @@ class SlicerPanel(HasTraits):
             color_tuple = self.sphere_color.toTuple()
         except:
             color_tuple = self.sphere_color
-        return mlab.points3d(
-            self.sphere_coords[:,0],
-            self.sphere_coords[:,1],
-            self.sphere_coords[:,2],
-            mode='cube',
-            scale_factor=1,
-            figure = self.scene3d.mayavi_scene,
-            color  = (color_tuple[0]/255.,
-                     color_tuple[1]/255.,
-                     color_tuple[2]/255.)
-        )
+            
+        try:
+            pts = mlab.points3d(
+                self.sphere_coords[:,0],
+                self.sphere_coords[:,1],
+                self.sphere_coords[:,2],
+                mode='cube',
+                scale_factor=1,
+                figure = self.scene3d.mayavi_scene,
+                color  = (color_tuple[0]/255.,
+                         color_tuple[1]/255.,
+                         color_tuple[2]/255.)
+                )
+        except:
+            pts = mlab.points3d(
+                self.sphere_coords[:,0],
+                self.sphere_coords[:,1],
+                self.sphere_coords[:,2],
+                mode='cube',
+                scale_factor=1,
+                figure = self.scene3d.mayavi_scene,
+                color  = (1.,0.,0.)
+                )
+        return pts
 
     def _sphere_coords_default(self):
         return np.array(sphere_around_ijk(
