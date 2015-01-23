@@ -50,3 +50,29 @@ def graphml_from_label_source(label_source):
         return atlas_name
     
     return find_graphml_from_b0(label_source.b0_volume_path)
+
+
+def get_builtin_atlas_parameters(label_source):
+    if not label_source.b0_volume_path: raise ValueError("Must provide a b0 volume path")
+    aname = os.path.split(label_source.b0_volume_path)[-1].lower()
+    atlas_lut = {
+        "scale33":{"scale":33},
+        "scale60":{"scale":60},
+        "scale125":{"scale":125},
+        "scale250":{"scale":250},
+        "scale500":{"scale":500},
+        "resolution1015":{"scale":500},
+        "resolution500":{"scale":250},
+        "resolution258":{"scale":125},
+        "resolution150":{"scale":60},
+        "resolution83":{"scale":33}
+    }
+    atlas_id = None
+    for atlas in atlas_lut.keys():
+        if atlas in aname:
+            atlas_id = atlas
+    
+    if atlas_id is None: 
+        return {}
+    return atlas_lut[atlas_id]
+            
