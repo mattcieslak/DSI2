@@ -24,6 +24,7 @@ from bson.binary import Binary
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 import re
+import multiprocessing
 
 def init_db(db):
     """
@@ -288,7 +289,7 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     onim.to_filename(output_v)
 
 
-def create_missing_files(scan,input_dir, output_dir):
+def create_missing_files(scan, input_dir, output_dir):
     """
     Creates files on disk that are needed to visualize data
 
@@ -303,12 +304,13 @@ def create_missing_files(scan,input_dir, output_dir):
     """
 
     ## Ensure that the path where pkls are to be stored exists
-    abs_pkl_file = os.path.join(output_dir,scan.pkl_path)
+    sid = scan.scan_id
+    abs_pkl_file = scan.pkl_path
     pkl_directory = os.path.split(abs_pkl_file)[0]
     if not os.path.exists(pkl_directory):
-        print "\t+ making directory for pkl_files"
+        print "\t+ [%s] making directory for pkl_files" % sid
         os.makedirs(pkl_directory)
-    print "\t\t++ pkl_directory is", pkl_directory
+    print "\t\t++ [%s] pkl_directory is" % sid, pkl_directory
 
 
     if os.path.isabs(scan.trk_file):
@@ -320,28 +322,28 @@ def create_missing_files(scan,input_dir, output_dir):
         if not os.path.exists(abs_trk_file):
             raise ValueError(abs_trk_file + " does not exist")
     # Load the tracks
-    print "\t+ loading", abs_trk_file
+    print "\t+ [%s] loading" %sid , abs_trk_file
     tds = TrackDataset(abs_trk_file)
     # NOTE: If these were MNI 152 @ 1mm, we could do something like
     # tds.tracks_at_ijk = streamline_mapping(tds.tracks,(1,1,1))
-    print "\t+ hashing tracks in qsdr space"
+    print "\t+ [%s] hashing tracks in qsdr space"%sid
     tds.hash_voxels_to_tracks()
-    print "\t\t++ Done."
+    print "\t\t++ [%s] Done." % sid
 
 
     # =========================================================
     # Loop over the track labels, creating .npy files as needed
     n_labels = len(scan.track_label_items)
-    print "\t+ Intersecting", n_labels, "label datasets"
+    print "\t+ [%s] Intersecting"%sid, n_labels, "label datasets"
     for lnum, label_source in enumerate(scan.track_label_items):
         # Load the mask
         # File containing the corresponding label vector
         npy_path = label_source.numpy_path if \
             os.path.isabs(label_source.numpy_path) else \
             os.path.join(output_dir,label_source.numpy_path)
-        print "\t\t++ Ensuring %s exists" % npy_path
+        print "\t\t++ [%s] Ensuring %s exists" % (sid, npy_path)
         if os.path.exists(npy_path):
-            print "\t\t++", npy_path, "already exists"
+            print "\t\t++ [%s]"%sid, npy_path, "already exists"
             continue
 
         # Check to see if the qsdr volume exists. If not, create it from
@@ -359,32 +361,35 @@ def create_missing_files(scan,input_dir, output_dir):
         if not os.path.exists(abs_qsdr_path):
             # If neither volume exists, the data is incomplete
             if not os.path.exists(abs_b0_path):
-                print "\t\t++ ERROR: must have a b0 volume and .map.fib.gz OR a qsdr_volume"
+                print "\t\t++ [%s] ERROR: must have a b0 volume and .map.fib.gz OR a qsdr_volume"%sid
                 continue
-            print "\t\t++ mapping b0 labels to qsdr space"
+            print "\t\t++ [%s] mapping b0 labels to qsdr space"%sid
             b0_to_qsdr_map(abs_fib_file, abs_b0_path,
                            abs_qsdr_path)
 
-        print "\t\t++ Loading volume %d/%d:\n\t\t\t %s" % (
-                lnum, n_labels, abs_qsdr_path )
+        print "\t\t++ [%s] Loading volume %d/%d:\n\t\t\t %s" % (
+                sid, lnum + 1, n_labels, abs_qsdr_path )
         mds = MaskDataset(abs_qsdr_path)
         
         # Get the region labels from the parcellation
         graphml = graphml_from_label_source(label_source)
         if graphml is None:
-            print "\t\t++ No graphml exists: using unique region labels"
+            print "\t\t++ [%s] No graphml exists: using unique region labels"%sid
             regions = mds.roi_ids
         else:
-            print "\t\t++ Recognized atlas name, using Lausanne2008 atlas", graphml
+            print "\t\t++ [%s] Recognized atlas name, using Lausanne2008 atlas"%sid, graphml
             regions = __get_region_ints_from_graphml(graphml)
+            if not len(label_source.parameters):
+                label_source.parameters = get_builtin_atlas_parameters(graphml)
+            
 
         # Save it.
         conn_ids = connection_ids_from_tracks(mds, tds,
               save_npy=npy_path,
               scale_coords=tds.header['voxel_size'],
               region_ints=regions)
-        print "\t\t++ Saved %s" % npy_path
-        print "\t\t\t*** %.2f percent streamlines not accounted for by regions"%( 100. * np.sum(conn_ids==0)/len(conn_ids) )
+        print "\t\t++ [%s] Saved %s" % (sid, npy_path)
+        print "\t\t\t*** [%s] %.2f percent streamlines not accounted for by regions"%( sid, 100. * np.sum(conn_ids==0)/len(conn_ids) )
 
     # =========================================================
     # Loop over the track scalars, creating .npy files as needed
@@ -482,6 +487,7 @@ class LocalDataImporter(HasTraits):
     process_inputs = Button()
     input_directory = File()
     output_directory = File()
+    n_processors = Int(1)
     def _connect_to_mongod_fired(self):
         self.mongo_creator.edit_traits()
         
@@ -508,6 +514,9 @@ class LocalDataImporter(HasTraits):
     
     def _process_inputs_fired(self):
         print "Processing input data"
+        #if self.n_processors > 1:
+        #    print "Using %d processors" % self.n_processors
+            
         for scan in self.datasets:
             create_missing_files(scan,"","")
         print "Finished!"

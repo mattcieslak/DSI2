@@ -215,6 +215,8 @@ class Scan(Dataset):
                 Item("study"),
                 Item("scan_group"),
                 Item("fib_file"),
+                Item("pkl_path"),
+                Item("pkl_trk_path"),
                 orientation="vertical",
                 show_border=True,
                 label="Subject Information"
