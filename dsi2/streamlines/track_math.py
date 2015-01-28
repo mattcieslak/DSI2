@@ -60,7 +60,9 @@ def region_pair_dict_from_roi_list(roi_list):
           np.array(np.triu_indices(len(roi_ids))).T) ]
        )
 
-def connection_ids_from_tracks(msk_dset, trk_dset, region_ints=None, save_npy="", n_endpoints=3,scale_coords=np.array([1,1,1])):
+def connection_ids_from_tracks(msk_dset, trk_dset, 
+                region_ints=None, save_npy="", 
+                n_endpoints=3, scale_coords=np.array([1,1,1])):
     """ Take a mask dataset and some tracks. For each track in the tracks
     make sure that the last point(s) is(are) in gray_regions and that at least
     one of its points is in `white_regions`. Make a new trk dataset with these
