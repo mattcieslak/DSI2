@@ -527,9 +527,9 @@ class TrackDataset(HasTraits):
         fop.close()
 
 
-    #====================================================================================
+    #==============================================================
     # Functions from the former TraitedTrackDataset
-    #====================================================================================
+    #==============================================================
     def _name_default(self):
         return self.properties.scan_id
 
@@ -769,7 +769,4 @@ class TrackDataset(HasTraits):
             clust.mcolor = cmap[idx_fetcher(clust.id_number)]
 
 class dtkTrackDataset(TrackDataset):
-    pass
-
-if __name__=="__main__":
     pass

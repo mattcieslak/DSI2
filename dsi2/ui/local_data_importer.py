@@ -289,7 +289,7 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     onim.to_filename(output_v)
 
 
-def create_missing_files(scan, input_dir, output_dir):
+def create_missing_files(scan):
     """
     Creates files on disk that are needed to visualize data
 
@@ -514,11 +514,15 @@ class LocalDataImporter(HasTraits):
     
     def _process_inputs_fired(self):
         print "Processing input data"
-        #if self.n_processors > 1:
-        #    print "Using %d processors" % self.n_processors
-            
-        for scan in self.datasets:
-            create_missing_files(scan,"","")
+        if self.n_processors > 1:
+            print "Using %d processors" % self.n_processors
+            pool = multiprocessing.Pool(processes=self.n_processors)
+            result = pool.map(create_missing_files, self.datasets)
+            pool.close()
+            pool.join()
+        else:    
+            for scan in self.datasets:
+                create_missing_files(scan,"","")
         print "Finished!"
     
     def _upload_to_mongodb_fired(self):
@@ -553,12 +557,12 @@ class LocalDataImporter(HasTraits):
                 ),
             Group(
                 Item("process_inputs"),
-                Item("save"),
                 Item("connect_to_mongod"),
                 Item("upload_to_mongodb"),
                 orientation="horizontal",
                 show_labels=False
                 ),
+            Item("n_processors"),
             orientation="vertical"
         ),
         resizable=True,
