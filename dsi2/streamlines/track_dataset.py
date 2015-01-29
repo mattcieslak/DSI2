@@ -197,6 +197,7 @@ class TrackDataset(HasTraits):
             # Convert voxmm to ijk
             self.set_tracks(np.array([stream[0] for stream in streams],
                                      dtype=np.object))
+            fl.close()
 
         # Check for scalars, support them someday
         if self.header['n_scalars'] > 0:
