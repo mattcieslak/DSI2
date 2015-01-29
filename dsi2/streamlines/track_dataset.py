@@ -18,6 +18,8 @@ import cPickle as pickle
 from mayavi.core.ui.api import SceneEditor
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from mayavi import mlab
+import gzip
+
 
 from .track_math import tracks_to_endpoints
 from mayavi.core.api import PipelineBase, Source
@@ -187,7 +189,11 @@ class TrackDataset(HasTraits):
             self.header = header
             self.set_tracks(tracks)
         else:
-            streams, self.header = trackvis.read(fname)
+            if fname.endswith("gz"):
+                fl = gzip.open(fname,"r")
+            else:
+                fl = open(fname,"r")
+            streams, self.header = trackvis.read(fl)
             # Convert voxmm to ijk
             self.set_tracks(np.array([stream[0] for stream in streams],
                                      dtype=np.object))
