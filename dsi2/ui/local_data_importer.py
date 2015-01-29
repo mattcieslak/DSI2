@@ -522,7 +522,7 @@ class LocalDataImporter(HasTraits):
             pool.join()
         else:    
             for scan in self.datasets:
-                create_missing_files(scan,"","")
+                create_missing_files(scan)
         print "Finished!"
     
     def _upload_to_mongodb_fired(self):
