@@ -280,6 +280,24 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     if old_aff[2,2] < 0:
         print "\t\t+++ Flipping Z"
         old_atlas = old_atlas[:,:,::-1]
+        
+    # XXX: there is an error when importing some of the HCP datasets where the
+    # map-from index is out of bounds from the b0 image. This will check for
+    # any indices that would cause an index error and sets them to 0.
+    bx, by, bz = old_atlas.shape
+    idx_err_x = np.flatnonzero( mx >= bx)
+    if len(idx_err_x):
+        print "\t\t+++ WARNING: %d voxels are out of original data x range" % len(idx_err_x)
+        mx[idx_err_x] = 0
+    idx_err_y = np.flatnonzero( my >= by)
+    if len(idx_err_x):
+        print "\t\t+++ WARNING: %d voxels are out of original data y range" % len(idx_err_y)
+        mx[idx_err_y] = 0
+    idx_err_z = np.flatnonzero( mz >= bz)
+    if len(idx_err_z):
+        print "\t\t+++ WARNING: %d voxels are out of original data z range" % len(idx_err_z)
+        mx[idx_err_z] = 0
+        
     
     # Fill up the output atlas with labels from b0, collected through the fib mappings
     new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
