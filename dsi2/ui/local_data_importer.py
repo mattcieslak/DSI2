@@ -292,11 +292,11 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     idx_err_y = np.flatnonzero( my >= by)
     if len(idx_err_x):
         print "\t\t+++ WARNING: %d voxels are out of original data y range" % len(idx_err_y)
-        mx[idx_err_y] = 0
+        my[idx_err_y] = 0
     idx_err_z = np.flatnonzero( mz >= bz)
     if len(idx_err_z):
         print "\t\t+++ WARNING: %d voxels are out of original data z range" % len(idx_err_z)
-        mx[idx_err_z] = 0
+        mz[idx_err_z] = 0
         
     
     # Fill up the output atlas with labels from b0, collected through the fib mappings
