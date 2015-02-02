@@ -566,7 +566,6 @@ class LocalDataImporter(HasTraits):
 
     # UI definition for the local db
     traits_view = View(
-        Group(
             Item("json_file"),
             Group(
                 Item("datasets",editor = scan_table),
@@ -574,6 +573,7 @@ class LocalDataImporter(HasTraits):
                 show_labels=False
                 ),
             Group(
+                Item("save"),
                 Item("process_inputs"),
                 Item("connect_to_mongod"),
                 Item("upload_to_mongodb"),
