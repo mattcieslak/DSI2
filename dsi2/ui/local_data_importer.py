@@ -581,8 +581,7 @@ class LocalDataImporter(HasTraits):
                 show_labels=False
                 ),
             Item("n_processors"),
-            orientation="vertical"
-        ),
+            orientation="vertical",
         resizable=True,
         width=900,
         height=500,
