@@ -290,7 +290,7 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
         print "\t\t+++ WARNING: %d voxels are out of original data x range" % len(idx_err_x)
         mx[idx_err_x] = 0
     idx_err_y = np.flatnonzero( my >= by)
-    if len(idx_err_x):
+    if len(idx_err_y):
         print "\t\t+++ WARNING: %d voxels are out of original data y range" % len(idx_err_y)
         my[idx_err_y] = 0
     idx_err_z = np.flatnonzero( mz >= bz)
