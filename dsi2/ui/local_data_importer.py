@@ -11,7 +11,7 @@ from ..database.traited_query import Scan
 from ..streamlines.track_dataset import TrackDataset
 from ..streamlines.track_math import connection_ids_from_tracks
 from ..volumes.mask_dataset import MaskDataset
-from ..volumes import get_NTU90, graphml_from_label_source
+from ..volumes import get_NTU90, graphml_from_label_source, get_builtin_atlas_parameters
 import networkx as nx
 import numpy as np
 import nibabel as nib
