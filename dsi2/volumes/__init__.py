@@ -53,8 +53,8 @@ def graphml_from_label_source(label_source):
 
 
 def get_builtin_atlas_parameters(label_source):
-    if not label_source.b0_volume_path: raise ValueError("Must provide a b0 volume path")
-    aname = os.path.split(label_source.b0_volume_path)[-1].lower()
+    if not label_source: raise ValueError("Must provide a b0 volume path")
+    aname = os.path.split(label_source)[-1].lower()
     atlas_lut = {
         "scale33":{"scale":33},
         "scale60":{"scale":60},
