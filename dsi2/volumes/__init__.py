@@ -56,16 +56,16 @@ def get_builtin_atlas_parameters(label_source):
     if not label_source: raise ValueError("Must provide a b0 volume path")
     aname = os.path.split(label_source)[-1].lower()
     atlas_lut = {
-        "scale33":{"scale":33},
-        "scale60":{"scale":60},
-        "scale125":{"scale":125},
-        "scale250":{"scale":250},
-        "scale500":{"scale":500},
-        "resolution1015":{"scale":500},
-        "resolution500":{"scale":250},
-        "resolution258":{"scale":125},
-        "resolution150":{"scale":60},
-        "resolution83":{"scale":33}
+        "scale33":{"scale":33,"param1":1},
+        "scale60":{"scale":60,"param1":1},
+        "scale125":{"scale":125,"param1":1},
+        "scale250":{"scale":250,"param1":1},
+        "scale500":{"scale":500,"param1":1},
+        "resolution1015":{"scale":500,"param1":1},
+        "resolution500":{"scale":250,"param1":1},
+        "resolution258":{"scale":125,"param1":1},
+        "resolution150":{"scale":60,"param1":1},
+        "resolution83":{"scale":33,"param1":1}
     }
     atlas_id = None
     for atlas in atlas_lut.keys():

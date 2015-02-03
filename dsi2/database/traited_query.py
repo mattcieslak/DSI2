@@ -13,6 +13,7 @@ from traitsui.extras.checkbox_column import CheckboxColumn
 from ..ui.ui_extras import colormaps
 import cPickle as pickle
 import re
+from ..volumes import get_builtin_atlas_parameters
 
 
 """
@@ -95,6 +96,12 @@ class TrackScalarSource(HasTraits):
             os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
         return self.scalars
     
+    @on_trait_change("b0_volume_path")
+    def update_params(self):
+        if len(self.parameters) == 0:
+            self.parameters = get_builtin_atlas_parameters(self.b0_volume_path)
+        print self.parameters
+        
     def to_json(self):
         return {
             "name" : self.name,
