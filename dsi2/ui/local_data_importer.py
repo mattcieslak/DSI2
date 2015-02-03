@@ -397,9 +397,6 @@ def create_missing_files(scan):
         else:
             print "\t\t++ [%s] Recognized atlas name, using Lausanne2008 atlas"%sid, graphml
             regions = __get_region_ints_from_graphml(graphml)
-            if not len(label_source.parameters):
-                label_source.parameters = get_builtin_atlas_parameters(graphml)
-            
 
         # Save it.
         conn_ids = connection_ids_from_tracks(mds, tds,
