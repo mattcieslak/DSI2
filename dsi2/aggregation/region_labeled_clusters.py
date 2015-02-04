@@ -483,7 +483,8 @@ class RegionLabelAggregator(ClusterEditor):
         out = [ "subject, regionA, regionB, streamline_count" ]
         for subj, arr in zip(self.track_source.get_subjects(),cvec):
             for sl_count, reg_pair in zip(arr,conn_ids):
-                regA, regB = self.index_to_region_pairs[ reg_pair ]
+                regA, regB = self.index_to_region_pairs.get(
+                    reg_pair, default = ("unlabeled","unlabeled"))
                 out.append("%s, %s, %s, %d" % (subj, regA, regB, sl_count) )
         return "\n".join(out)
 
