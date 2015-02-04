@@ -62,7 +62,10 @@ Getting Started
 .. toctree::
 
    installation
+   detailed_downloads
    preprocessing/preproc
+   FreeSurfer
+   reconstruction
    analysis/overview
    analysis/import_gui
    analysis/ltpa

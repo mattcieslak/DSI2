@@ -69,9 +69,9 @@ a <tt class="docutils literal"><span class="pre">.src</span></tt> file</p>
 <p>Once the <tt class="docutils literal"><span class="pre">.src.gz</span></tt> is created, reconstruct it with</p>
 <div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>dsi_studio <span class="se">\</span>
     --action<span class="o">=</span>rec <span class="se">\</span>
-    --thread<span class="o">=</span>2 <span class="se">\</span>
+    --thread<span class="o">=</span><span class="m">2</span> <span class="se">\</span>
     --source<span class="o">=</span>output.src.gz <span class="se">\</span>
-    --method<span class="o">=</span>7 <span class="se">\</span>
+    --method<span class="o">=</span><span class="m">7</span> <span class="se">\</span>
     --param0<span class="o">=</span>1.25 <span class="se">\</span>
     --param1-2 <span class="se">\</span>
     --output_map<span class="o">=</span>1
@@ -88,11 +88,11 @@ with some conservative parameters. See DSI Studio&#8217;s
 to tune the parameters appropriately.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>dsi_studio <span class="se">\</span>
     --action<span class="o">=</span>trk <span class="se">\</span>
-    --fiber_count<span class="o">=</span>100000 <span class="se">\</span>
-    --turning_angle<span class="o">=</span>55 <span class="se">\</span>
-    --min_length<span class="o">=</span>10 <span class="se">\</span>
+    --fiber_count<span class="o">=</span><span class="m">100000</span> <span class="se">\</span>
+    --turning_angle<span class="o">=</span><span class="m">55</span> <span class="se">\</span>
+    --min_length<span class="o">=</span><span class="m">10</span> <span class="se">\</span>
     --smoothing<span class="o">=</span>0.0 <span class="se">\</span>
-    --max_length<span class="o">=</span>400 <span class="se">\</span>
+    --max_length<span class="o">=</span><span class="m">400</span> <span class="se">\</span>
     --output<span class="o">=</span>output.trk
 </pre></div>
 </div>
@@ -111,10 +111,12 @@ scaner. Your mileage may vary.</p>
           <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing DSI2</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preproc.html">Preparing data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../analysis/overview.html">Organizing your local datasource</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../analysis/overview.html">Organizing your local datasource (Hard way)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../analysis/import_gui.html">Importing your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../analysis/ltpa.html">Accessing and analyzing your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../analysis/aggregation.html">Creating a streamline aggregator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html">Browsing the Streamline Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html#the-sphere-browser-querying-and-visualizing-streamlines">The Sphere Browser: Querying and visualizing streamlines</a></li>
 </ul>
 
           <h3 style="margin-top: 1.5em;">Search</h3>
@@ -150,7 +152,7 @@ scaner. Your mileage may vary.</p>
           
     <div class="footer">
         &copy; Copyright 2013, Matt Cieslak.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
     </div>
         </div>
         <div class="clearer"></div>

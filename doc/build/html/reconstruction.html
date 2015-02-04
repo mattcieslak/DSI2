@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DSI2 Reconstruction &mdash; dsi2 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dsi2 0.0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="header-wrapper">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">dsi2 0.0.1 documentation</a></div>
+        <div class="rel">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dsi2-reconstruction">
+<h1>DSI2 Reconstruction<a class="headerlink" href="#dsi2-reconstruction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="dsi-studio">
+<h2>DSI Studio<a class="headerlink" href="#dsi-studio" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step-1">
+<h3>Step 1<a class="headerlink" href="#step-1" title="Permalink to this headline">¶</a></h3>
+<p>Click the &#8220;Step 1: Open Source Images&#8221; at the upper left of the screen:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/1.png"><img alt="_images/1.png" src="_images/1.png" style="width: 495.6px; height: 289.8px;" /></a>
+</div>
+<p>Go into your folder with your subject&#8217;s &#8221;.dcm&#8221; files:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/creating_src.png"><img alt="_images/creating_src.png" src="_images/creating_src.png" style="width: 341.0px; height: 187.0px;" /></a>
+</div>
+<p>After selecting an MR image file in the desired subject folder, click &#8220;yes&#8221; if the following screen pops up:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/2.png"><img alt="_images/2.png" src="_images/2.png" style="width: 272.35px; height: 106.6px;" /></a>
+</div>
+<p>Click &#8220;OK&#8221; on the following &#8220;B-table&#8221; screen:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/3.png"><img alt="_images/3.png" src="_images/3.png" style="width: 408.2px; height: 237.9px;" /></a>
+</div>
+<p>Double click the src file in the top screen:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/4.png"><img alt="_images/4.png" src="_images/4.png" style="width: 341.25px; height: 135.2px;" /></a>
+</div>
+<p><strong>Note:</strong> At this point, if you scroll down in the brain, you will notice that some of the highlighted area
+is <em>not</em> actual brain matter.</p>
+<p>For example, some of the highlighted section below is the subject&#8217;s tongue:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/5.png"><img alt="_images/5.png" src="_images/5.png" style="width: 356.85px; height: 352.3px;" /></a>
+</div>
+<p>Yet, most of what is highlighted is in fact the brain:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/6brainstep2.png"><img alt="_images/6brainstep2.png" src="_images/6brainstep2.png" style="width: 358.15px; height: 349.7px;" /></a>
+</div>
+<p>At the bottom of the &#8220;Reconstruction&#8221; screen displayed above, click &#8220;Step 2: select reconstruction method.&#8221;</p>
+</div>
+<div class="section" id="step-2">
+<h3>Step 2<a class="headerlink" href="#step-2" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/7.png"><img alt="_images/7.png" src="_images/7.png" style="width: 386.75px; height: 377.65px;" /></a>
+</div>
+<ul>
+<li><p class="first">Check &#8220;QSDR&#8221; under &#8220;Reconstruction Method&#8221;</p>
+</li>
+<li><p class="first">Change &#8220;1&#8221; to &#8220;2&#8221; in the &#8220;Output Resolution&#8221; box</p>
+</li>
+<li><dl class="first docutils">
+<dt>Click &#8220;Advanced Options&#8221;:</dt>
+<dd><ul class="first last simple">
+<li>Check &#8220;ODFs&#8221; and &#8220;Spatial Mapping&#8221; under &#8220;Output&#8221;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Depending on how you collectd the data, some older versions of DSI Studio may let you check &#8220;Half-sphere scheme&#8221; under &#8220;Others&#8221;</p>
+</li>
+<li><p class="first">Finally, click the &#8220;Run Reconstruction&#8221; button at the lower right</p>
+</li>
+</ul>
+</div>
+<div class="section" id="reconstruction">
+<h3>Reconstruction<a class="headerlink" href="#reconstruction" title="Permalink to this headline">¶</a></h3>
+<p>Double click the new &#8220;fib&#8221; file created in the bottom screen:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/8.png"><img alt="_images/8.png" src="_images/8.png" style="width: 399.75px; height: 166.5px;" /></a>
+</div>
+<p>Under &#8220;Tracking&#8221; in the Options box to the right:</p>
+<ul class="simple">
+<li>Change &#8220;5000&#8221; in &#8220;Terminate if&#8221; to &#8220;100000&#8221;</li>
+<li>Change &#8220;Seeds&#8221; to &#8220;Tracts&#8221;</li>
+</ul>
+<p>Click &#8220;Run Tracking&#8221; under &#8220;Fiber Tracts&#8221; box</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/9.png"><img alt="_images/9.png" src="_images/9.png" style="width: 192.0px; height: 334.5px;" /></a>
+</div>
+<p>After Tracking, make sure to save the file by clicking on the icon shown in the screenshot below:</p>
+<p><strong>Note:</strong> <em>Save file as &#8221;.trk&#8221;</em></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/10.png"><img alt="_images/10.png" src="_images/10.png" style="width: 731.9px; height: 456.95px;" /></a>
+</div>
+</div>
+<div class="section" id="step-3">
+<h3>Step 3<a class="headerlink" href="#step-3" title="Permalink to this headline">¶</a></h3>
+<p>From command line:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>dsi_studio --action<span class="o">=</span>exp --source<span class="o">=</span>/PATH/TO/example.src.gz --export<span class="o">=</span>image0
+</pre></div>
+</div>
+<p>Open the newly created &#8220;-.image0.nii.gz&#8221; file in Mricron (or other Nifty Viewer) and make sure that the image looks something like this:</p>
+<p><strong>Note</strong>: <em>The white space is mainly CSF - absent of brain matter.</em></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/mricron.png"><img alt="_images/mricron.png" src="_images/mricron.png" style="width: 521.4px; height: 491.4px;" /></a>
+</div>
+</div>
+<div class="section" id="step-4-free-surfer">
+<h3>Step 4: Free Surfer<a class="headerlink" href="#step-4-free-surfer" title="Permalink to this headline">¶</a></h3>
+<p>Running FreeSurfer</p>
+<p>Make sure you&#8217;ve sourced your setupfreesurfer.sh file
+Make sure your environment variable for SUBJECTS_DIR is set to your desired location</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">SUBJECTS_DIR</span><span class="o">=</span>/Users/Viktoriya/Desktop/subjects
+</pre></div>
+</div>
+<p>Next step will take input data and copy it into SUBJECTS_DIR</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>recon-all <span class="se">\</span>
+  ... -s example_data <span class="se">\</span>
+  ... -i /Users/Viktoriya/Desktop/subjects/example_MPRAGE.nii.gz <span class="se">\</span>
+  ... -T2 /Users/Viktoriya/Desktop/subjects/example_t2wspace.nii.gz
+</pre></div>
+</div>
+<p>Now run the FreeSurfer reconstruction pipeline</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>recon-all -s example_data -all
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-5-easy-lausanne">
+<h3>Step 5: Easy Lausanne<a class="headerlink" href="#step-5-easy-lausanne" title="Permalink to this headline">¶</a></h3>
+<p>Run Easy Lausanne to generate the Lausanne 2008 atlases.</p>
+<p>Enter the following code into your terminal,
+making sure to change the &#8220;subject_num&#8221; to your subject&#8217;s id and &#8220;PATH/TO/...&#8221; to your corresponding path:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">SUBJECTS_DIR</span><span class="o">=</span>PATH/TO/your_freesurfer_subjects_dir
+<span class="nv">$ </span>easy_lausanne <span class="se">\</span>
+ --target_type diffusion <span class="se">\</span>
+ --subject_id subject_num <span class="se">\</span>
+ --target_volume /PATH/TO/example.src.gz.image0.nii.gz <span class="se">\</span>
+ --output_dir /PATH/TO/output_dir
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-6-checking-registration">
+<h3>Step 6: Checking Registration<a class="headerlink" href="#step-6-checking-registration" title="Permalink to this headline">¶</a></h3>
+<p>From command line:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">SUBJECTS_DIR</span><span class="o">=</span>PATH/TO/your_freesurfer_subjects_dir
+<span class="nv">$ </span>tkregister2 --mov /PATH/TO/example.src.gz.image0.nii.gz <span class="se">\</span>
+--reg /PATH/TO/output_dir/b0-TO-orig.dat --surf
+</pre></div>
+</div>
+<p>The command will take you to the tkregister2 program:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step5.png"><img alt="_images/step5.png" src="_images/step5.png" style="width: 336.05px; height: 231.4px;" /></a>
+</div>
+<p>Make sure that the brain image looks similar to the following:</p>
+</div>
+<div class="section" id="coronal">
+<h3>CORONAL:<a class="headerlink" href="#coronal" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step5a.png"><img alt="_images/step5a.png" src="_images/step5a.png" style="width: 149.0px; height: 187.0px;" /></a>
+</div>
+</div>
+<div class="section" id="sagittal">
+<h3>SAGITTAL:<a class="headerlink" href="#sagittal" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step5b.png"><img alt="_images/step5b.png" src="_images/step5b.png" style="width: 197.0px; height: 139.0px;" /></a>
+</div>
+</div>
+<div class="section" id="horizontal">
+<h3>HORIZONTAL:<a class="headerlink" href="#horizontal" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step5c.png"><img alt="_images/step5c.png" src="_images/step5c.png" style="width: 153.0px; height: 173.5px;" /></a>
+</div>
+<p><strong>NOTE</strong> - IF EVERYTHING LOOKS GOOD, MOVE ON TO STEP 7. <em>IF REGISTRATION FAILS, DO THE FOLLOWING</em>:</p>
+<hr class="docutils" />
+<blockquote>
+<div><ul class="simple">
+<li>Return to <strong>Step 2</strong> <em>(see above)</em> using dsi_studio</li>
+<li>Double click the -src.gz file that was previously created for the file that had registration fail</li>
+<li>Check &#8220;GQI&#8221; under &#8220;Reconstruction Method&#8221;</li>
+<li>Click the &#8220;Run Reconstruction&#8221; button at the lower right</li>
+</ul>
+</div></blockquote>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/qao1.png"><img alt="_images/qao1.png" src="_images/qao1.png" style="width: 375.7px; height: 354.9px;" /></a>
+</div>
+<ul class="simple">
+<li>Double click the new &#8220;fib&#8221; file created in the bottom screen</li>
+<li>Under &#8220;View&#8221; in the upper left, click &#8220;Save qao as...&#8221;</li>
+<li>Save new file as -.nii.gz</li>
+</ul>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/qao2.png"><img alt="_images/qao2.png" src="_images/qao2.png" style="width: 559.0px; height: 359.5px;" /></a>
+</div>
+<p>Next, you will run a slightly different code for Easy Lausanne for the file that previously failed registration:</p>
+<p>Enter the following code into your terminal,
+making sure to change the &#8220;subject_num&#8221; to your subject&#8217;s id and &#8220;PATH/TO/...&#8221; to your corresponding path:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">SUBJECTS_DIR</span><span class="o">=</span>PATH/TO/your_freesurfer_subjects_dir
+<span class="nv">$ </span>easy_lausanne <span class="se">\</span>
+ --target_type anisotropy <span class="se">\</span>
+ --subject_id subject_num <span class="se">\</span>
+ --target_volume /PATH/TO/new_QAO_file.nii.gz <span class="se">\</span>
+ --output_dir /PATH/TO/output_dir
+</pre></div>
+</div>
+<p>CHECK REGISTRATION:</p>
+<p>From command line:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">SUBJECTS_DIR</span><span class="o">=</span>PATH/TO/your_freesurfer_subjects_dir
+<span class="nv">$ </span>tkregister2 --mov /PATH/TO/new_QAO_file.nii.gz <span class="se">\</span>
+--reg /PATH/TO/output_dir/b0-TO-orig.dat --surf
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-7-dilate-your-images-by-1-voxel">
+<h3>STEP 7: Dilate your images by 1 voxel<a class="headerlink" href="#step-7-dilate-your-images-by-1-voxel" title="Permalink to this headline">¶</a></h3>
+<p>Enter the following code into your terminal (in the directory in which you would like to save
+your new dilated file) for every &#8220;ROIv_scale...&#8221; file in your output_dir.</p>
+<p>Example:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>atlas_dilate /PATH/TO/ROIv_scale60.nii.gz <span class="se">\</span>
+ /PATH/TO/ROIv_scale60_thickened.nii.gz
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-8-comparing-your-files">
+<h3>STEP 8: Comparing your files<a class="headerlink" href="#step-8-comparing-your-files" title="Permalink to this headline">¶</a></h3>
+<p>In order to check that your labels are correct, compare the images of the original ROIv files with the new dilated ones.</p>
+<p>To do so, cd into your output directory and open &#8220;fslview&#8221;:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">cd</span> /PATH/TO/output_dir/
+<span class="nv">$ </span>fslview
+</pre></div>
+</div>
+<p>Next, open your &#8220;-image0.nii.gz&#8221; file in the FSLview program:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step6.png"><img alt="_images/step6.png" src="_images/step6.png" style="width: 468.0px; height: 458.25px;" /></a>
+</div>
+<dl class="docutils">
+<dt>Go to &#8220;File&#8221; - &#8220;Add...&#8221;</dt>
+<dd><ul class="first last">
+<li><p class="first">Choose an &#8220;ROIv_scale..&#8221; file from your output_dir</p>
+</li>
+<li><p class="first">Click the &#8220;i&#8221; at the bottom of the screen (shown below)</p>
+</li>
+<li><dl class="first docutils">
+<dt>Under &#8220;Lookup table options&#8221;:</dt>
+<dd><ul class="first last simple">
+<li>choose &#8220;Random-Rainbow&#8221;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Click &#8220;Close&#8221; and double check that everything looks in order</p>
+</li>
+<li><p class="first">&#8220;Add...&#8221; every &#8220;ROIv_scale...&#8221; file</p>
+</li>
+</ul>
+</dd>
+</dl>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step6a.png"><img alt="_images/step6a.png" src="_images/step6a.png" style="width: 470.6px; height: 459.55px;" /></a>
+</div>
+<p>&#8220;Add...&#8221; the new &#8220;ROIvscale..._thickened.nii.gz&#8221; files and compare the images.</p>
+<p><em>Make sure to change &#8220;Lookup table options&#8221; to &#8220;Random-Rainbow&#8221; for every file you open.</em></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/step7.png"><img alt="_images/step7.png" src="_images/step7.png" style="width: 567.45px; height: 582.4px;" /></a>
+</div>
+<p><strong>Note:</strong> <em>You can &#8220;Add...&#8221; multiple files to the fslview program and use the eye (shown above) to show/hide
+each file. You want to keep the &#8220;-image0.nii.gz&#8221; file shown throughout.</em></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing DSI2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprocessing/preproc.html">Preparing data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/overview.html">Organizing your local datasource (Hard way)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/import_gui.html">Importing your data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/ltpa.html">Accessing and analyzing your data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/aggregation.html">Creating a streamline aggregator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows/browsing.html">Browsing the Streamline Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows/browsing.html#the-sphere-browser-querying-and-visualizing-streamlines">The Sphere Browser: Querying and visualizing streamlines</a></li>
+</ul>
+
+          <h3 style="margin-top: 1.5em;">Search</h3>
+          <form class="search" action="search.html" method="get">
+            <input type="text" name="q" />
+            <input type="submit" value="Go" />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
+          <p class="searchtip" style="font-size: 90%">
+            Enter search terms or a module, class or function name.
+          </p>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <a href="genindex.html" title="General Index"
+             >index</a>
+            <br/>
+            <a href="_sources/reconstruction.txt"
+               rel="nofollow">Show Source</a>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer">
+        &copy; Copyright 2013, Matt Cieslak.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
