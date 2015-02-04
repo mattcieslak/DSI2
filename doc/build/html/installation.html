@@ -54,10 +54,11 @@
             
   <div class="section" id="installing-dsi2">
 <h1>Installing DSI2<a class="headerlink" href="#installing-dsi2" title="Permalink to this headline">¶</a></h1>
+<p><strong>Note:</strong> <em>Download instructions are for Mac OS users only</em></p>
 <div class="section" id="dependencies">
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
 <p>Here we describe how to install DSI2 on your system.  Before DSI2 will work, a number of python
-packages must be installed.  The Enthought&#8217;s <a class="reference external" href="https://enthought.com/products/canopy/">Canopy</a> is very useful if you work in academia.
+packages must be installed.  The Enthought&#8217;s <a class="reference external" href="https://enthought.com/products/canopy/">Canopy</a> is very useful if you work in academia and is highly recommended.
 Otherwise you will need to install the following packages:</p>
 <ul class="simple">
 <li><a class="reference external" href="http://www.scipy.org/install.html">NumPy</a> / <a class="reference external" href="http://www.scipy.org/install.html">Scipy</a></li>
@@ -67,18 +68,37 @@ Otherwise you will need to install the following packages:</p>
 <li><a class="reference external" href="https://github.com/enthought/mayavi">MayaVi</a></li>
 <li><a class="reference external" href="http://matplotlib.org/users/installing.html">Matplotlib</a></li>
 </ul>
-<p>Even if using Canopy, you will need to install the following packages:</p>
+<div class="section" id="even-if-using-canopy-you-will-need-to-install-the-following-packages">
+<h3>Even if using Canopy, you will need to install the following packages:<a class="headerlink" href="#even-if-using-canopy-you-will-need-to-install-the-following-packages" title="Permalink to this headline">¶</a></h3>
+<p>First, install <a class="reference external" href="http://docs.mongodb.org/manual/installation">MongoDB</a>.</p>
+<p>Next, use the &#8220;pip install _____&#8221; command in your terminal to install these packages.
+Make sure that you have Xcode <em>(from the app store)</em> and the command line tools installed ahead of time:</p>
 <ul class="simple">
-<li><a class="reference external" href="http://scikit-learn.org/stable/install.html">PyMongo</a></li>
+<li><a class="reference external" href="http://api.mongodb.org/python/current/installation.html">PyMongo</a></li>
 <li><a class="reference external" href="http://nipy.org/nibabel/installation.html">Nibabel</a></li>
 <li><a class="reference external" href="http://nipy.org/dipy/installation.html">DiPy</a></li>
 <li><a class="reference external" href="http://matplotlib.org/users/installing.html">Matplotlib</a></li>
+</ul>
+</div>
+<div class="section" id="next-you-will-be-using-canopy-s-package-manager-in-the-welcome-screen-as-shown-below">
+<h3>Next, you will be using Canopy&#8217;s &#8220;Package Manager&#8221; in the welcome screen as shown below:<a class="headerlink" href="#next-you-will-be-using-canopy-s-package-manager-in-the-welcome-screen-as-shown-below" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/welcome_canopy.png"><img alt="_images/welcome_canopy.png" src="_images/welcome_canopy.png" style="width: 306.82px; height: 204.74px;" /></a>
+</div>
+<p><strong>Search for &#8220;scikit&#8221; and install the</strong> <em>top two</em> <strong>packages:</strong></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/canopy_install.png"><img alt="_images/canopy_install.png" src="_images/canopy_install.png" style="width: 514.15px; height: 342.55px;" /></a>
+</div>
+<p>Below are additional links that can assist you if you run into problems or if you are not using Canopy:</p>
+<ul class="simple">
 <li><a class="reference external" href="http://scikit-image.org/download">Scikit-Image</a></li>
 <li><a class="reference external" href="http://scikit-learn.org/stable/install.html">Scikit-Learn</a></li>
 </ul>
-<p>You will also need to install <a class="reference external" href="http://docs.mongodb.org/manual/installation">MongoDB</a>.</p>
+</div>
+<div class="section" id="open-your-terminal-to-download-the-dsi2-source-code">
+<h3>Open your terminal to download the DSI2 source code:<a class="headerlink" href="#open-your-terminal-to-download-the-dsi2-source-code" title="Permalink to this headline">¶</a></h3>
 <p>The DSI2 source code can be downloaded from <a class="reference external" href="https://github.com/mattcieslak/DSI2">github</a>. Get the source by</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>git clone git@github.com/mattcieslak/DSI2.git
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>git clone git@github.com:mattcieslak/DSI2.git
 <span class="nv">$ </span><span class="nb">cd </span>DSI2-master
 <span class="c"># If you have write permission to your python distribution</span>
 <span class="nv">$ </span>python setup.py install
@@ -87,24 +107,14 @@ Otherwise you will need to install the following packages:</p>
 </pre></div>
 </div>
 </div>
+</div>
 <div class="section" id="setting-up-your-environment">
 <h2>Setting up your environment<a class="headerlink" href="#setting-up-your-environment" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">dsi2</span></tt> requires some environment variables to be set so it can find
-resources in your file system. On a *nix system these are set using the
-<tt class="docutils literal"><span class="pre">export</span></tt> command.</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">DSI2_DATA</span></tt> is the path to the <tt class="docutils literal"><span class="pre">example_data</span></tt> directory that
-is provided on this website (<strong>NOTE: upload the example data</strong>).
-This is data that dsi2 needs internally (such as standard atlas
-labels and the MNI 152 volume).</li>
-<li><tt class="docutils literal"><span class="pre">LOCAL_TRACKDB</span></tt> is the path to your directory containing your
-locally stored .pkl files. If this variable is not set, dsi2 will
-check your home directory for a <tt class="docutils literal"><span class="pre">local_trackdb</span></tt> directory. If you
-have downloaded example_trackdb.tar.gz, the location of its extracted
-directory</li>
-</ul>
-</div></blockquote>
+<p>On a Mac, edit your .profile script to include this line, assuming you installed
+dsi_studio.app in /Applications.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">alias </span><span class="nv">dsi_studio</span><span class="o">=</span>/Applications/dsi_studio.app/Contents/MacOS/dsi_studio
+</pre></div>
+</div>
 <div class="section" id="starting-mongodb">
 <h3>Starting MongoDB<a class="headerlink" href="#starting-mongodb" title="Permalink to this headline">¶</a></h3>
 <p>You will need to start a <tt class="docutils literal"><span class="pre">mongod</span></tt> process if you intend to use the MongoDB backend.
@@ -130,7 +140,12 @@ remember to pass a <tt class="docutils literal"><span class="pre">--bind_ip</spa
           <h3>Table Of Contents</h3>
           <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="">Installing DSI2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#even-if-using-canopy-you-will-need-to-install-the-following-packages">Even if using Canopy, you will need to install the following packages:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#next-you-will-be-using-canopy-s-package-manager-in-the-welcome-screen-as-shown-below">Next, you will be using Canopy&#8217;s &#8220;Package Manager&#8221; in the welcome screen as shown below:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open-your-terminal-to-download-the-dsi2-source-code">Open your terminal to download the DSI2 source code:</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#setting-up-your-environment">Setting up your environment</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#starting-mongodb">Starting MongoDB</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#verifying-your-installation">Verifying your installation</a></li>
@@ -139,10 +154,12 @@ remember to pass a <tt class="docutils literal"><span class="pre">--bind_ip</spa
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="preprocessing/preproc.html">Preparing data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="analysis/overview.html">Organizing your local datasource</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/overview.html">Organizing your local datasource (Hard way)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/import_gui.html">Importing your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="analysis/ltpa.html">Accessing and analyzing your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="analysis/aggregation.html">Creating a streamline aggregator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflows/browsing.html">Browsing the Streamline Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows/browsing.html#the-sphere-browser-querying-and-visualizing-streamlines">The Sphere Browser: Querying and visualizing streamlines</a></li>
 </ul>
 
           <h3 style="margin-top: 1.5em;">Search</h3>
@@ -178,7 +195,7 @@ remember to pass a <tt class="docutils literal"><span class="pre">--bind_ip</spa
           
     <div class="footer">
         &copy; Copyright 2013, Matt Cieslak.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
     </div>
         </div>
         <div class="clearer"></div>

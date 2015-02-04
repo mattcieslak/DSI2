@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DSI2 Download Details &mdash; dsi2 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dsi2 0.0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="header-wrapper">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">dsi2 0.0.1 documentation</a></div>
+        <div class="rel">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dsi2-download-details">
+<h1>DSI2 Download Details<a class="headerlink" href="#dsi2-download-details" title="Permalink to this headline">¶</a></h1>
+<p><strong>Note:</strong> <em>Download instructions are for Mac OS users only</em></p>
+<div class="section" id="freesurfer">
+<h2>FreeSurfer<a class="headerlink" href="#freesurfer" title="Permalink to this headline">¶</a></h2>
+<p>You will need to download the latest version of <a class="reference external" href="http://ftp.nmr.mgh.harvard.edu/pub/dist/freesurfer/5.3.0-HCP/">FreeSurfer</a> for your operating system:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/freesurf.png"><img alt="_images/freesurf.png" src="_images/freesurf.png" style="width: 157.25px; height: 106.25px;" /></a>
+</div>
+<p>Once you&#8217;ve downloaded the package (above), right click to &#8220;open&#8221; and begin installation of FreeSurfer.</p>
+<p>The &#8220;Read Me&#8221; instructions in the downloading process will instruct you to do the following:</p>
+<p>In your terminal, type in &#8220;open .profile&#8221; from your home directory and paste the following into your .profile:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">FREESURFER_HOME</span><span class="o">=</span>/Applications/freesurfer
+<span class="nb">source</span> <span class="nv">$FREESURFER_HOME</span>/SetUpFreeSurfer.sh  <span class="c"># ← Make sure you make it a &quot;.sh&quot; file and NOT &quot;.csh&quot;</span>
+</pre></div>
+</div>
+<p>Afterwards, continue with installation process.</p>
+<div class="section" id="xquartz">
+<h3>XQuartz<a class="headerlink" href="#xquartz" title="Permalink to this headline">¶</a></h3>
+<p>You <em>may</em> be required to download <a class="reference external" href="http://xquartz.macosforge.org/landing/">XQuartz</a> as well:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/xquartz.png"><img alt="_images/xquartz.png" src="_images/xquartz.png" style="width: 143.65px; height: 92.65px;" /></a>
+</div>
+<p>Once you&#8217;ve downloaded the package (above), right click to &#8220;open&#8221; and begin installation of XQuartz.</p>
+<p>Follow the &#8220;Read Me&#8221; instructions before completing installation.</p>
+</div>
+</div>
+<div class="section" id="easy-lausanne">
+<h2>Easy Lausanne<a class="headerlink" href="#easy-lausanne" title="Permalink to this headline">¶</a></h2>
+<p>Easy Lausanne takes input data and creates an atlas to label streamlines for tractography of the brain.</p>
+<p>Enter the following into your terminal from your home directory:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>git clone git@github.com:mattcieslak/easy_lausanne.git
+<span class="nv">$ </span><span class="nb">cd </span>easy_lausanne-master
+<span class="c"># If you have write permission to your python distribution</span>
+<span class="nv">$ </span>python setup.py install
+<span class="c"># otherwise</span>
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PYTHONPATH</span>:<span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-dsi-studio">
+<h2>Installing DSI Studio<a class="headerlink" href="#installing-dsi-studio" title="Permalink to this headline">¶</a></h2>
+<p>Finally, download and install <a class="reference external" href="http://dsi-studio.labsolver.org/dsi-studio-download">DSIstudio</a></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing DSI2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprocessing/preproc.html">Preparing data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/overview.html">Organizing your local datasource (Hard way)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/import_gui.html">Importing your data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/ltpa.html">Accessing and analyzing your data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis/aggregation.html">Creating a streamline aggregator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflows/browsing.html">Browsing the Streamline Database</a></li>
+</ul>
+
+          <h3 style="margin-top: 1.5em;">Search</h3>
+          <form class="search" action="search.html" method="get">
+            <input type="text" name="q" />
+            <input type="submit" value="Go" />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
+          <p class="searchtip" style="font-size: 90%">
+            Enter search terms or a module, class or function name.
+          </p>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <a href="genindex.html" title="General Index"
+             >index</a>
+            <br/>
+            <a href="_sources/detailed_downloads.txt"
+               rel="nofollow">Show Source</a>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer">
+        &copy; Copyright 2013, Matt Cieslak.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
