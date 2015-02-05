@@ -58,8 +58,8 @@
 <ol class="arabic simple">
 <li>You ran QSDR reconstruction <em>with &#8220;save mapping&#8221; selected</em></li>
 <li>You saved a .trk file from the output from (1)</li>
-<li>You have a brain atlas aligned to the b0 volume used to create QSDR.
-<em>This volume must be interpolated to the SAME grid as the b0 volume</em></li>
+<li>You have a brain atlas aligned to the B0 volume used to create QSDR.
+<em>This volume must be interpolated to the SAME grid as the B0 volume</em></li>
 </ol>
 <p>You can launch the data importer from your shell</p>
 <div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>dsi2_import
@@ -67,27 +67,69 @@
 </div>
 <p>and will see the following screen</p>
 <div class="figure align-center">
-<a class="reference internal image-reference" href="../_images/import_add_blank.png"><img alt="data importer" src="../_images/import_add_blank.png" style="width: 721.6px; height: 420.0px;" /></a>
+<a class="reference internal image-reference" href="../_images/import_add_blank.png"><img alt="data importer" src="../_images/import_add_blank.png" style="width: 631.4px; height: 367.5px;" /></a>
 </div>
-<p>To access the &#8220;add new item&#8221;, right click in the white space.  A new subject metadata
+<p>To access the &#8220;Add new item&#8221; tab, right click in the white space.  A new subject metadata
 input panel will appear below</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="../_images/label_importer.png"><img alt="label importer" src="../_images/label_importer.png" style="width: 601.4px; height: 350.0px;" /></a>
 </div>
 <p>A giant arrow points to a tab where you can add each of the atlases you&#8217;ve aligned to
-the b0 volume</p>
+the B0 volume.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>Under Subject Information:</dt>
+<dd><ul class="first last simple">
+<li>Enter your subject&#8217;s data including their Scan id, Subject id, Gender, Study, and Group.</li>
+<li>For &#8220;Fib file,&#8221; choose the &#8220;-.map.fib.gz&#8221; file in your output directory.</li>
+<li>For &#8220;Pkl path,&#8221; create an output/file/path/name ending in &#8220;-.pkl&#8221; for your subject</li>
+<li>For &#8220;Pkl trk path,&#8221; create an output/file/path/name ending in &#8220;-.pkl.trk&#8221; for your subject</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Under &#8220;Reconstruction Information on the left-hand side:</dt>
+<dd><ul class="first last simple">
+<li>Enter DSI Studio for &#8220;Software&#8221;</li>
+<li>For &#8220;Trk file&#8221; on the left, choose the &#8220;-.trk&#8221; file in your output directory (<em>if needed, unzip this file ahead of time</em>):</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
 <div class="figure align-center">
-<a class="reference internal image-reference" href="../_images/import_blank_atlas.png"><img alt="data importer" src="../_images/import_blank_atlas.png" style="width: 902.0px; height: 525.0px;" /></a>
+<a class="reference internal image-reference" href="../_images/dsinew.png"><img alt="data importer" src="../_images/dsinew.png" style="width: 753.2px; height: 418.6px;" /></a>
+</div>
+<p>Choose the &#8220;Label values&#8221; tab:</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../_images/import_blank_atlas.png"><img alt="data importer" src="../_images/import_blank_atlas.png" style="width: 631.4px; height: 367.5px;" /></a>
 </div>
 <p>Add a new atlas by right clicking in the whitespace.  Your b0-aligned atlases will be
-warped to QSDR space using the voxel mapping in the <tt class="docutils literal"><span class="pre">fib.gz</span></tt> file. Here is an example</p>
+warped to QSDR space using the voxel mapping in the <tt class="docutils literal"><span class="pre">-map.fib.gz</span></tt> file.</p>
+<p><strong>Note:</strong> <em>The color coding is important in the cells of this sheet.  If a cell is red, it means that
+the current value does not point to an existing file and that this file MUST exist for data
+to be successfully imported.  Blue cells indicate that the file does not</em> <strong>yet</strong> <em>exist, but will
+be created during the import process.  White cells mean that the file exists on your filesystem.</em></p>
+<dl class="docutils">
+<dt>Under &#8220;B0 volume path&#8221; :</dt>
+<dd><ul class="first last simple">
+<li>Enter your &#8220;-ROIv_scale...thickened...&#8221; file</li>
+</ul>
+</dd>
+<dt>Under &#8220;QSDR volume path&#8221; and &#8220;Numpy path&#8221;:</dt>
+<dd><ul class="first last simple">
+<li>Enter your QSDR thickened scale path and Numpy path (&#8220;-.npy&#8221;)</li>
+<li><em>If these do not exist yet, you can type in an output/file/path/name that you would like to save them as and the program will create these for you</em></li>
+</ul>
+</dd>
+</dl>
+<p>Here is an example:</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="../_images/import_add_b0_atlas.png"><img alt="data importer" src="../_images/import_add_b0_atlas.png" style="width: 721.6px; height: 420.0px;" /></a>
 </div>
-<p>The color coding is important in the cells of this sheet.  If a cell is red, it means that
-the current value does not point to an existing file and that this file MUST exist for data
-to be successfully imported.  Blue cells indicate that the file does not yet exist, but will
-be created during the import process.  White cells mean that the file exists on your filesystem.</p>
 <p>Once all your cells are white or blue, you can click the <strong>Process inputs</strong> button to create any
 files needed for import. Once all the cells are white, you can click the <strong>Save</strong> button to write
 out a json file that can be loaded locally OR the <strong>Upload to mongodb</strong> if you have a local
@@ -109,6 +151,7 @@ mongodb instance running.</p>
 <li class="toctree-l1"><a class="reference internal" href="ltpa.html">Accessing and analyzing your data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="aggregation.html">Creating a streamline aggregator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html">Browsing the Streamline Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflows/browsing.html#the-sphere-browser-querying-and-visualizing-streamlines">The Sphere Browser: Querying and visualizing streamlines</a></li>
 </ul>
 
           <h3 style="margin-top: 1.5em;">Search</h3>
@@ -144,7 +187,7 @@ mongodb instance running.</p>
           
     <div class="footer">
         &copy; Copyright 2013, Matt Cieslak.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
     </div>
         </div>
         <div class="clearer"></div>
