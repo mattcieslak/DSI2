@@ -418,7 +418,10 @@ def create_missing_files(scan):
             print npy_path, "already exists"
             continue
         print "\t\t++ saving values to", npy_path
-        scalars = np.loadtxt(label_source.text_path)
+        fop = open(label_source.txt_path,"r")
+        scalars = np.array(
+            [np.fromstring(line,sep=" ").mean() for line in fop] )
+        fop.close()
         np.save(npy_path,scalars)
         print "\t\t++ Done."
 

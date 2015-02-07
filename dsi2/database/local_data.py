@@ -20,11 +20,11 @@ elif os.path.exists(home_pkl):
     print "Using local_trackdb in home directory for data"
 
 
-def get_local_data(json_file, pkl_dir=pkl_dir):
+def get_local_data(json_file):
     fop = open(json_file,"r")
     jdata = json.load(fop)
     fop.close()
-    datasets = [Scan(pkl_dir=pkl_dir, data_dir=dsi2_data, original_json=d, **d) for d in jdata ]
+    datasets = [Scan(pkl_dir="", data_dir="", original_json=d, **d) for d in jdata ]
     print "  " + "=" * 50
     print "  DSI2"
     print "  ----"
