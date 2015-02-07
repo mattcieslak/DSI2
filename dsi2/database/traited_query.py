@@ -16,66 +16,8 @@ import re
 from ..volumes import get_builtin_atlas_parameters
 
 
-"""
-How to query for track datasets
-
-Keys:
------
-  ## Scan parameters
-  subject_id:
-    Unique identifier for a Scan. A Scan_id can be present in
-    multiple scans.
-  scan_id:
-    Unique identifier for a single dataset. Should begin with a
-    Scan_id followed by a suffic for which scan.
-  scan_gender:
-    "male" or "female"
-  scan_age:
-    Scan age in years.
-  study:
-    Name of the study/experiment. Each study should have a set of
-    discrete Scan groups (for example the study "tbi" might have
-    groups "patient" and "control")
-  scan_group:
-    Which group does this Scan belong to
-
-  ## Tractography parameters
-  software:
-    DSI studio, DTK or dipy
-  smoothing:
-    DSI studio smoothing parameter
-  cutoff_angle:
-    Angle in degrees that determined
-  qa_threshold:
-    Quantitative anisotropy threshold
-  gfa_threshold:
-    Generalized FA threshold
-  length_min:
-    Tracks less than `length_min` have been excluded
-  length_max:
-    Tracks longer than `length_max` have been excluded
-
-
-  ## Scanning parameters
-  institution:
-    Scanning center where the data was acquired (ie "UCSB", "CMU")
-  scanner:
-    "SIEMENS TIM TRIO"
-  n_directions:
-    "512",
-  max_b_value:
-    "5000"
-  bvals:
-    "",
-  bvecs:
-    ""
-}
-"""
-
-
-class TrackScalarSource(HasTraits):
-    """ Contains data specifying the nature of a streamline labeling
-    scheme
+class TrackLabelSource(HasTraits):
+    """ Contains connection ids for streamlines
     """
     # identifying traits
     name = Str("")
@@ -113,12 +55,51 @@ class TrackScalarSource(HasTraits):
             "qsdr_volume_path" : self.qsdr_volume_path
         }
     
+class TrackScalarSource(HasTraits):
+    """ Contains scalar data (GFA,QA,etc) for streamlines
+    """
+    # identifying traits
+    name = Str("")
+    description = Str("")
+    parameters = Dict()
+
+    # file paths to data
+    numpy_path = File("")
+    txt_path = File("")
+    scalars = Array
+
+    def load_array(self):
+        self.scalars = np.load(
+            os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
+        return self.scalars
+    
+    @on_trait_change("b0_volume_path")
+    def update_params(self):
+        if len(self.parameters) == 0:
+            self.parameters = get_builtin_atlas_parameters(self.b0_volume_path)
+        print self.parameters
+        
+    def to_json(self):
+        return {
+            "name" : self.name,
+            "description" : self.description,
+            "parameters" : self.parameters,
+            "numpy_path" : self.numpy_path,
+            "txt_path" : self.txt_path,
+        }
+    
 # ------- Custom column colorizers based on whether the thing will exist 
 # ------- after processing 
 
 class b0VolumeColumn(ObjectColumn):
     def get_cell_color(self,object):
         if os.path.exists(object.b0_volume_path):
+            return "white"
+        return "red"
+    
+class txtColumn(ObjectColumn):
+    def get_cell_color(self,object):
+        if os.path.exists(object.txt_path):
             return "white"
         return "red"
     
@@ -138,11 +119,24 @@ class QSDRVolumeColumn(ObjectColumn):
             return "red"
         return "lightblue"
     
-scalar_table = TableEditor(
+label_table = TableEditor(
     columns =
     [   ObjectColumn(name="name"),
         b0VolumeColumn(name="b0_volume_path"),
         QSDRVolumeColumn(name="qsdr_volume_path"),
+        NumpyPathColumn(name="numpy_path"),
+        ObjectColumn(name="description")
+    ],
+    deletable  = True,
+    auto_size  = True,
+    show_toolbar = True,
+    row_factory = TrackScalarSource
+    )
+
+scalar_table = TableEditor(
+    columns =
+    [   ObjectColumn(name="name"),
+        txtColumn(name="txt_path"),
         NumpyPathColumn(name="numpy_path"),
         ObjectColumn(name="description")
     ],
@@ -199,7 +193,7 @@ class Scan(Dataset):
     # ROI labels and scalar (GFA/QA) values
     track_labels    = List(Dict)
     track_scalars   = List(Dict)
-    track_label_items    = List(Instance(TrackScalarSource))
+    track_label_items    = List(Instance(TrackLabelSource))
     track_scalar_items   = List(Instance(TrackScalarSource))
     # Traits for interactive use
     color_map       = Enum(colormaps)
@@ -248,7 +242,7 @@ class Scan(Dataset):
           layout="tabbed"
         ),
         Group(
-            Item("track_label_items",editor=scalar_table),
+            Item("track_label_items",editor=label_table),
             show_labels=False,
             show_border=True,
             label = "Label values"
@@ -269,14 +263,14 @@ class Scan(Dataset):
         super(Scan,self).__init__(**traits)
         
         self.track_label_items = \
-            [TrackScalarSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
+            [TrackLabelSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
              self.track_labels ]
         self.track_scalar_items = \
             [TrackScalarSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
              self.track_scalars ]
         self.atlases = dict(
             [ (d['name'],
-               {  "graphml_path":d['graphml_path'],
+               {  "graphml_path":d.get('graphml_path',None),
                   "numpy_path":d['numpy_path'],
                 } )\
                for d in self.track_labels ])
