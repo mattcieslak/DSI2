@@ -4,8 +4,11 @@ from dsi2.volumes import graphml_from_label_source
 from pkg_resources import Requirement, resource_filename
 from scipy.io.matlab import savemat
 import networkx as nx
+import nibabel as nib
 import numpy as np
 import os
+
+N_PROCS=8
 
 lausanne_scale_lookup = {
                   33:resource_filename(Requirement.parse("dsi2"),
@@ -82,6 +85,13 @@ def save_connectivity_matrices(scan):
             scalars[prefix + scalar.name] = np.load(scalar.numpy_path)
             # Empty matrix for 
             out_data[prefix + scalar.name] = np.zeros((len(regions),len(regions)))
+            out_data[prefix + scalar.name + "_sd"] = np.zeros((len(regions),len(regions)))
+            
+        # extract the streamline lengths and put them into an array
+        out_data[prefix+'length'] = np.zeros((len(regions),len(regions)))
+        out_data[prefix+'length_sd'] = np.zeros((len(regions),len(regions)))
+        streams, hdr = nib.trackvis.read(scan.trk_file)
+        lengths = np.array([len(arr) for arr in streams])
         
         # extract the streamline scalar index
         for conn, (_i,_j) in graphml_data["index_to_region_pairs"].iteritems():
@@ -90,10 +100,16 @@ def save_connectivity_matrices(scan):
             sl_count = np.sum(indexes)
             connectivity[i,j] = connectivity[j,i] = sl_count
             
+            out_data[prefix+'length'][i,j] = out_data[prefix+'length'][j,i] = lengths[indexes].mean()
+            out_data[prefix+'length_sd'][i,j] = out_data[prefix+'length_sd'][j,i] = lengths[indexes].std()
+            
             # Fill in the average scalar value
             for scalar_name, scalar_data in scalars.iteritems():
-                scalar_mean = scalars[scalar_name][indexes].mean()
+                scalar_vals = scalars[scalar_name][indexes]
+                scalar_mean = scalars_vals.mean()
                 out_data[scalar_name][i,j] = out_data[scalar_name][j,i] = scalar_mean
+                scalar_std = scalars_vals.std()
+                out_data[scalar_name+"_sd"][i,j] = out_data[scalar_name][j,i] = scalar_std
     
     print "saving", opath
     savemat(opath, out_data)
@@ -103,5 +119,10 @@ if __name__ == "__main__":
     json_file = "/home/matt/testing_data/testing_input/data_wscalars.json"
     from dsi2.database.local_data import get_local_data
     local_data = get_local_data(json_file)
-    for scan in local_data:
-        save_connectivity_matrices(scan)
+    import multiprocessing
+    pool = multiprocessing.Pool(processes=N_PROCS)
+    result=pool.map(save_connectivity_matrices,local_data)    
+    pool.close()
+    pool.join()
+    print "finished!"
+    

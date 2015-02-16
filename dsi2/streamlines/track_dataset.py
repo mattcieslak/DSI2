@@ -69,7 +69,6 @@ class Cluster(HasTraits):
     id_number   = Int
     start_coordinate = Array(shape=(3,))
     end_coordinate   = Array(shape=(3,))
-    prototype = Array
     indices          = Array
     cluster_type     = "POINT"
 
@@ -87,8 +86,9 @@ class TrackDataset(HasTraits):
     # Holds original data: Never changes
     tracks = Array
     scalars = Array
-    labels = Array
     connections = Array
+    gfa = Array
+    qa = Array
     offsets=Array
     properties = Any
     #original_track_indices = Array(np.array([]))
@@ -322,13 +322,30 @@ class TrackDataset(HasTraits):
             idx = np.setdiff1d(_trks,idx)
 
         # Enable arbitrary downsampling through `every`
-        if every == 0:
+        if every < 1:
             every = 1
 
-        survivors = self.tracks[idx][every-1::every] if hasattr(self,"tracks") and self.tracks.size > 0 else None
-        #print "%i tracks reduced to %i"%(self.get_ntracks(),len(idx))
-        connections = self.connections[idx][every-1::every] if self.connections.size > 0 \
-                    else np.array([])
+        survivors = self.tracks[idx] if hasattr(self,"tracks") and self.tracks.size > 0 else None
+        if every > 1 and survivors:
+            survivors = survivors[every-1::every]
+            
+        # Similarly, subset the additional info
+        connections = self.connections[idx] if self.connections.size > 0 \
+                else np.array([])
+        gfa = self.gfa[idx] if self.gfa.size > 0 \
+                else np.array([])
+        qa = self.qa[idx] if self.qa.size > 0 \
+                else np.array([])
+        
+        if every > 1:
+            if connections.size > 0:
+                connections = connections[every-1::every]
+            if gfa.size > 0:
+                gfa = gfa[every-1::every] 
+            if qa.size > 0:
+                qa = qa[every-1::every] 
+            
+            
         # If we're subsetting a subset, get the original indices
         # TODO: my old pickles don't have this builtin. Remove hasattr in a future version
         if not hasattr(self,"original_track_indices") or self.original_track_indices.size==0:
@@ -338,7 +355,9 @@ class TrackDataset(HasTraits):
 
         return TrackDataset(tracks=survivors, header=self.header,
                                connections=connections, properties=self.properties,
-                               original_track_indices=orig_idx)
+                               original_track_indices=orig_idx,
+                               qa=qa, gfa=gfa
+                            )
 
     def voxmm_to_ijk(self, trk, to_order= "", floor=True):
         """Converts from trackvis voxmm to ijk.
