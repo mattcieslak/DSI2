@@ -109,7 +109,7 @@ def save_connectivity_matrices(scan):
                 scalar_mean = scalars_vals.mean()
                 out_data[scalar_name][i,j] = out_data[scalar_name][j,i] = scalar_mean
                 scalar_std = scalars_vals.std()
-                out_data[scalar_name+"_sd"][i,j] = out_data[scalar_name][j,i] = scalar_std
+                out_data[scalar_name+"_sd"][i,j] = out_data[scalar_name + "_sd"][j,i] = scalar_std
     
     print "saving", opath
     savemat(opath, out_data)
