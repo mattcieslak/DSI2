@@ -87,6 +87,7 @@ class TrackDataset(HasTraits):
     tracks = Array
     scalars = Array
     connections = Array
+    labels = Array
     gfa = Array
     qa = Array
     offsets=Array
@@ -563,9 +564,9 @@ class TrackDataset(HasTraits):
         # Make arguments specific to the color settings
         if not self.dynamic_color_clusters:
             return {"color":(
-                                    self.static_color.red/255.,
-                                    self.static_color.green/255.,
-                                    self.static_color.blue/255.)
+                                    self.static_color.red()/255.,
+                                    self.static_color.green()/255.,
+                                    self.static_color.blue()/255.)
             }
         if self.color_map == "random":
             return {"colormap":random_color}
