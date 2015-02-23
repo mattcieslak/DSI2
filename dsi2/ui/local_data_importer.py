@@ -331,22 +331,27 @@ def create_missing_files(scan):
     print "\t\t++ [%s] pkl_directory is" % sid, pkl_directory
 
 
-    if os.path.isabs(scan.trk_file):
-        abs_trk_file = scan.trk_file
-    else:
-        abs_trk_file = os.path.join(input_dir,scan.trk_file)
+    abs_trk_file = scan.trk_file
     # Check that the pkl file exists, or the trk file
     if not os.path.exists(abs_pkl_file):
         if not os.path.exists(abs_trk_file):
             raise ValueError(abs_trk_file + " does not exist")
-    # Load the tracks
-    print "\t+ [%s] loading" %sid , abs_trk_file
-    tds = TrackDataset(abs_trk_file)
-    # NOTE: If these were MNI 152 @ 1mm, we could do something like
-    # tds.tracks_at_ijk = streamline_mapping(tds.tracks,(1,1,1))
-    print "\t+ [%s] hashing tracks in qsdr space"%sid
-    tds.hash_voxels_to_tracks()
-    print "\t\t++ [%s] Done." % sid
+        else:
+            # Load the tracks
+            print "\t+ [%s] pkl not found, loading" %sid , abs_trk_file
+            tds = TrackDataset(abs_trk_file)
+            # NOTE: If these were MNI 152 @ 1mm, we could do something like
+            # tds.tracks_at_ijk = streamline_mapping(tds.tracks,(1,1,1))
+            print "\t+ [%s] hashing tracks in qsdr space"%sid
+            tds.hash_voxels_to_tracks()
+            print "\t\t++ [%s] Done." % sid
+        # Load the tracks
+    else:
+        print "\t+ [%s] pkl file exists, loading" %sid , abs_trk_file
+        fop = open(abs_pkl_file,"r")
+        tds = pickle.load(fop)
+        fop.close()
+        print "\t\t++ [%s] Done." % sid
 
 
     # =========================================================
@@ -356,9 +361,7 @@ def create_missing_files(scan):
     for lnum, label_source in enumerate(scan.track_label_items):
         # Load the mask
         # File containing the corresponding label vector
-        npy_path = label_source.numpy_path if \
-            os.path.isabs(label_source.numpy_path) else \
-            os.path.join(output_dir,label_source.numpy_path)
+        npy_path = label_source.numpy_path 
         print "\t\t++ [%s] Ensuring %s exists" % (sid, npy_path)
         if os.path.exists(npy_path):
             print "\t\t++ [%s]"%sid, npy_path, "already exists"
@@ -366,15 +369,9 @@ def create_missing_files(scan):
 
         # Check to see if the qsdr volume exists. If not, create it from
         # the B0 volume
-        abs_qsdr_path = label_source.qsdr_volume_path if os.path.isabs(
-            label_source.qsdr_volume_path) else os.path.join(
-                output_dir,label_source.qsdr_volume_path)
-        abs_b0_path = label_source.b0_volume_path if os.path.isabs(
-            label_source.b0_volume_path) else os.path.join(
-                input_dir,label_source.b0_volume_path)
-        abs_fib_file = scan.fib_file if os.path.isabs(
-            scan.fib_file ) else os.path.join(
-                input_dir,scan.fib_file )
+        abs_qsdr_path = label_source.qsdr_volume_path
+        abs_b0_path = label_source.b0_volume_path 
+        abs_fib_file = scan.fib_file
 
         if not os.path.exists(abs_qsdr_path):
             # If neither volume exists, the data is incomplete

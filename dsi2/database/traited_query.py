@@ -289,6 +289,12 @@ class Scan(Dataset):
         fop = open(pkl_file, "rb")
         _trkds = pickle.load(fop)
         _trkds.properties = self
+        
+        # Loop over the scalar items
+        for scalar_item in self.track_scalar_items:
+            setattr(_trkds,scalar_item.name,
+                    np.load(scalar_item.numpy_path)
+                    )
         return _trkds
     
     def to_json(self):
