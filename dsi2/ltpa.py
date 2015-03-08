@@ -31,6 +31,42 @@ def save_results(results,original_coords,filename):
     idx = original_coords.T
     data[idx[0], idx[1], idx[2] ] = results
     ec.to_filename(filename)
+    
+def process_centers(centers, func, data_source, 
+                    aggregator_args, radius, 
+                    fail_on_error, dview_vars={}):
+    if None in (func, data_source, aggregator_args, radius):
+        raise ValueError("Must specify all arguments")
+    # Create a fresh aggregator for this process
+    aggregator = make_aggregator(**aggregator_args)
+    # Give this data source a fresh connection to mongodb if that's 
+    # where the data's coming from.
+    if type(data_source) == MongoTrackDataSource:
+        data_source.new_mongo_connection()
+    
+    fetch_streamlines = aggregator_args["algorithm"] != "region labels"
+    results = []
+    for cnum, center_index in enumerate(centers):
+        # Which coordinates to search?        
+        if radius > 0:
+            coords = sphere_around_ijk(radius,center_index)
+        else:
+            coords = center_index
+        # Send the result to the aggregator and process the data
+        track_sets = data_source.query_ijk(coords,
+                                fetch_streamlines=fetch_streamlines)
+        aggregator.set_track_sets(track_sets)
+        aggregator.update_clusters()
+        # Send the freshly updated aggregator to the evaluator function
+        try:
+            result = func(aggregator, **dview_vars)
+        except Exception, e:
+            # Raise the error to get a debug if desired
+            if fail_on_error:
+                raise e
+            result = e
+        results.append(result)
+    return results
 
 def run_ltpa( function, data_source, aggregator_args, 
               radius=0, n_procs=1, search_centers=mni_white_matter,
@@ -72,42 +108,6 @@ def run_ltpa( function, data_source, aggregator_args,
     results:list
       
     """
-    def process_centers(centers, func=function, 
-                        data_source=data_source, 
-                        aggregator_args=aggregator_args, radius=radius, 
-                        fail_on_error=fail_on_error):
-        if None in (func, data_source, aggregator_args, radius):
-            raise ValueError("Must specify all arguments")
-        # Create a fresh aggregator for this process
-        aggregator = make_aggregator(**aggregator_args)
-        # Give this data source a fresh connection to mongodb if that's 
-        # where the data's coming from.
-        if type(data_source) == MongoTrackDataSource:
-            data_source.new_mongo_connection()
-        
-        fetch_streamlines = aggregator_args["algorithm"] != "region labels"
-        results = []
-        for cnum, center_index in enumerate(centers):
-            # Which coordinates to search?        
-            if radius > 0:
-                coords = sphere_around_ijk(radius,center_index)
-            else:
-                coords = center_index
-            # Send the result to the aggregator and process the data
-            track_sets = data_source.query_ijk(coords,
-                                    fetch_streamlines=fetch_streamlines)
-            aggregator.set_track_sets(track_sets)
-            aggregator.update_clusters()
-            # Send the freshly updated aggregator to the evaluator function
-            try:
-                result = func(aggregator)
-            except Exception, e:
-                # Raise the error to get a debug if desired
-                if fail_on_error:
-                    raise e
-                result = e
-            results.append(result)
-        return results
     
     # Process normally on this cpu
     if n_procs == 1:
@@ -136,7 +136,7 @@ def run_ltpa( function, data_source, aggregator_args,
         rc = Client()
         dview = rc[:]
         n_engines = len(dview)
-        dview.push(dview_vars)
+        dview.use_dill()
     except Exception, e:
         NEEDS_IPCLUSTER_KILL=True
         subprocess.Popen(["ipcluster", "start", "--n=%d"%n_procs,
@@ -146,12 +146,19 @@ def run_ltpa( function, data_source, aggregator_args,
             rc = Client()
             dview = rc[:]
             n_engines = len(dview)
+            dview.use_dill()
         except Exception, e:
             raise OSError("Unable to connect to ipcluster or start one")
+    #dview.push(dview_vars)
 
     #dview.execute("os.environ['MKL_NUM_THREADS']='1'")
-    # extract all results into a flat list    
-    results = dview.map_sync(process_centers,center_chunks)
+    # ====================================
+    # Run the function
+    results = dview.map_sync(lambda c: process_centers(c, func=function,
+                    data_source=data_source, 
+                    aggregator_args=aggregator_args, radius=radius, 
+                    fail_on_error=fail_on_error,dview_vars=dview_vars),
+                                              center_chunks)
     res = []
     map(res.extend, results)
     
@@ -159,4 +166,72 @@ def run_ltpa( function, data_source, aggregator_args,
     if NEEDS_IPCLUSTER_KILL:
         subprocess.Popen(["ipcluster", "stop"])
         
-    return res
+    return res    
+
+
+
+
+def debug_ltpa( function, data_source, aggregator_args, 
+              radius=0, n_procs=1, search_centers=mni_white_matter,
+              fail_on_error=False,dview_vars={}):
+    """
+    Performs a LTPA over a set of voxels
+    
+    Parameters:
+    -----------
+    function:function
+      A function that takes an aggregator as its only argument and
+      returns all the information you're interested in getting
+      from each search sphere
+    
+    data_source:dsi2.database.data_source.DataSource
+      A DataSource instance from which to query spatial coordinates
+      
+    aggregator:dict
+      Arguments to be passed to ``dsi2.aggregation.make_aggregator``
+      
+    radius:int
+      Radius (in voxels) that should be included around each coordinate
+      in ``search_centers``. Default: 1
+      
+    n_procs:int
+      split ``search_centers`` into ``n_procs`` pieces and process each 
+      piece on a different processor. Default is 1, must be less than or
+      equal to the number of processors on the local machine.
+      
+    search_centers:np.ndarray
+      n x 3 matrix with the coordinates to serve as centers for the 
+      LTPA search.
+      
+    use_ipcluster:bool
+      Should an existing ipython client be used?
+      
+    Returns:
+    --------
+    results:list
+      
+    """
+    # Create a fresh aggregator for this process
+    aggregator = make_aggregator(**aggregator_args)
+    # Give this data source a fresh connection to mongodb if that's 
+    # where the data's coming from.
+    if type(data_source) == MongoTrackDataSource:
+        data_source.new_mongo_connection()
+    
+    fetch_streamlines = aggregator_args["algorithm"] != "region labels"
+    results = []
+    for cnum, center_index in enumerate(search_centers):
+        # Which coordinates to search?        
+        if radius > 0:
+            coords = sphere_around_ijk(radius,center_index)
+        else:
+            coords = center_index
+        # Send the result to the aggregator and process the data
+        track_sets = data_source.query_ijk(coords,
+                                fetch_streamlines=fetch_streamlines)
+        aggregator.set_track_sets(track_sets)
+        aggregator.update_clusters()
+        # Send the freshly updated aggregator to the evaluator function
+        result = function(aggregator)
+        results.append(result)
+    return results

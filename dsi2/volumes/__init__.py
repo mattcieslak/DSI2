@@ -1,12 +1,32 @@
 import nibabel as nib
 import os
 from pkg_resources import Requirement, resource_filename
+import numpy as np
 
 def get_MNI152():
     return nib.load(resource_filename(
                    Requirement.parse("dsi2"),
                    "example_data/MNI152_T1_2mm.nii.gz")
             )
+
+def save_coords_to_volume(coords,outpath):
+    """
+    Parameters:
+    -----------------
+    coords: List of 3-tuples
+    outpath:path to output (.nii[.gz])
+    """
+    img = get_MNI152()
+    data = np.zeros_like(img.get_data())
+    hdr = img.get_header()
+    affine = img.get_affine()
+    ix, jx, kx = np.array(coords).T
+    
+    data[ix,jx,kx] = 1
+    
+    new_img = nib.Nifti1Image(data, affine=affine, header=hdr)
+    new_img.to_filename(outpath)
+    
 
 def get_NTU90():
     return nib.load(resource_filename(
