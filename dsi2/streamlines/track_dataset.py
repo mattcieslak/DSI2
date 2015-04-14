@@ -357,7 +357,7 @@ class TrackDataset(HasTraits):
             every = 1
 
         survivors = self.tracks[idx] if hasattr(self,"tracks") and self.tracks.size > 0 else None
-        if every > 1 and survivors:
+        if every > 1 and survivors.size > 0:
             survivors = survivors[every-1::every]
             
         # Similarly, subset the additional info
