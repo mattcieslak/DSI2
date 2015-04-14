@@ -74,6 +74,24 @@ class Cluster(HasTraits):
 
     def _mcolor_changed(self):
         self.color = str(tuple(self.mcolor))
+        
+class Segment(HasTraits):
+    color       = Color
+    mcolor      = Array(shape=(4,))
+    visible     = Bool(True)
+    render3d    = Bool(False)
+    representation = Enum("Barbell","Splater")
+    ntracks     = Int
+    ncoords     = Int
+    scan_id     = Str
+    segment_id   = Int
+    start_coordinate = Array(shape=(3,))
+    end_coordinate   = Array(shape=(3,))
+    indices          = Array
+    cluster_type     = "POINT"
+
+    def _mcolor_changed(self):
+        self.color = str(tuple(self.mcolor))
 
 class RegionCluster(Cluster):
     start_coordinate = Str
@@ -92,6 +110,7 @@ class TrackDataset(HasTraits):
     qa = Array
     offsets=Array
     properties = Any
+    segments = List(Instance(Segment))
     #original_track_indices = Array(np.array([]))
 
     # Are the glyphs already rendered?
@@ -199,13 +218,18 @@ class TrackDataset(HasTraits):
             self.set_tracks(np.array([stream[0] for stream in streams],
                                      dtype=np.object))
             fl.close()
-
-        # Check for scalars, support them someday
-        if self.header['n_scalars'] > 0:
-            print "WARNING: Ignoring track scalars in %s"%fname
+            # Check for scalars, support them someday
+            if self.header['n_scalars'] > 0:
+                print "WARNING: Ignoring track scalars in %s"%fname
+        
+        if properties is None:
+            from dsi2.database.traited_query import Scan
+            print "Warning: using default properties"
+            self.properties = Scan()
+        else:
+            self.properties = properties
 
         self.connections = connections
-        self.properties = properties
         self.clusters = []
         self.original_track_indices = original_track_indices
 
@@ -269,6 +293,12 @@ class TrackDataset(HasTraits):
         else:
             new_tracks = np.array([])
         self.tracks = new_tracks
+        
+        if self.tracks_drawn:
+            self.remove_glyphs()
+            if self.render_tracks:
+                self.draw_tracks()
+                
 
     def get_ntracks(self):
         return self.tracks.shape[0]
@@ -794,6 +824,45 @@ class TrackDataset(HasTraits):
         idx_fetcher = self.src.module_manager.scalar_lut_manager.lut.get_index
         for clust in self.clusters:
             clust.mcolor = cmap[idx_fetcher(clust.id_number)]
+            
+            
+    def set_segments(self, clusters, update_glyphs=True):
+        """
+        Applies a set of cluster assignments to the tracks, then
+        loops over the clusters and applies the
+        """
+        self.segments = clusters
+        if not update_glyphs: return
+        if self.empty: return
+
+        # If this object has a static color, our job is easy
+        if not self.dynamic_color_clusters:
+            for seg in self.segments:
+                seg.color = self.static_color
+            return
+
+        if self.render_tracks:
+            if not self.tracks_drawn:
+                self.draw_tracks()
+            self.paint_segments()
+            
+    def paint_segments(self,show_noise=True):
+        print "\t\t\t+++ painting", len(self.segments), "segments to previously drawn glyphs"
+        scalars = np.hstack(self.segments[0].segments)
+        if not scalars.shape[0] == self.x.shape[0]: raise ValueError("Shape mismatch")
+        self.scalars = scalars
+        
+        #for nseg, seg in enumerate(self.segments):
+            #begin,end = self.offsets[nseg], self.offsets[nseg+1]        
+            #usable = seg.segments[nseg][:(end-begin)]
+            #self.scalars[begin:end] = usable
+        self.src.mlab_source.scalars = self.scalars
+        cmap = self.src.module_manager.scalar_lut_manager.lut.table.to_array()
+        if not show_noise:
+            cmap[0,-1] = 0
+        idx_fetcher = self.src.module_manager.scalar_lut_manager.lut.get_index
+        for segment in self.segments:
+            segment.mcolor = cmap[idx_fetcher(segment.segment_id)]
 
 class dtkTrackDataset(TrackDataset):
     pass
