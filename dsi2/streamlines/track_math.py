@@ -11,6 +11,16 @@ def symmetricize(network):
 
 triu_indices = lambda x, y=0: zip(*list(chain(*[[(i, j) for j in range(i + y, x)] for i in range(x - y)])))
 
+def voxel_downsampler(tracks,voxel_size=np.array((2.,2.,2.))):
+    new_trks = []
+    for trk in tracks:
+        # get downsampled_indices
+        a = np.floor(trk/voxel_size)
+        b = a.ravel().view(np.dtype((np.void, a.dtype.itemsize*a.shape[1])))
+        _, unique_idx = np.unique(b, return_index=True)
+        new_trks.append(trk[np.sort(unique_idx)])
+    return new_trks
+
 def triu_indices_from(X):
     sz = X.shape[0]
     return zip(*triu_indices(sz))

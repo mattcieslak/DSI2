@@ -33,7 +33,8 @@ setup(  name='DSI2',
         entry_points = {
             'gui_scripts':[
                 'dsi2_browse = dsi2.app_launch:browser_builder',
-                'dsi2_import = dsi2.app_launch:import_data'
+                'dsi2_import = dsi2.app_launch:import_data',
+                'dsi2_view = dsi2.app_launch:view_tracks'
             ]
         }
 )
