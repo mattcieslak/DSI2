@@ -209,19 +209,26 @@ class TrackDataset(HasTraits):
             self.header = header
             self.set_tracks(tracks)
         else:
-            if fname.endswith("gz"):
+            if fname.endswith("trk.gz"):
                 fl = gzip.open(fname,"r")
-            else:
+            elif fname.endswith("trk"):
                 fl = open(fname,"r")
-            streams, self.header = trackvis.read(fl)
-            # Convert voxmm to ijk
-            self.set_tracks(np.array([stream[0] for stream in streams],
+                streams, self.header = trackvis.read(fl)
+                # Convert voxmm to ijk
+                self.set_tracks(np.array([stream[0] for stream in streams],
                                      dtype=np.object))
-            fl.close()
-            # Check for scalars, support them someday
-            if self.header['n_scalars'] > 0:
-                print "WARNING: Ignoring track scalars in %s"%fname
-        
+                fl.close()
+                # Check for scalars, support them someday
+                if self.header['n_scalars'] > 0:
+                    print "WARNING: Ignoring track scalars in %s"%fname
+            elif fname.endswith("txt"):
+                fop = open(fname,"r")
+                self.set_tracks( np.array(
+                    [np.array(map(float, line.strip().split())).reshape(-1,3) for \
+                     line in fop ], dtype=np.object ))
+            elif fname.endswith("mat"):
+                pass
+
         if properties is None:
             from dsi2.database.traited_query import Scan
             print "Warning: using default properties"
