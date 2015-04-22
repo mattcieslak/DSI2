@@ -101,9 +101,9 @@ class SphereBrowser(HasTraits):
     ##################################################################
     def _vslicer_default(self):
         return SlicerPanel()
-    def _clusterer_default(self):
+    def _aggregator_default(self):
         #return RegionAggregator(scene3d=self.vslicer.scene3d)
-        return RegionAggregator()
+        return ClusterEditor(scene3d=self.scene3d)
     def _track_source_default(self):
         #return TrackDataSource(scene3d=self.vslicer.scene3d)
         return TrackDataSource()
@@ -122,11 +122,12 @@ class SphereBrowser(HasTraits):
     ##################### Event Logic
     ##################################################################
 
-    def _clusterer_changed(self):
+    def _aggregator_changed(self):
         print "setting aggregator to interactive"
         self.aggregator.interactive = True
         if type(self.aggregator) == RegionAggregator:
             self.on_trait_change(self.change_atlas,"aggregator.atlas_name")
+        
 
     def set_track_source(self,track_source):
         """ Supply the aggregator/browser with a list of queryable
