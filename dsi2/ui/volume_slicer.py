@@ -3,8 +3,9 @@
 import numpy as np
 import nibabel as nib
 # Traits stuff
-from traits.api import HasTraits, Instance, Array, \
-    Bool, Dict, on_trait_change, Range, Color, Any, Int, DelegatesTo
+from traits.api import ( HasTraits, Instance, Array, 
+    Bool, Dict, on_trait_change, Range, Color, Any, Int, 
+    DelegatesTo, CInt, Property, File )
 from traitsui.api import View, Item, VGroup, \
     HGroup, Group, RangeEditor, ColorEditor, VSplit
 
@@ -26,30 +27,32 @@ from .chaco_slice import Slices
 import os
 from ..volumes import get_MNI152
 
-
-# -- MNI152@2mm LAS --
-nim = get_MNI152()
-extents = nim.get_header().get_data_shape()
-
-
 class SlicerPanel(HasTraits):
+    # path to a nifti file that holds the data
+    nim_path = File
+    
     # MNI_152 objects. data holds the np array, data_src is for mayavi
-    data = Array
+    data = Array(value=np.zeros((50,50,50)))
     data_src = Instance(Source)
 
     # --- Sphere configuration ---
     # position of the cursor
     # Radius of the sphere
     radius = Range(low=0,high=14,value=1)
-    sphere_x = Range(low=0,high=extents[0],value=extents[0]/2)
-    sphere_y = Range(low=0,high=extents[1],value=extents[1]/2)
-    sphere_z = Range(low=0,high=extents[2],value=extents[2]/2)
+    extent_x = Property(Int)
+    extent_y = Property(Int)
+    extent_z = Property(Int)
+    sphere_x = Range(low=0, high='extent_x')
+    sphere_y = Range(low=0, high='extent_y')
+    sphere_z = Range(low=0, high='extent_z')
     sphere_coords = Array
     sphere_color = Color((255,0,0,255))
     sphere_visible = Bool(True)
     coordsupdated = Int(0)
     # Spere's representation on the screen
     sphere_viz = Instance(PipelineBase)
+    
+    widgets_drawn = Bool(False)
     x_slice_plane = Instance(PipelineBase)
     y_slice_plane = Instance(PipelineBase)
     z_slice_plane = Instance(PipelineBase)
@@ -66,9 +69,6 @@ class SlicerPanel(HasTraits):
     scene3d = Instance(MlabSceneModel, ())
     camera_initialized = False
 
-    # Actual volume data
-    mni_data_src = Instance(Source)
-
     def __init__(self, **traits):
         """ Creates a panel for viewing a 3d Volume.
         Parameters:
@@ -76,28 +76,70 @@ class SlicerPanel(HasTraits):
 
         """
         super(SlicerPanel,self).__init__(**traits)
-        self.data = nim.get_data().astype(float)
         self.sphere_coords
         self.scene3d
         self.sphere_viz
-        #self.x_slice_plane
+        
+    @on_trait_change("nim_path")
+    def render_volume(self):
+        if not os.path.exists(self.nim_path):
+            print "No such file", self.nim_path
+            return
+        print "Opening", self.nim_path
+        try:
+            data = nib.load(self.nim_path)
+        except Exception, e:
+            print "Unable to load data", e
+            return
+        
+        # Remove imageplane widgets 
+        self.scene3d.disable_render = True
+        if self.widgets_drawn:
+            self.x_slice_plane.remove()
+            self.y_slice_plane.remove()
+            self.z_slice_plane.remove()
+        # Set data and update the data_src
+        self.data = data.get_data()
+        self.data_src = mlab.pipeline.scalar_field(self.data,
+                            figure=self.scene3d.mayavi_scene,
+                            name='Data',colormap="gray")
+        # Send the new data to the slices
+        self.slice_plots.set_volume(self.data)
+        # Update the sphere to be in the middle of this volume 
+        self.sphere_x = self.extent_x / 2
+        self.sphere_y = self.extent_y / 2
+        self.sphere_z = self.extent_z / 2
+        self.x_slice_plane = self.make_x_slice_plane()
         self.x_slice_plane.ipw.sync_trait(
             "slice_position", self, alias="x")
-        #self.x_slice_plane.ipw.sync_trait(
-        #    "enabled", self.slice_plots, alias="x_slice_plane_visible")
-        #self.y_slice_plane
+        self.x_slice_plane.ipw.sync_trait(
+            "enabled", self.slice_plots, alias="x_slice_plane_visible")
+        self.y_slice_plane = self.make_y_slice_plane()
         self.y_slice_plane.ipw.sync_trait(
             "slice_position", self, alias="y")
-        #self.y_slice_plane.ipw.sync_trait(
-        #    "enabled", self.slice_plots, alias="y_slice_plane_visible")
-        #self.z_slice_plane
+        self.y_slice_plane.ipw.sync_trait(
+            "enabled", self.slice_plots, alias="y_slice_plane_visible")
+        self.z_slice_plane = self.make_z_slice_plane()
         self.z_slice_plane.ipw.sync_trait(
             "slice_position", self, alias="z")
-        #self.z_slice_plane.ipw.sync_trait(
-        #    "enabled", self.slice_plots, alias="z_slice_plane_visible")
-
+        self.z_slice_plane.ipw.sync_trait(
+            "enabled", self.slice_plots, alias="z_slice_plane_visible")
+        
+        self.scene3d.disable_render = False
+        
+        self.widgets_drawn = True
+        
+    def _get_extent_x(self):
+        return self.data.shape[0]
+    
+    def _get_extent_y(self):
+        return self.data.shape[1]
+    
+    def _get_extent_z(self):
+        return self.data.shape[2]
+    
     def _slice_plots_default(self):
-        return Slices(volume_data=nim.get_data())
+        return Slices()
 
     def _sphere_viz_default(self):
         # different between wx and qt
@@ -149,12 +191,8 @@ class SlicerPanel(HasTraits):
                      color_tuple[1]/255.,
                      color_tuple[2]/255.)
 
-    def _data_src_default(self):
-        return mlab.pipeline.scalar_field(self.data,
-                            figure=self.scene3d.mayavi_scene,
-                            name='Data',colormap="gray")
 
-    def _x_slice_plane_default(self):
+    def make_x_slice_plane(self):
         ipw = mlab.pipeline.image_plane_widget(
             self.data_src,
             figure=self.scene3d.mayavi_scene,
@@ -162,24 +200,27 @@ class SlicerPanel(HasTraits):
             name='Cut x',colormap="gray"
             )
         ipw.ipw.slice_position=self.x
+        ipw.ipw.interaction = 0
         return ipw
 
-    def _y_slice_plane_default(self):
+    def make_y_slice_plane(self):
         ipw = mlab.pipeline.image_plane_widget(
             self.data_src, colormap='gray',
             figure=self.scene3d.mayavi_scene,
             plane_orientation='y_axes',
             name='Cut y')
         ipw.ipw.slice_position=self.y
+        ipw.ipw.interaction = 0
         return ipw
 
-    def _z_slice_plane_default(self):
+    def make_z_slice_plane(self):
         ipw = mlab.pipeline.image_plane_widget(
             self.data_src,colormap='gray',
             figure=self.scene3d.mayavi_scene,
             plane_orientation='z_axes',
             name='Cut z')
         ipw.ipw.slice_position=self.z
+        ipw.ipw.interaction = 0
         return ipw
 
     @on_trait_change('sphere_x,sphere_y,sphere_z,radius')
@@ -216,40 +257,37 @@ class SlicerPanel(HasTraits):
         self.scene3d.scene.interactor.interactor_style = \
                                  tvtk.InteractorStyleTerrain()
         #self.scene3d.mayavi_scene.scene.light_manager.light_mode = "vtk"
-        self.x_slice_plane.ipw.interaction = 0
-        self.y_slice_plane.ipw.interaction = 0
-        self.z_slice_plane.ipw.interaction = 0
 
-#    @on_trait_change('x_slice_plane_visible,y_slice_plane_visible,z_slice_plane_visible')
-#    def update_slice_opacity(self,obj,name,old,new):
-#        if name=='x_slice_plane_visible':
-#            self.x_slice_plane.ipw.texture_visibility = new
-#        if name=="y_slice_plane_visible":
-#            self.y_slice_plane.ipw.texture_visibility = new
-#        if name=="z_slice_plane_visible":
-#            self.z_slice_plane.ipw.texture_visibility = new
+    @on_trait_change('x_slice_plane_visible,y_slice_plane_visible,z_slice_plane_visible')
+    def update_slice_opacity(self,obj,name,old,new):
+        if name=='x_slice_plane_visible':
+            self.x_slice_plane.ipw.texture_visibility = new
+        if name=="y_slice_plane_visible":
+            self.y_slice_plane.ipw.texture_visibility = new
+        if name=="z_slice_plane_visible":
+            self.z_slice_plane.ipw.texture_visibility = new
 
     sphere_widgets = VGroup(
        Item(name="sphere_x",
             editor=RangeEditor(
                         auto_set=False,
                         mode="slider",
-                        high = 91,
-                        low  = 0,
+                        low=0,
+                        high_name="extent_x",
                         format    = "%i")),
        Item(name="sphere_y",
             editor=RangeEditor(
                         auto_set=False,
                         mode="slider",
-                        high = 109,
-                        low  = 0,
+                        low=0,
+                        high_name='extent_y',
                         format    = "%i")),
          Item(name="sphere_z",
             editor=RangeEditor(
                         auto_set=False,
                         mode="slider",
-                        high = 91,
-                        low  = 0,
+                        low=0,
+                        high_name='extent_z',
                         format    = "%i")),
          Item(name="radius"),
          Item(name="sphere_color"),
