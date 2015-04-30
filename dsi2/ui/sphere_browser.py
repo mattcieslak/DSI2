@@ -35,6 +35,25 @@ from mayavi.tools.mlab_scene_model import MlabSceneModel
 import os
 import numpy as np
 
+
+class AlgorithmPicker(HasTraits):
+    algorithm = Enum("None", "Brain Atlas", "k-Means", "QuickBundles", "ReebGen")
+
+    def get_algorithm(self):
+        if self.algorithm == "Brain Atlas":
+            return RegionLabelAggregator()
+        if self.algorithm == "k-Means":
+            from dsi2.aggregation.clustering_algorithms import FastKMeansAggregator
+            return FastKMeansAggregator()
+        if self.algorithm == "QuickBundles":
+            from dsi2.aggregation.clustering_algorithms import QuickBundlesAggregator
+            return QuickBundlesAggregator()
+        if self.algorithm == "ReebGen":
+            from dsi2.aggregation.segmentation.segmentation_algorithms import ReebGraphSegmentation
+            return ReebGraphSegmentation()
+        else:
+            return None
+        
 class SphereBrowser(HasTraits):
     # Object that slices the MNI brain
     vslicer =    Instance(SlicerPanel)
@@ -57,6 +76,9 @@ class SphereBrowser(HasTraits):
     # Object that manages additional volume glyphs to be rendered
     additional_volumes = Instance(ScalarVolumes)
 
+    # Object that enables the selection between aggregation 
+    algorithm_picker = Instance(AlgorithmPicker)
+
     # For saving trk files and screencaps, keep track of the file
     # Path for saving
     save_path = File(os.getcwd())
@@ -64,7 +86,6 @@ class SphereBrowser(HasTraits):
 
     # A list of file paths to
     reference_volumes = List(Instance(File))
-    
     
     def __init__(self,**traits):
         """
@@ -91,9 +112,7 @@ class SphereBrowser(HasTraits):
         self.aggregator.scene3d = self.scene3d
         self.aggregator.set_track_source(self.track_source)
 
-    ##################################################################
-    ##################### Default UI Items
-    ##################################################################
+    # Default UI Items
     def _vslicer_default(self):
         return SlicerPanel()
     def _aggregator_default(self):
@@ -112,11 +131,7 @@ class SphereBrowser(HasTraits):
     def _additional_volumes_default(self):
         return ScalarVolumes(scene3d=self.scene3d)
 
-
-    ##################################################################
-    ##################### Event Logic
-    ##################################################################
-
+    # Event Logic
     def _aggregator_changed(self):
         print "setting aggregator to interactive"
         self.aggregator.interactive = True
@@ -201,9 +216,10 @@ class SphereBrowser(HasTraits):
         also get its atlas changed.
         """
         print "Atlas changed to", self.aggregator.atlas_name
+        print "Previously some code ran now..."        
         # Reset the .connections attr on the searchable tds'es
-        self.track_source.set_atlas(self.aggregator.atlas_name)
-        self.region_pair_query.update_regions(self.aggregator)
+        #self.track_source.set_atlas(self.aggregator.atlas_name)
+        #self.region_pair_query.update_regions(self.aggregator)
 
     @on_trait_change("track_source")
     def get_atlas_names(self):
@@ -220,9 +236,7 @@ class SphereBrowser(HasTraits):
                                          set(tds.properties.atlases.keys()))
             self.aggregator.possible_atlases = ["None"] + sorted(list(possible_atlases))
 
-    ##################################################################
-    ##################### Menu Items
-    ##################################################################
+    # Menu Items
     def take_screenshot(self):
         s=ScreenShooter(
             filepath=os.path.join(self.save_path,self.save_name+".png"))
@@ -233,6 +247,7 @@ class SphereBrowser(HasTraits):
         self.scene3d.mayavi_scene.scene.save(s.filepath)
     a_take_screenshot = Action( name = "Save screen shot",
                                 action = "take_screenshot")
+    
     def edit_volumes(self):
         self.additional_volumes.edit_traits()
     a_edit_volumes = Action(name = "Render additional volumes",
@@ -249,17 +264,40 @@ class SphereBrowser(HasTraits):
                                       action = "set_coords_from_nifti")
 
     def evaluate_aggregation(self):
-        self.evaluator.edit_traits()
+        print "No longer Implemented"
+        #self.evaluator.edit_traits()
     a_evaluate_aggregation = Action( name = "Evaluate Aggregation",
                                     action = "evaluate_aggregation" )
 
     def change_datasource(self):
-        self.aggregator.edit_traits(kind="live", view="objects_view")
-    a_change_datasource = Action( name = "Edit data sources",
+        from dsi2.ui.browser_builder import BrowserBuilder
+        bb = BrowserBuilder()
+        #TODO: Check whether livemodal goes in viewdef or in conf call 
+        bb.configure_traits(view="dset_view")
+        self.set_track_source(bb.get_datasource())
+        
+    a_change_datasource = Action( name = "Select data sources",
                                   action = "change_datasource")
 
+    def _algorithm_picker_default(self):
+        return AlgorithmPicker()
+    
     def change_aggregation_algorithm(self):
-        print "Not implemented yet!"
+        self.algorithm_picker.edit_traits()
+    
+    @on_trait_change("algorithm_picker.algorithm")
+    def algorighm_change(self):
+        # A new algorithm got picked. Set up a new aggregator
+        print "algorithm is ", self.algorithm_picker.algorithm
+        new_agg = self.algorithm_picker.get_algorithm()
+        if new_agg is None: return
+        new_agg.set_track_sets(self.aggregator.track_sets)
+        new_agg.scene3d = self.scene3d
+        for attr in ("render_tracks", "auto_aggregate"):
+            setattr(new_agg,attr,getattr(self.aggregator,attr))
+        self.aggregator = new_agg
+        print "Algorithm changed"
+        
     a_change_aggregation_algorithm = Action( name="Change aggregation algorithm",
                                             action = "change_aggregation_algorithm")
     def save_streamlines(self):
@@ -304,14 +342,16 @@ class SphereBrowser(HasTraits):
                      show_labels=False
                  ),
                  menubar = MenuBar(
-                     Menu(a_change_datasource,
+                     Menu(
+                          a_change_datasource,
                           a_set_coords_from_nifti,
                           a_edit_volumes,
                           name="Data"
                          ),
-                     Menu(a_evaluate_aggregation,
+                     Menu(
                           a_change_aggregation_algorithm,
                           a_query_region_pair,
+                          a_evaluate_aggregation,
                           name="Aggregation"
                          ),
                      Menu(a_edit_scene3d,

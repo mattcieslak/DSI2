@@ -58,6 +58,7 @@ class BrowserBuilder(HasTraits):
     aggregator = Enum("K Means","QuickBundles","Region Labels")
     a_query = Button(label="Search for Datasets")
     a_browser_launch = Button(label="Launch Sphere Browser")
+    a_dsource_selected = Button(label="OK")
 
     def _a_query_fired(self):
         if self.data_source == "MongoDB":
@@ -102,6 +103,14 @@ class BrowserBuilder(HasTraits):
                 matchnum += 1
                 matches.append(dataspec)
         self.results = matches
+        
+    def get_datasource(self): 
+        # Create a track source
+        if self.data_source == "MongoDB":
+            track_source = self.get_mongo_datasource()
+        else:
+            track_source = self.get_local_datasource()
+        return track_source
 
     def _a_browser_launch_fired(self):
         if self.aggregator == "K Means":
@@ -112,10 +121,7 @@ class BrowserBuilder(HasTraits):
             cl = RegionLabelAggregator()
         
         # Create a track source
-        if self.data_source == "MongoDB":
-            track_source = self.get_mongo_datasource()
-        else:
-            track_source = self.get_local_datasource()
+        track_source = self.get_datasource()
             
         # Should we pass a list of colors to the aggregator?
         def wx_color_convert(wxc):
@@ -159,6 +165,29 @@ class BrowserBuilder(HasTraits):
         visible_when="data_source=='MongoDB'"
     )
         
+    dsource_view = View(
+        HSplit(
+                VGroup(
+                    Group(
+            Item("data_source",label="Data Source"),
+            local_file_group,
+            mongo_file_group,
+            ),
+                    Group(
+            Item("query_parameters", style="custom"),
+                show_labels=False),
+            ),
+            VGroup(
+                Item("a_query"),
+                Item("a_dsource_selected"),
+                Item(name="results",
+                 editor=scan_table),
+            show_labels=False
+            )
+        ),
+        title="Select Data Source",
+        kind="livemodal"
+    )
     traits_view = View(
         HSplit(
                 VGroup(
