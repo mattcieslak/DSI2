@@ -97,6 +97,14 @@ class ReebGraphSegmentation(SegmentationEditor):
             otmp.write(" ".join("%.4f"%f for _trk in trk for f in _trk ) + "\n")
         otmp.close()
         
+        vmap = tempfile.NamedTemporaryFile(delete=False)
+        vmap_name = vmap.name
+        vmap.close()
+        
+        bmap = tempfile.NamedTemporaryFile(delete=False)
+        bmap_name = bmap.name
+        bmap.close()
+        
         # Write the temporary dim file
         dimtmp = tempfile.NamedTemporaryFile(delete=False)
         geom_str = []
@@ -107,24 +115,28 @@ class ReebGraphSegmentation(SegmentationEditor):
         print "geometry:", "\n".join(geom_str)
         
         # call the reebgen executable
-        print "COMMAND:"
-        print " ".join([self.reeb_exe, dimtmp.name, tmpname,"%.3f"%self.epsilon,
-                          "%.2f"%self.delta, "%d"%self.min_tracks
-                          ])
-        proc = subprocess.Popen([self.reeb_exe, dimtmp.name, tmpname,
-                          "%.2f"%self.epsilon, "%.2f"%self.delta, "%d"%self.min_tracks
-                          ],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        cmd_list =[self.reeb_exe, dimtmp.name, tmpname,"%.3f"%self.epsilon,
+                          "%.2f"%self.delta, "%d"%self.min_tracks, 
+                          "V", vmap_name, "B", bmap_name
+                          ]
+ 
+        print "COMMAND:", " ".join(cmd_list)
+        proc = subprocess.Popen(cmd_list,
+                          stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         sout, serr = proc.communicate()
         print sout
         
         # Process labels from stdout
-        labels = sout.strip().split("\n")[(-len(tracks)):]
+        fop = open(bmap_name,"r")
         collected = []
-        for line in labels:
+        for line in fop.readlines():
             xx =np.array( map(int, line.strip().split()))
             xx[xx==-1] = -100
             collected.append(xx)
         labels = np.array(collected,dtype=np.object)
+        fop.close()
+        
+        #TODO: Read the bmap file
         
         # Cleanup tmp files
         #os.system("rm " + otmp.name)
