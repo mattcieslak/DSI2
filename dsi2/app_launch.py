@@ -26,20 +26,20 @@ def import_data():
     ldi.configure_traits()
     
     
+    
+    
 def view_tracks():
-    if len(sys.argv) < 2:
-        print "Requires arguments to run"
-        return
     from dsi2.streamlines.track_dataset import TrackDataset
     track_sets = []
-    for pth in sys.argv[1:]:
-        try:
-            track_sets.append(
-                TrackDataset(pth)
-                )
-        except Exception,e:
-            print "unable to load", pth
-            print e
+    if len(sys.argv) > 1:
+        for pth in sys.argv[1:]:
+            try:
+                track_sets.append(
+                    TrackDataset(pth)
+                    )
+            except Exception,e:
+                print "unable to load", pth
+                print e
     from dsi2.ui.sphere_browser import SphereBrowser
     sb = SphereBrowser()
     sb.aggregator.set_track_sets(track_sets)

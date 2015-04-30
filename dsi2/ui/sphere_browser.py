@@ -57,20 +57,15 @@ class SphereBrowser(HasTraits):
     # Object that manages additional volume glyphs to be rendered
     additional_volumes = Instance(ScalarVolumes)
 
-    # Streamlines may be labeled via aggregation, roi pair labeling.
-    #  Update streamline colors based on these labels or stick to their
-    #  default color?
-    apply_streamline_label_colors = Bool(True)
-    render_clusters = Bool(True)
-
     # For saving trk files and screencaps, keep track of the file
     # Path for saving
     save_path = File(os.getcwd())
     save_name = DelegatesTo("aggregator")
 
-    num_queries = Int(-1)
-    interactive = Bool(True)
-
+    # A list of file paths to
+    reference_volumes = List(Instance(File))
+    
+    
     def __init__(self,**traits):
         """
         Event handler for a number of objects that all work together.
