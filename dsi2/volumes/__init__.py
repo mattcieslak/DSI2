@@ -3,11 +3,12 @@ import os
 from pkg_resources import Requirement, resource_filename
 import numpy as np
 
-def get_MNI152():
-    return nib.load(resource_filename(
+def get_MNI152_path():
+    return resource_filename(
                    Requirement.parse("dsi2"),
                    "example_data/MNI152_T1_2mm.nii.gz")
-            )
+def get_MNI152():
+    return nib.load(get_MNI152_path())
 
 def save_coords_to_volume(coords,outpath):
     """

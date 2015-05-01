@@ -173,10 +173,10 @@ class BrowserBuilder(HasTraits):
             ),
                     Group(
             Item("query_parameters", style="custom"),
+            Item("a_query"),
                 show_labels=False),
             ),
             VGroup(
-                Item("a_query"),
                 Item(name="results",
                  editor=scan_table),
             show_labels=False
@@ -196,12 +196,12 @@ class BrowserBuilder(HasTraits):
             ),
                     Group(
             Item("query_parameters", style="custom"),
+            Item("a_query"),
                 show_labels=False),
             ),
             VGroup(
                 Item("aggregator",label="Aggregation Algorithm"),
             VGroup(
-                Item("a_query"),
                 Item("a_browser_launch"),
                 Item(name="results",
                  editor=scan_table),

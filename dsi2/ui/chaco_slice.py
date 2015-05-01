@@ -9,48 +9,29 @@ from traitsui.api import Group, HGroup, Item, View, RangeEditor
 
 class ChacoSlice(HasTraits):
     # Borrow the volume data from the parent
-    volume_data = Array
     plot_data = ArrayPlotData
     plot = Instance(Plot)
     origin = Enum("bottom left", "top left", "bottom right", "top right")
-    slice_number = Range(low=0, high=108, value=0)
-    x = slice_number
-    y = slice_number
-    z = slice_number
+    top_slice = Int
+    slice_number = Range(low=0, high_name="top_slice", value=0)
     slice_plane_visible = Bool(True)
     slice_opacity = Range(0.0,1.0,1.)
     plane = Enum("x","y","z")
-    extents = Property(Tuple)
-    top_slice = Property(Int)
 
     def __init__(self,**traits):
         super(ChacoSlice,self).__init__(**traits)
-        x,y = self.extents
         self.plot_data = ArrayPlotData(imagedata=self.data_source())
         self.plot = Plot(self.plot_data,
                 padding=1,
                 fixed_preferred_size=(50,50),
                 bgcolor="black"
                 )
-        if 0 in (x,y):
-            aspect_ratio = 1
-        else:
-            aspect_ratio = float(x)/y
+        aspect_ratio = 1
         self.renderer = self.plot.img_plot(
             "imagedata", name="plot1",
             colormap=gray,
             aspect_ratio=aspect_ratio)[0]
         
-    def _get_top_slice(self):
-        i,j,k = self.parent.extents
-        if self.plane == "x":
-            return i-1
-        if self.plane == "y":
-            return j-1
-        if self.plane == "z":
-            return k-1
-        
-
     def _slice_number_changed(self):
         #print self.plane, "slice changed to ",self.slice_number
         self.plot.data.set_data("imagedata",self.data_source())
@@ -59,8 +40,12 @@ class ChacoSlice(HasTraits):
     def _origin_changed(self):
         self.renderer.origin = self.origin
         self.plot.request_redraw()
-
-    def _get_extents(self):
+        
+    def reset_aspect_ratio(self):
+        x,y = self.get_extents()
+        self.renderer.aspect_ratio = float(x)/y
+        
+    def get_extents(self):
         i,j,k = self.parent.extents
         if self.plane == "x":
             return j,k
@@ -68,10 +53,6 @@ class ChacoSlice(HasTraits):
             return i,k
         if self.plane == "z":
             return i,j
-        
-    def reset_aspect_ratio(self):
-        x,y = self.extents
-        self.renderer.aspect_ratio = float(x)/y
         
     def data_source(self):
         # Link the appropriate view changer to the slice number change
@@ -93,8 +74,6 @@ class ChacoSlice(HasTraits):
                                     high_name = 'top_slice',
                                     low    = 0,
                                     format = "%i")),
-                            #Item("slice_opacity"),
-                            #Item("origin"),
                             show_labels=False),
                     show_labels=False,
                         ),
@@ -132,22 +111,24 @@ class Slices(HasTraits):
         # Enable communication between x,y,z and their windows
         self.sync_trait("x", self.x_slice_window,
                         alias="slice_number",mutual=True)
-        #self.sync_trait("x_slice_plane_visible", self.x_slice_window,
-        #                alias="slice_plane_visible",mutual=True)
+        self.sync_trait("x_slice_plane_visible", self.x_slice_window,
+                        alias="slice_plane_visible",mutual=True)
         self.sync_trait("y", self.y_slice_window,
                         alias="slice_number",mutual=True)
-        #self.sync_trait("y_slice_plane_visible", self.y_slice_window,
-        #                alias="slice_plane_visible",mutual=True)
+        self.sync_trait("y_slice_plane_visible", self.y_slice_window,
+                        alias="slice_plane_visible",mutual=True)
         self.sync_trait("z", self.z_slice_window,
                         alias="slice_number",mutual=True)
-        #self.sync_trait("z_slice_plane_visible", self.z_slice_window,
-        #                alias="slice_plane_visible",mutual=True)
+        self.sync_trait("z_slice_plane_visible", self.z_slice_window,
+                        alias="slice_plane_visible",mutual=True)
 
     def set_volume(self, volume):
         self.volume_data = volume
         for sw, dim in zip(["x","y","z"], volume.shape):
+            # reset the slices to the middle of the volume
             setattr(self,sw,dim/2)
             win = getattr(self,sw + "_slice_window")
+            win.top_slice = dim
             win.reset_aspect_ratio()
         
     def _x_default(self):
@@ -157,24 +138,21 @@ class Slices(HasTraits):
     def _z_default(self):
         return self.extents[2]/2
     
-    def _x_slice_window_default(self):
-        return ChacoSlice(
-            volume_data=self.volume_data,
-            plane = "x",
-            parent=self)
-        
     def _get_extents(self):
         return self.volume_data.shape
     
+    def _x_slice_window_default(self):
+        return ChacoSlice(
+            plane = "x",
+            parent=self)        
+    
     def _y_slice_window_default(self):
         return ChacoSlice(
-            volume_data=self.volume_data,
             plane = "y",
             parent=self)
     
     def _z_slice_window_default(self):
         return ChacoSlice(
-            volume_data=self.volume_data,
             plane = "z",
             parent=self)
 

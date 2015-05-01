@@ -19,6 +19,7 @@ from ..aggregation.region_labeled_clusters import RegionLabelAggregator
 from ..volumes.roi import ROI
 from ..volumes.scalar_volume import ScalarVolumes
 from ..database.traited_query import Scan
+from dsi2.volumes import get_MNI152_path
 
 from tvtk.pyface.scene import Scene
 from mayavi.core.ui.api import SceneEditor
@@ -110,7 +111,7 @@ class SphereBrowser(HasTraits):
         self.scene3d
         self.vslicer
         #self.aggregator.scene3d = self.scene3d
-        self.aggregator.set_track_source(self.track_source)
+        #self.aggregator.set_track_source(self.track_source)
 
     # Default UI Items
     def _vslicer_default(self):
@@ -138,6 +139,7 @@ class SphereBrowser(HasTraits):
           track_source:dsi2.database.track_datasource.TrackDataSource
         """
         track_source.interactive = True
+        self.track_source = track_source
         self.aggregator.set_track_source(track_source)
 
 
@@ -277,6 +279,11 @@ class SphereBrowser(HasTraits):
         
     a_change_reference_volume = Action( name="Change refence volume",
                                             action = "change_reference_volume")
+    def add_mni_152(self):
+        self.reference_volume = get_MNI152_path()
+        
+    a_mni152_2mm_reference_volume = Action( name="Add MNI152 2mm T1",
+                                            action = "add_mni_152")
     def save_streamlines(self):
         saver = StreamlineSaver(
                       track_sets=self.aggregator.track_sets,
@@ -343,6 +350,7 @@ class SphereBrowser(HasTraits):
                           a_add_streamlines,
                           a_change_datasource,
                           a_change_reference_volume,
+                          a_mni152_2mm_reference_volume,
                           name="Data"
                          ),
                      Menu(
