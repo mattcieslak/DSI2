@@ -39,9 +39,9 @@ class SlicerPanel(HasTraits):
     # position of the cursor
     # Radius of the sphere
     radius = Range(low=0,high=14,value=1)
-    extent_x = Property(Int)
-    extent_y = Property(Int)
-    extent_z = Property(Int)
+    extent_x = Int(50)
+    extent_y = Int(50)
+    extent_z = Int(50)
     sphere_x = Range(low=0, high='extent_x')
     sphere_y = Range(low=0, high='extent_y')
     sphere_z = Range(low=0, high='extent_z')
@@ -100,6 +100,9 @@ class SlicerPanel(HasTraits):
             self.z_slice_plane.remove()
         # Set data and update the data_src
         self.data = data.get_data()
+        # Change the extents to match the new volume
+        self.extent_x, self.extent_y, self.extent_z = self.data.shape
+        # Send to mayavi
         self.data_src = mlab.pipeline.scalar_field(self.data,
                             figure=self.scene3d.mayavi_scene,
                             name='Data',colormap="gray")
@@ -129,15 +132,6 @@ class SlicerPanel(HasTraits):
         
         self.widgets_drawn = True
         
-    def _get_extent_x(self):
-        return self.data.shape[0]
-    
-    def _get_extent_y(self):
-        return self.data.shape[1]
-    
-    def _get_extent_z(self):
-        return self.data.shape[2]
-    
     def _slice_plots_default(self):
         return Slices()
 
@@ -314,7 +308,3 @@ class SlicerPanel(HasTraits):
     traits_view = View(
           slice_panel_group
         )
-
-if __name__=="__main__":
-    sp = SlicerPanel()
-    sp.configure_traits(view="browser_view")
