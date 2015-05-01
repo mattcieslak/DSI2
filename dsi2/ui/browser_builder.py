@@ -6,7 +6,7 @@ from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      on_trait_change, Button, Set, File
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
-     CheckListEditor, ObjectColumn
+     CheckListEditor, ObjectColumn, OKButton, CancelButton
 from traitsui.group import ShadowGroup
 from ..database.track_datasource import TrackDataSource
 from ..database.mongo_track_datasource import MongoTrackDataSource
@@ -58,7 +58,6 @@ class BrowserBuilder(HasTraits):
     aggregator = Enum("K Means","QuickBundles","Region Labels")
     a_query = Button(label="Search for Datasets")
     a_browser_launch = Button(label="Launch Sphere Browser")
-    a_dsource_selected = Button(label="OK")
 
     def _a_query_fired(self):
         if self.data_source == "MongoDB":
@@ -136,7 +135,6 @@ class BrowserBuilder(HasTraits):
     def get_local_datasource(self):
         tdatasets = []
         for res in self.results:
-            print "Loading", res.pkl_path
             tdatasets.append(res.get_track_dataset())
         return TrackDataSource(track_datasets=tdatasets)
         
@@ -179,14 +177,14 @@ class BrowserBuilder(HasTraits):
             ),
             VGroup(
                 Item("a_query"),
-                Item("a_dsource_selected"),
                 Item(name="results",
                  editor=scan_table),
             show_labels=False
             )
         ),
         title="Select Data Source",
-        kind="livemodal"
+        kind="modal",
+        buttons = [OKButton, CancelButton]
     )
     traits_view = View(
         HSplit(

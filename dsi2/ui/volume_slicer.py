@@ -29,7 +29,7 @@ from ..volumes import get_MNI152
 
 class SlicerPanel(HasTraits):
     # path to a nifti file that holds the data
-    nim_path = File
+    reference_volume = File
     
     # MNI_152 objects. data holds the np array, data_src is for mayavi
     data = Array(value=np.zeros((50,50,50)))
@@ -80,14 +80,14 @@ class SlicerPanel(HasTraits):
         self.scene3d
         self.sphere_viz
         
-    @on_trait_change("nim_path")
+    @on_trait_change("reference_volume")
     def render_volume(self):
-        if not os.path.exists(self.nim_path):
-            print "No such file", self.nim_path
+        if not os.path.exists(self.reference_volume):
+            print "No such file", self.reference_volume
             return
-        print "Opening", self.nim_path
+        print "Opening", self.reference_volume
         try:
-            data = nib.load(self.nim_path)
+            data = nib.load(self.reference_volume)
         except Exception, e:
             print "Unable to load data", e
             return

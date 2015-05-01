@@ -74,7 +74,7 @@ class AlgorithmParameterHandler(Handler):
 cluster_editor_group = \
         VGroup( Group(
             Item("auto_aggregate"),
-            Item("render_clusters"),
+            #Item("render_clusters"),
             Item("render_tracks"),
                  ),
                  Include("algorithm_widgets"),
@@ -84,7 +84,7 @@ cluster_editor_group = \
                           adapter=ClusterAdapter(),
                           editable=False),
                       height=400, width=200, show_label=False),
-                      label="Aggregation Options",
+                      label="Clusters/Segments List",
                       show_border=True)
                     )
 
@@ -286,6 +286,21 @@ class ClusterEditor(HasTraits):
         self.tracks_drawn = True
         self.scene3d.disable_render = False
         print "++ Done"
+        
+    def add_tracks(self,tds):
+        """ Adds a TrackDataset to the working set """
+        tds.render_tracks = self.render_tracks
+        self.track_sets.append(tds)
+        if self.render_tracks:
+            self.scene3d.disable_render = True
+            self.track_sets[-1].draw_tracks()
+            self.tracks_drawn = True        
+            self.scene3d.disable_render = False
+        if self.render_clusters:
+            self.scene3d.disable_render = True
+            self.track_sets[-1].draw_clusters()
+            self.tracks_drawn = True        
+            self.scene3d.disable_render = False
 
     def draw_clusters(self):
         if not self.render_clusters: return
