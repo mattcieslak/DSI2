@@ -43,17 +43,7 @@ class ROI(HasTraits):
         volstr = os.path.split(self.filepath)[-1].rstrip(".nii.gz")
         return volstr + "_region_" + labelstr 
         
-    
-        
-        
-
-
     traits_view = View(
         Item("filepath"), Item("include_labels"),Item("dilation"),
         kind="modal", buttons=[OKButton,CancelButton]
         )
-
-    #if __name__=="__main__":
-    #r= ROI()
-    #r.edit_traits()
-    #print r.query_indices()

@@ -19,3 +19,11 @@ def traitcolor_to_mayavi(tcolor):
 
 def mayavi_to_traitcolor(mcolor):
     return (int(mcolor[0]*255), int(mcolor[1]*255), int(mcolor[2]*255), 255)
+
+from traits.api import HasTraits, File, Button
+from traitsui.api import View, HGroup, Item
+
+from traitsui.file_dialog import open_file
+
+class DSI2FileOpen( HasTraits ):
+    file_name = File
