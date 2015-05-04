@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import sys,os
+from traits.etsconfig.api import ETSConfig
+ETSConfig.toolkit = 'qt4'
 
 def browser_builder():
     from dsi2.ui.browser_builder import BrowserBuilder

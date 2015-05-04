@@ -1,0 +1,2 @@
+include example_data/*
+recursive-include example_data/lausanne2008 *
