@@ -16,3 +16,4 @@ roger_data
 .*.swp
 *.log
 scripts/example_sphere_browse.py
+build

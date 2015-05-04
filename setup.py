@@ -15,19 +15,20 @@ setup(  name='DSI2',
         license='GPLv3',
         url='https://github.com/mattcieslak/DSI2',
         packages = find_packages( exclude = ['doc', 'tests']),
+        include_package_data = True,
         package_data={
-            "":[
-                "example_data/lausanne2008/ParcellationLausanne2008.xls",
-                "example_data/lausanne2008/README.txt",
-                "example_data/lausanne2008/resolution1015/resolution1015.graphml",
-                "example_data/lausanne2008/resolution150/resolution150.graphml",
-                "example_data/lausanne2008/resolution258/resolution258.graphml",
-                "example_data/lausanne2008/resolution500/resolution500.graphml",
-                "example_data/lausanne2008/resolution83/resolution83.graphml",
-                "example_data/MNI152_T1_2mm_brain_mask.nii.gz",
-                "example_data/MNI152_T1_2mm.nii.gz",
-                "example_data/MNI_BRAIN_MASK_FLOAT.nii.gz",
-                "example_data/NTU90_QA.nii.gz"
+            "dsi2":[
+                "dsi2/example_data/lausanne2008/ParcellationLausanne2008.xls",
+                "dsi2/example_data/lausanne2008/README.txt",
+                "dsi2/example_data/lausanne2008/resolution1015/resolution1015.graphml",
+                "dsi2/example_data/lausanne2008/resolution150/resolution150.graphml",
+                "dsi2/example_data/lausanne2008/resolution258/resolution258.graphml",
+                "dsi2/example_data/lausanne2008/resolution500/resolution500.graphml",
+                "dsi2/example_data/lausanne2008/resolution83/resolution83.graphml",
+                "dsi2/example_data/MNI152_T1_2mm_brain_mask.nii.gz",
+                "dsi2/example_data/MNI152_T1_2mm.nii.gz",
+                "dsi2/example_data/MNI_BRAIN_MASK_FLOAT.nii.gz",
+                "dsi2/example_data/NTU90_QA.nii.gz"
             ]
         },
         entry_points = {
