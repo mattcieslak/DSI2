@@ -1,2 +1,2 @@
-include example_data/*
-recursive-include example_data/lausanne2008 *
+include dsi2/example_data/*
+recursive-include dsi2/example_data/lausanne2008 *

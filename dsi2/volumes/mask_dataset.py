@@ -3,7 +3,7 @@ import os, re, sys
 import numpy as np
 import nibabel as nib
 import subprocess
-from pkg_resources import Requirement, resource_filename
+from dsi2.config import dsi2_data_path
 
 class MaskDataset(object):
     def __init__(self, fpath, label_table=None,secondary_msk=None):
@@ -94,7 +94,4 @@ class MaskDataset(object):
            [np.array(self.get_roi_ijk(roi)).mean(axis=0) for roi in self.roi_ids])
 
 def get_MNI_wm_mask():
-    return MaskDataset(resource_filename(
-                   Requirement.parse("dsi2"),
-                   "example_data/MNI_BRAIN_MASK_FLOAT.nii.gz")
-            )
+    return MaskDataset(os.path.join(dsi2_data_dir, "MNI_BRAIN_MASK_FLOAT.nii.gz"))
