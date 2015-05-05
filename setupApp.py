@@ -101,10 +101,11 @@ p2a_includes=[
     #'dsi2.aggregation.segmentation'
 
     'sklearn',
-    'sklearn.*',
-    'sklearn.utils.*',
-    'skimage',
-    'skimage.*',
+    'sklearn.metrics',
+    'sklearn.cluster',
+    'sklearn.utils.lgamma',
+    'sklearn.utils.sparsetools.*',
+    'sklearn.neighbors.*'
 ]
 
 
