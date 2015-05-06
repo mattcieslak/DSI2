@@ -2,10 +2,12 @@
 
 from traits.api import HasTraits, Instance, Array, Bool, Dict, \
      on_trait_change, Delegate, List, Color, Any, Instance, Int, File, \
-     Button, Enum, Str, DelegatesTo
+     Button, Enum, Str, DelegatesTo, Property
 from traitsui.api import View, Item, HGroup, VGroup, \
      Group, Handler, HSplit, VSplit, RangeEditor, Include, Action, MenuBar, Menu, \
-     TableEditor, ObjectColumn
+     TableEditor, ObjectColumn, Separator
+
+from traitsui.extras.checkbox_column import CheckboxColumn
 
 from .volume_slicer import SlicerPanel
 from .screen_shooter import ScreenShooter
@@ -55,6 +57,60 @@ class AlgorithmPicker(HasTraits):
         else:
             return ClusterEditor()
         
+track_dataset_source_table = TableEditor(
+    columns =
+    [   ObjectColumn(name="scan_id",editable=False),
+        ObjectColumn(name="properties.study",editable=False),
+        ObjectColumn(name="properties.scan_group",editable=False),
+        ObjectColumn(name="properties.reconstruction",editable=False),
+    ],
+    auto_size  = True,
+    edit_view="data_source_view"
+    )
+
+track_dataset_graphics_table = TableEditor(
+    columns =
+    [   ObjectColumn(name="scan_id",editable=False),
+        CheckboxColumn(name="render_tracks",editable=True),
+        ObjectColumn(name="color_map",editable=True),
+        CheckboxColumn(name="dynamic_color_clusters",editable=True),
+        ObjectColumn(name="static_color",editable=True),
+    ],
+    auto_size  = True,
+    edit_view="graphics_view"
+    )
+        
+class StreamlineGraphics(HasTraits):
+    track_source = Instance(TrackDataSource)
+    track_sets = List(Instance(TrackDataset))
+    
+    
+    # Provides access to
+    graphics_view = View(
+        Group(
+            Group(
+                Item("track_sets", editor=track_dataset_graphics_table),
+                orientation="horizontal",
+                show_labels=False,
+                show_border=True,
+                label="Graphical Objects"
+                ),
+            layout="tabbed"
+        ),
+            Group(
+                Item("track_source",
+                      editor=track_dataset_source_table),
+                orientation="horizontal",
+                show_labels=False,
+                show_border=True,
+                label="Data Sources"
+                ),
+        resizable=True,
+        width=900,
+        height=500,
+        title="Streamline visualization options"
+
+    )
 class SphereBrowser(HasTraits):
     # Object that slices the MNI brain
     vslicer =    Instance(SlicerPanel)
@@ -74,6 +130,9 @@ class SphereBrowser(HasTraits):
     # Widget for querying specific region pair streamlines
     roi_query = Instance(ROI)
 
+    # Streamline Graphics Editor
+    sl_editor = Instance(StreamlineGraphics)
+    
     # Object that manages additional volume glyphs to be rendered
     additional_volumes = Instance(ScalarVolumes)
 
@@ -129,6 +188,13 @@ class SphereBrowser(HasTraits):
         return ROI()
     def _additional_volumes_default(self):
         return ScalarVolumes(scene3d=self.scene3d)
+    
+    def _sl_editor_default(self):
+        return StreamlineGraphics(
+            track_sets = self.aggregator.track_sets,
+            track_source = self.track_source
+        )
+    
 
     def set_track_source(self,track_source):
         """ Supply the aggregator/browser with a list of queryable
@@ -311,6 +377,11 @@ class SphereBrowser(HasTraits):
     a_add_streamlines = Action( name = "Add streamlines to working set",
                                  action = "add_streamlines")
     
+    def edit_streamline_graphics(self):
+        self.sl_editor.edit_traits(view="graphics_view")
+        
+    a_edit_streamline_viz = Action( name = "Edit streamline graphics",
+                                 action = "edit_streamline_graphics")
     def save_csv(self):
         if not hasattr(self.aggregator, "get_R_dat"):
             print "Not implemented for this kind of aggregator"
@@ -349,6 +420,7 @@ class SphereBrowser(HasTraits):
                      Menu(
                           a_add_streamlines,
                           a_change_datasource,
+                          Separator(),
                           a_change_reference_volume,
                           a_mni152_2mm_reference_volume,
                           name="Data"
@@ -362,6 +434,7 @@ class SphereBrowser(HasTraits):
                           name="Aggregation"
                          ),
                      Menu(
+                          a_edit_streamline_viz,
                           a_edit_scene3d,
                           a_edit_volumes,
                           a_take_screenshot,
