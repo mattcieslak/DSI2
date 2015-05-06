@@ -23,27 +23,7 @@ from ..streamlines.track_dataset import TrackDataset, Cluster, RegionCluster
 from .across_subject_postproc import AcrossSubjectPostproc
 from ..database.track_datasource import TrackDataSource
 
-track_dataset_source_table = TableEditor(
-    columns =
-    [   ObjectColumn(name="scan_id",editable=False),
-        ObjectColumn(name="properties.study",editable=False),
-        ObjectColumn(name="properties.scan_group",editable=False),
-        ObjectColumn(name="properties.reconstruction",editable=False),
-    ],
-    auto_size  = True,
-    edit_view="data_source_view"
-    )
 
-track_dataset_graphics_table = TableEditor(
-    columns =
-    [   ObjectColumn(name="scan_id",editable=False),
-        ObjectColumn(name="properties.study",editable=False),
-        ObjectColumn(name="properties.scan_group",editable=False),
-        ObjectColumn(name="properties.reconstruction",editable=False),
-    ],
-    auto_size  = True,
-    edit_view="graphics_view"
-    )
 
 class ClusterAdapter( TabularAdapter ):
     """
@@ -340,31 +320,6 @@ class ClusterEditor(HasTraits):
                     ),
                 )
 
-    # Provides access to
-    objects_view = View(
-        Group(
-            Group(
-                Item("track_sets",
-                      editor=track_dataset_source_table),
-                orientation="horizontal",
-                show_labels=False,
-                show_border=True,
-                label="Data Sources"
-                ),
-            Group(
-                Item("track_sets", editor=track_dataset_graphics_table),
-                orientation="horizontal",
-                show_labels=False,
-                show_border=True,
-                label="Graphical Objects"
-                ),
-            orientation="vertical"
-        ),
-        resizable=True,
-        width=900,
-        height=500
-
-    )
 
 
 if __name__=="__main__":
