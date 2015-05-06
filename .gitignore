@@ -17,3 +17,4 @@ roger_data
 *.log
 scripts/example_sphere_browse.py
 build
+*DS_Store
