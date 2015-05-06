@@ -16,5 +16,5 @@ rm dist/DSI2.app/Contents/Resources/lib/python2.7/site-packages/tvtk/tvtk_classe
 echo Copying data files to app bundle
 mkdir -p dist/DSI2.app/Contents/Resources/dsi2
 cp -r dsi2/example_data dist/DSI2.app/Contents/Resources/dsi2/
-
+cp -r /usr/local/lib/python2.7/site-packages/sklearn dist/DSI2.app/Contents/Resources/lib/python2.7/site-packages
 
