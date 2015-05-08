@@ -51,9 +51,18 @@ def join_tracks(args):
 
     """
     assert len(args)
+    trackful = [ds for ds in args if ds.tracks.size > 0]
+    if len(trackful) < 1:
+        return None
+    if len(trackful) == 1:
+        return trackful[0]
+    all_tracks = []
     header = args[0].header
-    new_tracks = np.concatenate([ds.tracks for ds in args])
-    return TrackDataset(header = header, tracks=new_tracks)
+    for ds in args:
+        all_tracks.extend([trk for trk in ds.tracks])
+    
+    return TrackDataset(header = header, 
+                        tracks=all_tracks)
 
 def random_color(*args):
     return (np.random.rand(),np.random.rand(),np.random.rand())
