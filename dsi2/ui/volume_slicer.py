@@ -31,6 +31,7 @@ class SlicerPanel(HasTraits):
     # path to a nifti file that holds the data
     reference_volume = File
     
+    scene3d_inited = Bool(False)
     # MNI_152 objects. data holds the np array, data_src is for mayavi
     data = Array(value=np.zeros((50,50,50)))
     data_src = Instance(Source)
@@ -245,12 +246,14 @@ class SlicerPanel(HasTraits):
 
     @on_trait_change('scene3d.activated')
     def display_scene3d(self):
+        if self.scene3d_inited: return
         self.scene3d.mlab.view(40, 50)
         self.scene3d.scene.background = (0, 0, 0)
         # Keep the view always pointing up
         self.scene3d.scene.interactor.interactor_style = \
                                  tvtk.InteractorStyleTerrain()
         #self.scene3d.mayavi_scene.scene.light_manager.light_mode = "vtk"
+        self.scene3d_inited = True
 
     @on_trait_change('x_slice_plane_visible,y_slice_plane_visible,z_slice_plane_visible')
     def update_slice_opacity(self,obj,name,old,new):

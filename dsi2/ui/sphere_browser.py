@@ -9,19 +9,21 @@ from traitsui.api import View, Item, HGroup, VGroup, \
 
 from traitsui.extras.checkbox_column import CheckboxColumn
 
-from .volume_slicer import SlicerPanel
-from .screen_shooter import ScreenShooter
-from ..streamlines.track_dataset  import Cluster, TrackDataset, join_tracks
-from ..aggregation.cluster_ui import ClusterAdapter, ClusterEditor
-from ..aggregation.clustering_algorithms import QuickBundlesAggregator, FastKMeansAggregator
-from ..aggregation.region_clusters import RegionAggregator, RegionPair
-from ..database.track_datasource import TrackDataSource
-from ..aggregation.cluster_evaluator import AggregationEvaluator, flat_tep
-from ..aggregation.region_labeled_clusters import RegionLabelAggregator
-from ..volumes.roi import ROI
-from ..volumes.scalar_volume import ScalarVolumes
-from ..database.traited_query import Scan
+from dsi2.ui.volume_slicer import SlicerPanel
+from dsi2.ui.screen_shooter import ScreenShooter
+from dsi2.streamlines.track_dataset  import Cluster, TrackDataset, join_tracks
+from dsi2.aggregation.cluster_ui import ClusterAdapter, ClusterEditor
+from dsi2.aggregation.clustering_algorithms import QuickBundlesAggregator, FastKMeansAggregator
+from dsi2.aggregation.region_clusters import RegionAggregator, RegionPair
+from dsi2.database.track_datasource import TrackDataSource
+from dsi2.aggregation.cluster_evaluator import AggregationEvaluator, flat_tep
+from dsi2.aggregation.region_labeled_clusters import RegionLabelAggregator
+from dsi2.volumes.roi import ROI
+from dsi2.volumes.scalar_volume import ScalarVolumes
+from dsi2.database.traited_query import Scan
 from dsi2.volumes import get_MNI152_path
+
+from dsi2.ui.ltpa_result import load_ltpa_results
 
 from tvtk.pyface.scene import Scene
 from mayavi.core.ui.api import SceneEditor
@@ -377,6 +379,25 @@ class SphereBrowser(HasTraits):
     a_add_streamlines = Action( name = "Add streamlines to working set",
                                  action = "add_streamlines")
     
+    def add_ltpa_result(self):
+        """ Adds streamlines to the working set"""
+        fpath = open_file(title="Select Streamline File",
+                       filter=["*.ltpa"],
+            file_name = os.path.expanduser("~")
+                       )
+        if fpath == "": return
+        try:
+            lr = load_ltpa_results(fpath)
+        except Exception,e:
+            print "Unable to load", fpath, "because", e
+            return
+        
+        lr.scene3d = self.scene3d
+        lr.edit_traits()
+        
+    a_load_ltpa = Action( name = "Load LTPA results",
+                                 action = "add_ltpa_result")
+    
     def edit_streamline_graphics(self):
         self.sl_editor.edit_traits(view="graphics_view")
         
@@ -423,6 +444,8 @@ class SphereBrowser(HasTraits):
                           Separator(),
                           a_change_reference_volume,
                           a_mni152_2mm_reference_volume,
+                          Separator(),
+                          a_load_ltpa,
                           name="Data"
                          ),
                      Menu(

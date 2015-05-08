@@ -23,6 +23,7 @@ class ScalarVolume(HasTraits):
     filepath = File("")
     ijk   = Tuple
     scalars = Array
+    indices = Array
 
     # Holds the mayavi objects
     source = Instance(Source)
