@@ -2,7 +2,7 @@
 
 from traits.api import HasTraits, Instance, Array, Bool, Dict, \
      on_trait_change, Delegate, List, Color, Any, Instance, Int, File, \
-     Button, Enum, Str, DelegatesTo, Property, CFloat
+     Button, Enum, Str, DelegatesTo, Property, CFloat,Range
 from traitsui.api import View, Item, HGroup, VGroup, \
      Group, Handler, HSplit, VSplit, RangeEditor, Include, Action, MenuBar, Menu, \
      TableEditor, ObjectColumn, Separator
@@ -51,12 +51,16 @@ class CoordinatesGraphic(HasTraits):
     # Data
     scalars = Array
     indices = Array
+    
+    radius = CFloat(0.5)
 
     # Holds the mayavi objects
     source = Instance(Source,transient=True)
     glyph = Instance(PipelineBase, transient=True)
     glyph_drawn = Bool(False, transient=True)
     splatter = Instance(PipelineBase,transient=True)
+    glyph_opacity = Range(high=1.0,low=0.0,value=0.3)
+    
 
     # MayaVi data options
     color_map = Enum(
@@ -66,6 +70,7 @@ class CoordinatesGraphic(HasTraits):
     static_color = Color
     visible = Bool(True)
 
+            
     def set_visibility(self, visibility):
         if not visibility:
             if not self.glyph_drawn: return
@@ -74,7 +79,7 @@ class CoordinatesGraphic(HasTraits):
                 self.render()
                 
         # Set visibility of all items
-        for viz in [self.source, self.glyph, self.splatter]:
+        for viz in [self.glyph, self.splatter]:
             if viz:
                 viz.visible = visibility
 
@@ -85,6 +90,7 @@ class CoordinatesGraphic(HasTraits):
         except:
             color = self.static_color
         static_color = color[0]/255., color[1]/255., color[2]/255.
+        
         
         
         if self.render_type == "sized_cubes":
@@ -104,7 +110,11 @@ class CoordinatesGraphic(HasTraits):
             self.source = mlab.pipeline.scalar_scatter(
                 self.indices[:,0],self.indices[:,1],self.indices[:,2])
             self.glyph = mlab.pipeline.glyph(
-                self.source, color=static_color, mode="cube" )
+                self.source, color=static_color, 
+                mode="sphere" )
+            self.glyph.glyph.glyph_source.glyph_source.radius = self.radius
+        self.glyph.actor.property.opacity = self.glyph_opacity
+        self.glyph_drawn = True
             
 
     def _color_map_changed(self):
@@ -169,7 +179,9 @@ class LTPAResult(HasTraits):
         return CoordinatesGraphic(
             indices = self.result_coords,
             static_color=c,
-            scalars = self.result_coord_scalars)
+            scalars = self.result_coord_scalars,
+            radius=self.coord_radius
+        )
 
     def _visible_changed(self):
         """
