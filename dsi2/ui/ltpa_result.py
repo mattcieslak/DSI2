@@ -88,10 +88,8 @@ class CoordinatesGraphic(HasTraits):
         try:
             color = self.static_color.toTuple()
         except:
-            color = self.static_color
+            color = (self.static_color.red(),self.static_color.green(),self.static_color.blue())
         static_color = color[0]/255., color[1]/255., color[2]/255.
-        
-        
         
         if self.render_type == "sized_cubes":
             self.glyph = mlab.pipeline.glyph(
