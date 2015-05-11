@@ -23,7 +23,7 @@ from dsi2.volumes.scalar_volume import ScalarVolumes
 from dsi2.database.traited_query import Scan
 from dsi2.volumes import get_MNI152_path
 
-from dsi2.ui.ltpa_result import load_ltpa_results
+from dsi2.ui.ltpa_result import load_ltpa_results, LTPAResults
 
 from tvtk.pyface.scene import Scene
 from mayavi.core.ui.api import SceneEditor
@@ -131,6 +131,9 @@ class SphereBrowser(HasTraits):
 
     # Widget for querying specific region pair streamlines
     roi_query = Instance(ROI)
+    
+    # object holding ltpa results
+    ltpa_results = Instance(LTPAResults)
 
     # Streamline Graphics Editor
     sl_editor = Instance(StreamlineGraphics)
@@ -399,6 +402,14 @@ class SphereBrowser(HasTraits):
     a_load_ltpa = Action( name = "Load LTPA results",
                                  action = "add_ltpa_result")
     
+    def edit_ltpa_graphic(self):
+        """ Adds streamlines to the working set"""
+        if not self.ltpa_result is None:
+            self.ltpa_result.edit_traits()
+        
+    a_ltpa_graphics = Action( name = "Change LTPA result graphics",
+                                 action = "edit_ltpa_graphic")
+    
     def edit_streamline_graphics(self):
         self.sl_editor.edit_traits(view="graphics_view")
         
@@ -459,6 +470,7 @@ class SphereBrowser(HasTraits):
                          ),
                      Menu(
                           a_edit_streamline_viz,
+                          a_ltpa_graphics,
                           a_edit_scene3d,
                           a_edit_volumes,
                           a_take_screenshot,
