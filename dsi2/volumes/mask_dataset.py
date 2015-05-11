@@ -94,4 +94,4 @@ class MaskDataset(object):
            [np.array(self.get_roi_ijk(roi)).mean(axis=0) for roi in self.roi_ids])
 
 def get_MNI_wm_mask():
-    return MaskDataset(os.path.join(dsi2_data_dir, "MNI_BRAIN_MASK_FLOAT.nii.gz"))
+    return MaskDataset(os.path.join(dsi2_data_path, "MNI_BRAIN_MASK_FLOAT.nii.gz"))

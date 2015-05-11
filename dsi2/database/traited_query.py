@@ -4,7 +4,7 @@ import sys, os
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
-     on_trait_change, Button, Set, File, Int
+     on_trait_change, Button, Set, File, Int, CInt
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
@@ -150,7 +150,7 @@ class Dataset(HasTraits):
     scan_id         = Str("")
     subject_id      = Str("")
     scan_gender     = List(["female","male"])
-    scan_age        = Int(22)
+    scan_age        = CInt(22)
     study           = Str("")
     scan_group      = Str("")
 
