@@ -38,13 +38,18 @@ ltpa_result_table = TableEditor(
     [
         ObjectColumn(name="name"),
         CheckboxColumn(name="visible"),
+        ObjectColumn(name="coord_opacity"),
+        ObjectColumn(name="tracksA_opacity"),
+        CheckboxColumn(name="tracksA_visible"),
+        ObjectColumn(name="tracksB_opacity"),
+        CheckboxColumn(name="tracksB_visible"),
         ColorColumn(name="colorA", width=5),
         ColorColumn(name="colorB", width=5),
         ObjectColumn(name="coord_shape"),
         ObjectColumn(name="coord_radius"),
         
     ],
-    auto_size=True,
+    auto_size=False,
 )
 
 class CoordinatesGraphic(HasTraits):
@@ -114,6 +119,7 @@ class CoordinatesGraphic(HasTraits):
         self.glyph.actor.property.opacity = self.glyph_opacity
         self.glyph_drawn = True
             
+    
 
     def _color_map_changed(self):
         self.clear()
@@ -150,10 +156,17 @@ class LTPAResult(HasTraits):
     showA_as = Enum("splatter","tracks")
     showB_as = Enum("splatter","tracks")
     coord_group = Enum("A","B")
+    coord_opacity = Range(0.0,1.0,0.5)
     visible = Bool(False)
+    tracksA_opacity = Range(0.0,1.0,0.5)
+    tracksA_visible = Bool(True)
+    tracksB_opacity = Range(0.0,1.0,0.5)
+    tracksB_visible = Bool(True)
+    
     
     # graphics objects
     coord_graphic = Instance(CoordinatesGraphic,transient=True)
+    coord_opacity = Range(0.0,1.0,0.5)
     
     def __init__(self,**traits):
         super(LTPAResult,self).__init__(**traits)
@@ -180,13 +193,30 @@ class LTPAResult(HasTraits):
             scalars = self.result_coord_scalars,
             radius=self.coord_radius
         )
-
+    
+    def _coord_opacity_changed(self):
+        self.coord_graphic.glyph.actor.property.opacity = self.coord_opacity
+        
     def _visible_changed(self):
         """
         """
         for tds in [self.tracksA, self.tracksB]:
             tds.set_track_visibility(self.visible)
         self.coord_graphic.set_visibility(self.visible)
+        
+    def _tracksA_opacity_changed(self):
+        if self.tracksA.tracks_drawn:
+            self.tracksA.src.actor.property.opacity = self.tracksA_opacity
+    def _tracksA_visible_changed(self):
+        if self.tracksA.tracks_drawn:
+            self.tracksA.set_track_visibility(self.tracksA_visible)
+            
+    def _tracksB_opacity_changed(self):
+        if self.tracksB.tracks_drawn:
+            self.tracksB.src.actor.property.opacity = self.tracksB_opacity
+    def _tracksB_visible_changed(self):
+        if self.tracksB.tracks_drawn:
+            self.tracksB.set_track_visibility(self.tracksB_visible)
         
 
 class LTPAResults(HasTraits):
@@ -211,7 +241,9 @@ class LTPAResults(HasTraits):
                          height=500, width=500),
             Item("results", editor=ltpa_result_table),
             show_labels=False
-            )
+            ),
+        
+        resizable=True
         )
     
     @on_trait_change('scene3d.activated')

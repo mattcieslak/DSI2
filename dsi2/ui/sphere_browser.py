@@ -394,6 +394,7 @@ class SphereBrowser(HasTraits):
         
         lr.scene3d = self.scene3d
         lr.edit_traits()
+        self.ltpa_result = lr
         
     a_load_ltpa = Action( name = "Load LTPA results",
                                  action = "add_ltpa_result")
