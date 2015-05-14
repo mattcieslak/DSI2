@@ -36,6 +36,13 @@ mni_hdr['vox_to_ras'] = \
                      [  0.,  0.,  2.,  -72.],
                      [  0.,  0.,  0.,    1.]], dtype='float32')
 
+qsdr_hdr = trackvis.empty_header(version=1)
+qsdr_hdr['dim'] = np.array([79, 95, 69],dtype="int16")
+qsdr_hdr['voxel_order'] = 'LPS'
+qsdr_hdr['voxel_size'] = np.array([ 2.,  2.,  2.], dtype='float32')
+qsdr_hdr['image_orientation_patient'] = np.array(
+                     [ 1.,  0.,  0.,  0.,  1.,  0.], dtype='float32')
+
 def join_tracks(args):
     """
     combines a set of TrackDatasets into a single TrackDataset
@@ -238,6 +245,8 @@ class TrackDataset(HasTraits):
             elif fname.endswith("mat"):
                 pass
 
+        if not hasattr(self,"header"):
+            self.header = trackvis.empty_header()
         if properties is None:
             from dsi2.database.traited_query import Scan
             print "Warning: using default properties"
@@ -581,9 +590,15 @@ class TrackDataset(HasTraits):
                 np.array(mni_hdr)
                 )
 
-    def save(self,fname,use_mni_header=False):
+    def save(self,fname,use_mni_header=False,use_qsdr_header=False):
         """Save the object as a .trk file"""
-        header = mni_hdr if use_mni_header else self.header
+        if use_mni_header:
+            header = mni_hdr
+        elif use_qsdr_header:
+            header=qsdr_hdr
+        else:
+            header= self.header
+            
         trackvis.write(
             fname,
             ((stream,None,None) for stream in self),

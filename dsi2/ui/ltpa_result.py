@@ -202,6 +202,8 @@ class LTPAResult(HasTraits):
         """
         for tds in [self.tracksA, self.tracksB]:
             tds.set_track_visibility(self.visible)
+            self._tracksA_opacity_changed()
+            self._tracksB_opacity_changed()
         self.coord_graphic.set_visibility(self.visible)
         
     def _tracksA_opacity_changed(self):
