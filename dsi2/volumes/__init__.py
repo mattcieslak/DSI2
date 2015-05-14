@@ -32,7 +32,7 @@ def save_coords_to_volume(coords,outpath):
 
 def get_NTU90():
     return nib.load(
-                   os.path.join(dsi2_data_dir,
+                   os.path.join(dsi2_data_path,
                    "NTU90_QA.nii.gz")
             )
 
@@ -58,7 +58,7 @@ def find_graphml_from_b0(b0_path):
 
     if atlas_id is None:
         return
-    abs_graphml_path = os.path.join( dsi2_data_dir,atlas_lut[atlas_id])
+    abs_graphml_path = os.path.join( dsi2_data_path,atlas_lut[atlas_id])
 
     return abs_graphml_path
 
