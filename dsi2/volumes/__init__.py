@@ -40,16 +40,16 @@ def find_graphml_from_b0(b0_path):
     if not b0_path: raise ValueError("Must provide a b0 volume path")
     aname = os.path.split(b0_path)[-1].lower()
     atlas_lut = {
-        "scale33":"dsi2/example_data/lausanne2008/resolution83/resolution83.graphml",
-        "scale60":"dsi2/example_data/lausanne2008/resolution150/resolution150.graphml",
-        "scale125":"dsi2/example_data/lausanne2008/resolution258/resolution258.graphml",
-        "scale250":"dsi2/example_data/lausanne2008/resolution500/resolution500.graphml",
-        "scale500":"dsi2/example_data/lausanne2008/resolution1015/resolution1015.graphml",
-        "resolution1015":"dsi2/example_data/lausanne2008/resolution1015/resolution1015.graphml",
-        "resolution500":"dsi2/example_data/lausanne2008/resolution500/resolution500.graphml",
-        "resolution258":"dsi2/example_data/lausanne2008/resolution258/resolution258.graphml",
-        "resolution150":"dsi2/example_data/lausanne2008/resolution150/resolution150.graphml",
-        "resolution83":"dsi2/example_data/lausanne2008/resolution83/resolution83.graphml"}
+        "scale33":"lausanne2008/resolution83/resolution83.graphml",
+        "scale60":"lausanne2008/resolution150/resolution150.graphml",
+        "scale125":"lausanne2008/resolution258/resolution258.graphml",
+        "scale250":"lausanne2008/resolution500/resolution500.graphml",
+        "scale500":"lausanne2008/resolution1015/resolution1015.graphml",
+        "resolution1015":"lausanne2008/resolution1015/resolution1015.graphml",
+        "resolution500":"lausanne2008/resolution500/resolution500.graphml",
+        "resolution258":"lausanne2008/resolution258/resolution258.graphml",
+        "resolution150":"lausanne2008/resolution150/resolution150.graphml",
+        "resolution83":"lausanne2008/resolution83/resolution83.graphml"}
     atlas_id = None
     for atlas in atlas_lut.keys():
         if atlas in aname:
@@ -95,3 +95,11 @@ def get_builtin_atlas_parameters(label_source):
         return {}
     return atlas_lut[atlas_id]
             
+
+# Shapes of the volume data
+QSDR_SHAPE = (79,95,69) # Shape of QSDR output
+QSDR_AFFINE = np.array(
+      [[ -2.,   0.,   0.,  78.],
+       [  0.,  -2.,   0.,  76.],
+       [  0.,   0.,   2., -50.],
+       [  0.,   0.,   0.,   1.]])

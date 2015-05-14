@@ -12,6 +12,7 @@ from ..streamlines.track_dataset import TrackDataset
 from ..streamlines.track_math import connection_ids_from_tracks
 from ..volumes.mask_dataset import MaskDataset
 from ..volumes import get_NTU90, graphml_from_label_source, get_builtin_atlas_parameters
+from dsi2.volumes import QSDR_AFFINE, QSDR_SHAPE
 import networkx as nx
 import numpy as np
 import nibabel as nib
@@ -262,10 +263,6 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     my = m['my'].squeeze().astype(int)
     mz = m['mz'].squeeze().astype(int)
 
-    # Load the QSDR template volume from DSI studio
-    QSDR_nim = get_NTU90()
-    QSDR_data = QSDR_nim.get_data()
-
     # Labels in b0 space
     _old_atlas = nib.load(b0_atlas)
     old_atlas = _old_atlas.get_data()
@@ -301,9 +298,7 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     
     # Fill up the output atlas with labels from b0, collected through the fib mappings
     new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
-    aff = QSDR_nim.get_affine()
-    aff[(0,1,2),(0,1,2)]*=2
-    onim = nib.Nifti1Image(new_atlas,aff)
+    onim = nib.Nifti1Image(new_atlas,QSDR_AFFINE)
     onim.to_filename(output_v)
 
 
