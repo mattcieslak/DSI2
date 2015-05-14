@@ -18,15 +18,10 @@ from gzip import open as gzopen
 from dsi2.streamlines.track_dataset import TrackDataset
 from dsi2.volumes import get_NTU90
 import os
+import json
 import os.path as op
-
-# Shapes of the volume data
-QSDR_SHAPE = (79,95,69) # Shape of QSDR output
-QSDR_AFFINE = np.array(
-      [[ -2.,   0.,   0.,  78.],
-       [  0.,  -2.,   0.,  76.],
-       [  0.,   0.,   2., -50.],
-       [  0.,   0.,   0.,   1.]])
+from dsi2.volumes import QSDR_SHAPE, QSDR_AFFINE
+from dsi2.database.traited_query import Scan, TrackLabelSource, TrackScalarSource
 
 ORIG_SHAPE = (79,95,69) # Shape of original data
 BRAINSTEM_ID = 83
@@ -45,6 +40,19 @@ def make_coords(xmin,xmax,ymin,ymax,zmin,zmax):
     return np.array(
     [d.flatten() for d in np.mgrid[
         xmin:(xmax+1), ymin:(ymax+1), zmin:(zmax+1)]])
+
+def save_fake_fib(fname):
+    """returns a dict to get saved"""
+    inds = np.arange(QSDR_SHAPE[0] * QSDR_SHAPE[1] * QSDR_SHAPE[2])
+    mx, my, mz = np.unravel_index(inds,QSDR_SHAPE,order="F")
+    fop = gzopen(fname,"wb")
+    savemat(fop,
+            {"dimension":np.array(QSDR_SHAPE),
+                     "mx":mx,"my":my,"mz":mz},
+            format='4'
+            )
+    fop.close()
+    
 
 # Create the brainstem "bs" region, same for both scales
 bs_i, bs_j, bs_k = make_coords(32,44,40,52,10,24)
@@ -201,25 +209,61 @@ def get_streamlines2():
     return tds1
 
 
-def get_fib_with_map():
-    pass
-
 def test_create_data():
     from tempfile import mkdtemp
     droot = mkdtemp()
-    print "saving data to", droot
+    json_file = op.join(droot,"test_data.json")
+    print "saving data to", droot, "sumary at", json_file
+    datasets = []
     def save_subject(subjname, tracks):
         subjdir = op.join(droot,subjname)
         trk_pth = op.join(subjdir,subjname+".trk")
+        pkl_trk_pth = op.join(subjdir,subjname+".pkl.trk")
         scale33 = op.join(subjdir,subjname+".scale33.nii.gz")
+        scale33_q = op.join(subjdir,subjname+".scale33.QSDR.nii.gz")
         scale60 = op.join(subjdir,subjname+".scale60.nii.gz")
+        scale60_q = op.join(subjdir,subjname+".scale60.QSDR.nii.gz")
+        fib = op.join(subjdir,subjname+".fib.gz")
         os.makedirs(subjdir)
         tracks.save(trk_pth,use_qsdr_header=True)
         get_scale33_nim().to_filename(scale33)
         get_scale60_nim().to_filename(scale60)
+        save_fake_fib(fib)
+        sc =  Scan(
+                scan_id=subjname,
+                subject_id=subjname,
+                study="testing",
+                trk_space="qsdr",
+                pkl_path=op.join(subjdir,subjname+".pkl"),
+                fib_file=fib,
+                trk_file=trk_pth,
+                pkl_trk_path=pkl_trk_pth)
+        sc.track_label_items = [
+                    TrackLabelSource(
+                        name="Lausanne2008",
+                        parameters={"scale":33,"thick":1},
+                        numpy_path=op.join(subjdir,"scale33.npy"),
+                        b0_volume_path=scale33,
+                        qsdr_volume_path=scale33_q
+                        ),
+                    TrackLabelSource(
+                        name="Lausanne2008",
+                        parameters={"scale":60,"thick":1},
+                        numpy_path=op.join(subjdir,"scale60.npy"),
+                        b0_volume_path=scale60,
+                        qsdr_volume_path=scale60_q
+                        )
+                    ]
+        datasets.append(sc)
+                
     save_subject("s1", get_streamlines1())
     save_subject("s2", get_streamlines2())
-        
+
+    json_data = [scan.to_json() for scan in datasets]
+    with open(json_file,"w") as outfile:
+        json.dump(json_data,outfile,indent=4)
+    print "Saved", json_file
+
 def mlab_show_test_dataset():
     from mayavi import mlab
     mlab.points3d(bs_i, bs_j, bs_k,mode="cube",color=(1,1,0))

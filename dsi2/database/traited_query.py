@@ -130,7 +130,7 @@ label_table = TableEditor(
     deletable  = True,
     auto_size  = True,
     show_toolbar = True,
-    row_factory = TrackScalarSource
+    row_factory = TrackLabelSource
     )
 
 scalar_table = TableEditor(
