@@ -48,5 +48,5 @@ def test_create_missing_files():
         assert scan.scan_id in ("s1", "s2")
     # test that the numpy files match the correct streamlines    
     lbl0 = ldi.datasets[0].track_label_items
-    assert np.all(np.load(lbl0[0]) == tds1_scale33)
-    assert np.all(np.load(lbl0[1]) == tds1_scale60)
+    assert np.all(np.load(lbl0[0].numpy_path) == tds1_scale33)
+    assert np.all(np.load(lbl0[1].numpy_path) == tds1_scale60)
