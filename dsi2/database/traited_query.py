@@ -327,7 +327,8 @@ class Scan(Dataset):
             "trk_file":self.trk_file,
             "fib_file":self.fib_file,
             "track_labels": track_labels,
-            "track_scalars": track_scalars
+            "track_scalars": track_scalars,
+            "software":self.software
         }
     
 TrackScalarSource.add_class_trait("parent",Instance(Scan))

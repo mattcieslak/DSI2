@@ -30,10 +30,7 @@ scan_table = TableEditor(
     [   ObjectColumn(name="scan_id",editable=False),
         ObjectColumn(name="study",editable=False),
         ObjectColumn(name="scan_group",editable=False),
-        ObjectColumn(name="software",editable=False),
-        ObjectColumn(name="color_map"),
-        CheckboxColumn(name="dynamic_color_clusters"),
-        ObjectColumn(name="static_color")
+        ObjectColumn(name="software",editable=False)
     ],
     deletable  = True,
     auto_size  = True,
@@ -112,23 +109,11 @@ class BrowserBuilder(HasTraits):
         return track_source
 
     def _a_browser_launch_fired(self):
-        if self.aggregator == "K Means":
-            cl = FastKMeansAggregator()
-        elif self.aggregator == "QuickBundles":
-            cl = QuickBundlesAggregator()
-        elif self.aggregator == "Region Labels":
-            cl = RegionLabelAggregator()
-        
         # Create a track source
         track_source = self.get_datasource()
-            
-        # Should we pass a list of colors to the aggregator?
-        def wx_color_convert(wxc):
-            return wxc[0]/255.,wxc[1]/255.,wxc[2]/255.
-        if all([not d.dynamic_color_clusters for d in track_source.track_dataset_properties]):
-            cl.subject_colors = [wx_color_convert(c.static_color) for c in track_source.track_dataset_properties]
-        
-        sb = SphereBrowser(aggregator=cl,track_source=track_source)
+        # set it to a sphere browser
+        sb = SphereBrowser()
+        sb.set_track_source(track_source)
         sb.configure_traits()
         self.browsers.append(sb)
         
@@ -200,13 +185,10 @@ class BrowserBuilder(HasTraits):
                 show_labels=False),
             ),
             VGroup(
-                Item("aggregator",label="Aggregation Algorithm"),
-            VGroup(
                 Item("a_browser_launch"),
                 Item(name="results",
                  editor=scan_table),
             show_labels=False
-                  )
             )
         ),
         title="Select Data Source"
