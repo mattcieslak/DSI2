@@ -9,7 +9,12 @@ Required data:
 ~/testing_data/testing_output
 
 """
+# Directories where input and output data will go
+home = os.path.expanduser("~")
+test_input_data = os.path.join(home,"dsi2_testing_data", "testing_input")
+test_output_data = os.path.join(home,"dsi2_testing_data", "testing_output")
 
-home = os.getenv("HOME")
-test_input_data = os.path.join(home,"testing_data", "testing_input")
-test_output_data = os.path.join(home,"testing_data", "testing_output")
+# Json data describing the files to be "imported" for testing
+input_data_json = os.path.join(test_input_data,"test_data.json")
+local_trackdb_dir = os.path.join(test_output_data,"local_trackdb")
+local_trackdb_dir = os.path.join(test_output_data,"local_mongodb")

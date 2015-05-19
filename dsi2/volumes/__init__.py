@@ -2,6 +2,8 @@ import nibabel as nib
 import os
 import numpy as np
 from dsi2.config import dsi2_data_path
+from dsi2.streamlines.track_math import region_pair_dict_from_roi_list
+import networkx as nx
 
 def get_MNI152_path():
     return os.path.join(dsi2_data_path,
@@ -53,7 +55,6 @@ def find_graphml_from_b0(b0_path):
     atlas_id = None
     for atlas in atlas_lut.keys():
         if atlas in aname:
-            print "\t\t++ "
             atlas_id = atlas
 
     if atlas_id is None:
@@ -103,3 +104,31 @@ QSDR_AFFINE = np.array(
        [  0.,  -2.,   0.,  76.],
        [  0.,   0.,   2., -50.],
        [  0.,   0.,   0.,   1.]])
+
+
+def load_lausanne_graphml(graphml):
+    graph = nx.read_graphml(graphml)
+    graphml_data = {'region_labels':{},
+                    'region_pairs_to_index':{},
+                    'index_to_region_pairs':{},
+                    'region_pair_strings_to_index':{},
+                    'regions':[]}
+    for roi_id,roi_data in graph.nodes(data=True):
+        graphml_data['region_labels'][roi_id] = roi_data
+    graphml_data['regions'] = np.array(sorted(map( int,graph.nodes() )))
+    
+    graphml_data['region_pairs_to_index'] = region_pair_dict_from_roi_list(
+                                                       graphml_data['regions'])
+    
+    # Which regionpairs map to which unique id in this dataset?
+    graphml_data['index_to_region_pairs'] = dict(
+        [
+        (idxnum,(graphml_data['region_labels'][str(id1)]['dn_name'],
+                   graphml_data['region_labels'][str(id2)]['dn_name']) ) \
+         for (id1,id2), idxnum in graphml_data['region_pairs_to_index'].iteritems()
+        ]
+    )
+    graphml_data['region_pair_strings_to_index'] = dict([
+        (value,key) for key,value in graphml_data['index_to_region_pairs'].iteritems()
+    ])
+    return graphml_data

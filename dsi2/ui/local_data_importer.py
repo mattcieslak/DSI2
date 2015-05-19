@@ -423,6 +423,7 @@ def create_missing_files(scan):
         abs_pkl_trk_file = scan.pkl_trk_path
     print "\t+ Dumping MNI152 hash table"
     tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
+    return True
 
 
 scan_table = TableEditor(

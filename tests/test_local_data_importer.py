@@ -1,64 +1,52 @@
 #!/usr/bin/env python
 import sys
 import os
-import paths
-
-import dsi2.config
-dsi2.config.local_trackdb_path = paths.test_input_data
-
+import os.path as op
+from paths import test_input_data, test_output_data, input_data_json, local_trackdb_dir
 import nibabel as nib
 import numpy as np
 import cPickle as pickle
+from create_testing_data import (tds1, tds1_scale33, tds1_scale60, 
+                                 tds2, tds2_scale33, tds2_scale60)
 
 from dsi2.ui.local_data_importer import (LocalDataImporter, b0_to_qsdr_map,
                                          create_missing_files)
 
-def test_b0_to_qsdr_map(tmpdir):
-    td =  "/" + tmpdir.relto("/")
-    print type(td)
-    b0_vol = os.path.join(paths.test_input_data,"0377A",
-            "B0.scale33.thick2.nii.gz")
-    fib_file = os.path.join(paths.test_input_data,"0377A",
-            "0377A.src.gz.odf8.f3.reg1.qsdr.1.25.2mm.map.fib.gz")
-    qsdr_out = os.path.join(td,"QSDR_out.nii.gz")
-    correct_file = os.path.join(paths.test_output_data,
-            "0377A","QSDR.scale33.thick2.nii.gz")
-    # Call the test function
+def test_b0_to_qsdr_map():
+    """
+    Tests that the mapping from b0 space to QSDR space works
+    correctly.  We use the ROI and fib volumes generated for 
+    testing.  The trick here is that the fib file contains a 
+    self-mapping.  Therefore the data in b0-space should be the
+    same as the data after mapping to qsdr space.
+    """
+    b0_vol = op.join(test_input_data,"s1",
+            "s1.scale33.nii.gz")
+    fib_file =op.join(test_input_data,"s1",
+            "s1.fib.gz")
+    qsdr_out = op.join(test_output_data,"tmp.QSDR_out.nii.gz")
+    # Perform the mapping
     b0_to_qsdr_map(fib_file,b0_vol,qsdr_out)
-    correct_vol = nib.load(correct_file).get_data()
+    # check that data is unchanged
+    correct_vol = nib.load(b0_vol).get_data()
     test_vol = nib.load(qsdr_out).get_data()
     assert (test_vol==correct_vol).all()
 
 
-def test_create_missing_files(tmpdir):
-    new_localdb = "/" + tmpdir.relto("/")
-    json_file = os.path.join(paths.test_input_data,"example_data.json")
-    ldi = LocalDataImporter(json_file=json_file,
-                          output_directory=new_localdb)
-    assert len(ldi.datasets)
+def test_create_missing_files():
+    json_file = input_data_json
+    os.makedirs(local_trackdb_dir)
+    ldi = LocalDataImporter(json_file=input_data_json)
+    assert len(ldi.datasets) == 2
     for scan in ldi.datasets:
-        create_missing_files(scan,
-                input_dir=os.path.dirname(ldi.json_file),
-                output_dir=new_localdb)
-    
+        assert create_missing_files(scan)
         # Check the pickle file
-        fop = open(os.path.join(new_localdb,scan.pkl_path),"rb")
+        fop = open(scan.pkl_path,"rb")
         test_pkl = pickle.load(fop)
         fop.close()
-    
-        fop = open(os.path.join(paths.test_output_data,scan.pkl_path),"rb")
-        ok_pkl = pickle.load(fop)
-        fop.close()
-        # All the same coordinates covered?
-        assert set(ok_pkl.tracks_at_ijk.keys()) == set(test_pkl.tracks_at_ijk.keys())
-        # Do they point to the same streamline ids?
-        for coord in ok_pkl.tracks_at_ijk.keys():
-            assert test_pkl.tracks_at_ijk[coord] == ok_pkl.tracks_at_ijk[coord]
-    
-        # Check the labeling output
-        for label_source in scan.track_label_items:
-            # File containing the corresponding label vector
-            ok_npy_path = os.path.join(paths.test_output_data,label_source.numpy_path)
-            test_npy_path = os.path.join(new_localdb,label_source.numpy_path)
-            assert (np.load(ok_npy_path) == np.load(test_npy_path)).all()
-
+        
+        assert scan.scan_id in ("s1", "s2")
+    # test that the numpy files match the correct streamlines    
+    lbl0 = ldi.datasets[0].track_label_items
+    assert np.all(np.load(lbl0[0]) == tds1_scale33)
+    assert np.all(np.load(lbl0[1]) == tds1_scale60)

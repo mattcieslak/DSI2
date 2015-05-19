@@ -1,28 +1,25 @@
 import os
+from dsi2.config import dsi2_data_path
 
-os.environ['DSI2_DATA'] = 'DSI2'
-os.environ['LOCAL_TRACKDB'] = 'TRACKDB'
-
-import dsi2.config
+"""
+Tests that the data included with DSI2 is available
+"""
 
 def test_initialization():
-    assert dsi2.config.dsi2_data_path == 'DSI2'
-    assert dsi2.config.local_trackdb_path == 'TRACKDB'
+    assert os.path.exists(dsi2_data_path)
 
-def test_loadConfig():
-    os.environ['DSI2_DATA'] = 'NEWDSI2'
-    os.environ['LOCAL_TRACKDB'] = 'NEWTRACKDB'
-    dsi2.config.loadConfig()
-    assert dsi2.config.dsi2_data_path == 'DSI2'
-    assert dsi2.config.local_trackdb_path == 'TRACKDB'
-    dsi2.config.loadConfig(True)
-    assert dsi2.config.dsi2_data_path == 'NEWDSI2'
-    assert dsi2.config.local_trackdb_path == 'NEWTRACKDB'
-
-def test_undefinedEnv():
-    del os.environ['DSI2_DATA']
-    del os.environ['LOCAL_TRACKDB']
-    dsi2.config.loadConfig(True)
-    assert dsi2.config.dsi2_data_path == 'example_data'
-    assert dsi2.config.local_trackdb_path == 'example_trackdb'
-
+def test_example_data():
+    # Check for the lausanne graphml files
+    lausanne_paths = [
+        "lausanne2008/resolution83/resolution83.graphml",
+        "lausanne2008/resolution150/resolution150.graphml",
+        "lausanne2008/resolution258/resolution258.graphml",
+        "lausanne2008/resolution500/resolution500.graphml",
+        "lausanne2008/resolution1015/resolution1015.graphml"]
+    for pth in lausanne_paths:
+        assert os.path.exists(
+            os.path.join(dsi2_data_path,pth))
+    
+    # check for the mni152
+    from dsi2.volumes import get_MNI152_path
+    assert os.path.exists(get_MNI152_path())
