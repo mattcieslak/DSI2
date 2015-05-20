@@ -225,10 +225,11 @@ class TrackDataset(HasTraits):
             self.header = header
             self.set_tracks(tracks)
         else:
-            if fname.endswith("trk.gz"):
-                fl = gzip.open(fname,"r")
-            elif fname.endswith("trk"):
-                fl = open(fname,"r")
+            if fname.endswith("trk.gz") or fname.endswith("trk"):
+                if fname.endswith("trk.gz"):
+                    fl = gzip.open(fname,"r")
+                elif fname.endswith("trk"):
+                    fl = open(fname,"r")
                 streams, self.header = trackvis.read(fl)
                 # Convert voxmm to ijk
                 self.set_tracks(np.array([stream[0] for stream in streams],
