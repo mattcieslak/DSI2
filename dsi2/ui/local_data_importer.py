@@ -3,7 +3,7 @@ import sys, json, os
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
-     on_trait_change, Button, Set, File, Int
+     on_trait_change, Button, Set, File, Int, Bool, cached_property
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
@@ -22,6 +22,7 @@ import subprocess
 import cPickle as pickle
 import pymongo
 from bson.binary import Binary
+import os.path as op
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 import re
@@ -243,7 +244,7 @@ def check_scan_for_files(sc):
     return True
 
 
-def __get_region_ints_from_graphml(graphml):
+def get_region_ints_from_graphml(graphml):
     """
     Returns an array of region ints from a graphml file.
     """
@@ -302,6 +303,28 @@ def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     onim.to_filename(output_v)
 
 
+
+    
+    
+        
+
+
+class lazy_tds(HasTraits):
+    file_name = File
+    tds = Property(Instance(TrackDataset))
+    
+    @cached_property
+    def _get_tds(self):
+        # Load the tracks
+        tds = TrackDataset(self.file_name)
+        print "\t+ [%s] hashing tracks in qsdr space"
+        tds.hash_voxels_to_tracks()
+        print "\t\t++ [%s] Done." 
+        return tds
+    
+    
+
+
 def create_missing_files(scan):
     """
     Creates files on disk that are needed to visualize data
@@ -331,23 +354,10 @@ def create_missing_files(scan):
     if not os.path.exists(abs_pkl_file):
         if not os.path.exists(abs_trk_file):
             raise ValueError(abs_trk_file + " does not exist")
-        else:
-            # Load the tracks
-            print "\t+ [%s] pkl not found, loading" %sid , abs_trk_file
-            tds = TrackDataset(abs_trk_file)
-            # NOTE: If these were MNI 152 @ 1mm, we could do something like
-            # tds.tracks_at_ijk = streamline_mapping(tds.tracks,(1,1,1))
-            print "\t+ [%s] hashing tracks in qsdr space"%sid
-            tds.hash_voxels_to_tracks()
-            print "\t\t++ [%s] Done." % sid
-        # Load the tracks
-    else:
-        print "\t+ [%s] pkl file exists, loading" %sid , abs_trk_file
-        fop = open(abs_pkl_file,"r")
-        tds = pickle.load(fop)
-        fop.close()
-        print "\t\t++ [%s] Done." % sid
-
+    
+    # prevent loading and hashing of tracks unless necessary
+    # to create missing files
+    tds = lazy_tds(file_name=abs_trk_file, subject_name=sid)
 
     # =========================================================
     # Loop over the track labels, creating .npy files as needed
@@ -388,12 +398,12 @@ def create_missing_files(scan):
             regions = mds.roi_ids
         else:
             print "\t\t++ [%s] Recognized atlas name, using Lausanne2008 atlas"%sid, graphml
-            regions = __get_region_ints_from_graphml(graphml)
+            regions = get_region_ints_from_graphml(graphml)
 
         # Save it.
-        conn_ids = connection_ids_from_tracks(mds, tds,
+        conn_ids = connection_ids_from_tracks(mds, tds.tds,
               save_npy=npy_path,
-              scale_coords=tds.header['voxel_size'],
+              scale_coords=tds.tds.header['voxel_size'],
               region_ints=regions)
         print "\t\t++ [%s] Saved %s" % (sid, npy_path)
         print "\t\t\t*** [%s] %.2f percent streamlines not accounted for by regions"%( sid, 100. * np.sum(conn_ids==0)/len(conn_ids) )
@@ -422,7 +432,7 @@ def create_missing_files(scan):
     else:
         abs_pkl_trk_file = scan.pkl_trk_path
     print "\t+ Dumping MNI152 hash table"
-    tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
+    tds.tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
     return True
 
 

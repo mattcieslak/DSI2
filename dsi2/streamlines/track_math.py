@@ -72,7 +72,8 @@ def region_pair_dict_from_roi_list(roi_list):
 
 def connection_ids_from_tracks(msk_dset, trk_dset, 
                 region_ints=None, save_npy="", 
-                n_endpoints=3, scale_coords=np.array([1,1,1])):
+                n_endpoints=3, scale_coords=np.array([1,1,1]),
+                correct_labels=None):
     """ Take a mask dataset and some tracks. For each track in the tracks
     make sure that the last point(s) is(are) in gray_regions and that at least
     one of its points is in `white_regions`. Make a new trk dataset with these
@@ -123,14 +124,17 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
         lbl = np.flatnonzero(labels)
 
         # Are there any regions found in this track?
-        if not len(lbl) > 2: continue
+        if not len(lbl) > 1: continue
         startpoint, endpoint = labels[lbl[0]], labels[lbl[-1]]
         #if startpoint == endpoint: continue
         stoppers = sorted([startpoint,endpoint])
-
+        
+        roi_id = roi_pair_lookup[tuple(stoppers)]
+        
+        if not (correct_labels is None):
+            assert correct_labels[trknum] == roi_id
         # Fiber has met all the requirements
-        endpoints[trknum] = \
-            roi_pair_lookup[tuple(stoppers)]
+        endpoints[trknum] = roi_id
 
     if save_npy: np.save(save_npy,endpoints)
     return endpoints
