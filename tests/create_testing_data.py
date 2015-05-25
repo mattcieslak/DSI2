@@ -23,7 +23,32 @@ import os.path as op
 from dsi2.volumes import QSDR_SHAPE, QSDR_AFFINE, find_graphml_from_b0, load_lausanne_graphml
 from dsi2.database.traited_query import Scan, TrackLabelSource, TrackScalarSource
 from dsi2.aggregation import make_aggregator
+import shutil
+from copy import deepcopy
+import pytest
 
+
+qsdr_trk_header = np.array(
+        ('TRACK', [79, 95, 69], [2.0, 2.0, 2.0], 
+         [0.0, 0.0, 0.0], 0, 
+         ['', '', '', '', '', '', '', '', '', ''], 0, 
+         ['', '', '', '', '', '', '', '', '', ''], 
+         [[-2.0, 0.0, 0.0, 0.0], [0.0, -2.0, 0.0, 0.0], 
+          [0.0, 0.0, -2.0, 0.0], [0.0, 0.0, 0.0, 1.0]], 
+         '', 'LPS', 'LPS', [1.0, 0.0, 0.0, 0.0, 1.0, 0.0], 
+         '', '', '', '', '', '', '', 100000, 2, 1000), 
+      dtype=[('id_string', 'S6'), ('dim', '<i2', (3,)), 
+             ('voxel_size', '<f4', (3,)), 
+             ('origin', '<f4', (3,)), 
+             ('n_scalars', '<i2'), ('scalar_name', 'S20', (10,)), 
+             ('n_properties', '<i2'), ('property_name', 'S20', (10,)), 
+             ('vox_to_ras', '<f4', (4, 4)), ('reserved', 'S444'), 
+             ('voxel_order', 'S4'), ('pad2', 'S4'), 
+             ('image_orientation_patient', '<f4', (6,)), 
+             ('pad1', 'S2'), ('invert_x', 'S1'), ('invert_y', 'S1'), 
+             ('invert_z', 'S1'), ('swap_xy', 'S1'), ('swap_yz', 'S1'), 
+             ('swap_zx', 'S1'), ('n_count', '<i4'), ('version', '<i4'), 
+             ('hdr_size', '<i4')])
 
 scale33_graphml = find_graphml_from_b0("scale33")
 scale33_data = load_lausanne_graphml(scale33_graphml)
@@ -40,12 +65,12 @@ R_PRECEN_1_60 = 16
 R_PRECEN_2_60 = 17
 
 # Connection IDS
-scale33_rpc_to_bs = scale33_data['region_pairs_to_index'][(R_PRECEN_33,BRAINSTEM_ID)]
-scale33_lpc_to_bs = scale33_data['region_pairs_to_index'][(L_PRECEN_33,BRAINSTEM_ID)]
-scale60_rpc_1_to_bs = scale60_data['region_pairs_to_index'][(R_PRECEN_1_60,BRAINSTEM_ID)]
-scale60_lpc_1_to_bs = scale60_data['region_pairs_to_index'][(L_PRECEN_1_60,BRAINSTEM_ID)]
-scale60_rpc_2_to_bs = scale60_data['region_pairs_to_index'][(R_PRECEN_2_60,BRAINSTEM_ID)]
-scale60_lpc_2_to_bs = scale60_data['region_pairs_to_index'][(L_PRECEN_2_60,BRAINSTEM_ID)]
+SCALE33_RPC_TO_BS = scale33_data['region_pairs_to_index'][(R_PRECEN_33,BRAINSTEM_ID)]
+SCALE33_LPC_TO_BS = scale33_data['region_pairs_to_index'][(L_PRECEN_33,BRAINSTEM_ID)]
+SCALE60_RPC_1_TO_BS = scale60_data['region_pairs_to_index'][(R_PRECEN_1_60,BRAINSTEM_ID)]
+SCALE60_LPC_1_TO_BS = scale60_data['region_pairs_to_index'][(L_PRECEN_1_60,BRAINSTEM_ID)]
+SCALE60_RPC_2_TO_BS = scale60_data['region_pairs_to_index'][(R_PRECEN_2_60,BRAINSTEM_ID)]
+SCALE60_LPC_2_TO_BS = scale60_data['region_pairs_to_index'][(L_PRECEN_2_60,BRAINSTEM_ID)]
 
 
 def test_region_label_names():
@@ -81,32 +106,73 @@ def save_fake_fib(fname):
     fop.close()
     
 
-# Create the brainstem "bs" region, same for both scales
-bs_i, bs_j, bs_k = make_coords(32,44,40,52,10,24)
-bs_coord = np.array([bs_i,bs_j,bs_k]).T
 
 # Create scale 33 precentral, left and right
+L_PRE_CEN_MIN_X=50
+L_PRE_CEN_MAX_X=58
+L_PRE_CEN_MIN_Y=40
+L_PRE_CEN_MAX_Y=51
+L_PRE_CEN_MIN_Z=45
+L_PRE_CEN_MAX_Z=50
+
+R_PRE_CEN_MIN_X=20
+R_PRE_CEN_MAX_X=28
+R_PRE_CEN_MIN_Y=40
+R_PRE_CEN_MAX_Y=51
+R_PRE_CEN_MIN_Z=45
+R_PRE_CEN_MAX_Z=50
+
+BS_MIN_X=36
+BS_MAX_X=40
+BS_MIN_Y=46
+BS_MAX_Y=50
+BS_MIN_Z=14
+BS_MAX_Z=20
+
+# Create the brainstem "bs" region, same for both scales
+bs_i, bs_j, bs_k = make_coords(
+    BS_MIN_X, BS_MAX_X,
+    BS_MIN_Y, BS_MAX_Y,
+    BS_MIN_Z, BS_MAX_Z)
+bs_coord = np.array([bs_i,bs_j,bs_k]).T
+
 left_pre_cen33_i,left_pre_cen33_j,left_pre_cen33_k = make_coords(
-    46,59, 38,54, 40,50)
+    L_PRE_CEN_MIN_X,L_PRE_CEN_MAX_X, 
+    L_PRE_CEN_MIN_Y,L_PRE_CEN_MAX_Y,
+    L_PRE_CEN_MIN_Z,L_PRE_CEN_MAX_Z)
 right_pre_cen33_i,right_pre_cen33_j,right_pre_cen33_k = make_coords(
-    15,28, 38,54, 40,50)
+    R_PRE_CEN_MIN_X,R_PRE_CEN_MAX_X, 
+    R_PRE_CEN_MIN_Y,R_PRE_CEN_MAX_Y,
+    R_PRE_CEN_MIN_Z,R_PRE_CEN_MAX_Z)
 
 # Create scale 60 precentral, left and right
+# Use the midpoints in y to divide the original regions
+L_PRE_CEN_MID = (L_PRE_CEN_MAX_Y + L_PRE_CEN_MIN_Y) // 2
+R_PRE_CEN_MID = (R_PRE_CEN_MAX_Y + R_PRE_CEN_MIN_Y) // 2
+
 left_pre_cen60_1_i,left_pre_cen60_1_j,left_pre_cen60_1_k = make_coords(
-    46,59, 38,46, 40,50)
+    L_PRE_CEN_MIN_X,L_PRE_CEN_MAX_X, 
+    L_PRE_CEN_MIN_Y,L_PRE_CEN_MID,
+    L_PRE_CEN_MIN_Z,L_PRE_CEN_MAX_Z)
 lpc60_1_coord = np.array(
     [left_pre_cen60_1_i,left_pre_cen60_1_j,left_pre_cen60_1_k]).T
-right_pre_cen60_1_i,right_pre_cen60_1_j,right_pre_cen60_1_k = make_coords(
-    15,28, 38,46, 40,50)
-rpc60_1_coord = np.array(
-    [right_pre_cen60_1_i,right_pre_cen60_1_j,right_pre_cen60_1_k]).T
-                
 left_pre_cen60_2_i,left_pre_cen60_2_j,left_pre_cen60_2_k = make_coords(
-    46,59, 46,54, 40,50)
+    L_PRE_CEN_MIN_X,L_PRE_CEN_MAX_X, 
+    L_PRE_CEN_MID+1,L_PRE_CEN_MAX_Y,
+    L_PRE_CEN_MIN_Z,L_PRE_CEN_MAX_Z)
 lpc60_2_coord = np.array(
     [left_pre_cen60_2_i,left_pre_cen60_2_j,left_pre_cen60_2_k]).T
+                
+right_pre_cen60_1_i,right_pre_cen60_1_j,right_pre_cen60_1_k = make_coords(
+    R_PRE_CEN_MIN_X,R_PRE_CEN_MAX_X, 
+    R_PRE_CEN_MIN_Y,R_PRE_CEN_MID,
+    R_PRE_CEN_MIN_Z,R_PRE_CEN_MAX_Z)
+rpc60_1_coord = np.array(
+    [right_pre_cen60_1_i,right_pre_cen60_1_j,right_pre_cen60_1_k]).T
 right_pre_cen60_2_i,right_pre_cen60_2_j,right_pre_cen60_2_k = make_coords(
-    15,28, 46,54, 40,50)
+    R_PRE_CEN_MIN_X,R_PRE_CEN_MAX_X, 
+    R_PRE_CEN_MID+1,R_PRE_CEN_MAX_Y,
+    R_PRE_CEN_MIN_Z,R_PRE_CEN_MAX_Z)
 rpc60_2_coord = np.array(
     [right_pre_cen60_2_i,right_pre_cen60_2_j,right_pre_cen60_2_k]).T
 
@@ -156,7 +222,7 @@ def create_streamlines(from_coords, to_coords):
                 np.linspace(fx,tx,distance_mm,endpoint=True)*2,
                 np.linspace(fy,ty,distance_mm,endpoint=True)*2,
                 np.linspace(fz,tz,distance_mm,endpoint=True)*2
-            ]).T
+            ]).T 
         )
     return streamlines
 
@@ -168,31 +234,31 @@ def get_streamlines1():
     
     np.random.seed(0)
     sl_bs_lpc1 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_lpc_to_bs ] * 20
+    scale33 += [ SCALE33_LPC_TO_BS ] * 20
     np.random.seed(0)
     sl_lpc1_bs = lpc60_1_coord[np.random.choice(len(left_pre_cen60_1_i),20)]
-    scale60 += [ scale60_lpc_1_to_bs ] * 20
+    scale60 += [ SCALE60_LPC_1_TO_BS ] * 20
     
     np.random.seed(1)
     sl_bs_lpc2 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_lpc_to_bs ] * 20
+    scale33 += [ SCALE33_LPC_TO_BS ] * 20
     np.random.seed(1)
     sl_lpc2_bs = lpc60_2_coord[np.random.choice(len(left_pre_cen60_2_i),20)]
-    scale60 += [ scale60_lpc_2_to_bs ] * 20
+    scale60 += [ SCALE60_LPC_2_TO_BS ] * 20
     
     np.random.seed(2)
     sl_bs_rpc1 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_rpc_to_bs ] * 20
+    scale33 += [ SCALE33_RPC_TO_BS ] * 20
     np.random.seed(2)
     sl_rpc1_bs = rpc60_1_coord[np.random.choice(len(right_pre_cen60_1_i),20)]
-    scale60 += [ scale60_rpc_1_to_bs ] * 20
+    scale60 += [ SCALE60_RPC_1_TO_BS ] * 20
     
     np.random.seed(3)
     sl_bs_rpc2 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_rpc_to_bs ] * 20
+    scale33 += [ SCALE33_RPC_TO_BS ] * 20
     np.random.seed(3)
     sl_rpc2_bs = rpc60_2_coord[np.random.choice(len(right_pre_cen60_2_i),20)]
-    scale60 += [ scale60_rpc_2_to_bs ] * 20
+    scale60 += [ SCALE60_RPC_2_TO_BS ] * 20
     
     # create the streamlines from left pre central
     streamlines = []
@@ -201,8 +267,9 @@ def get_streamlines1():
     streamlines += create_streamlines(sl_bs_rpc1, sl_rpc1_bs)
     streamlines += create_streamlines(sl_bs_rpc2, sl_rpc2_bs)
     
-    tds1 = TrackDataset()
-    tds1.set_tracks(streamlines)
+    hdr = deepcopy(qsdr_trk_header)
+    hdr['n_count'] = len(streamlines)
+    tds1 = TrackDataset(header=hdr, tracks=streamlines)
 
     return tds1, np.array(scale33), np.array(scale60)
 tds1, tds1_scale33, tds1_scale60 = get_streamlines1()
@@ -213,53 +280,65 @@ def get_streamlines2():
     scale33 = []
     scale60 = []
     # limited y on lpc1 
-    _i,_j,_k = make_coords( 32, 44, 44,52, 10,24)
-    _coord = np.array([ _i, _j, _k ]).T
+    lpc_1_small_i,lpc_1_small_j,lpc_1_small_k = make_coords(
+        L_PRE_CEN_MIN_X,L_PRE_CEN_MAX_X, 
+        L_PRE_CEN_MIN_Y+4,L_PRE_CEN_MID,
+        L_PRE_CEN_MIN_Z,L_PRE_CEN_MAX_Z)
+    lpc_1_small_coord = np.array([lpc_1_small_i,lpc_1_small_j,lpc_1_small_k]).T
     np.random.seed(4)
-    sl_bs_lpc1 = _coord[np.random.choice(len(_i),10)]
-    scale33 += [ scale33_lpc_to_bs ] * 10
+    sl_bs_lpc1_small = lpc_1_small_coord[np.random.choice(len(lpc_1_small_i),10)]
     np.random.seed(4)
-    _i,_j,_k = make_coords( 50,59, 44,46, 45,50)
-    _coord = np.array([ _i, _j, _k ]).T
-    sl_lpc1_bs = _coord[np.random.choice(len(_coord),10)]
-    scale60 += [ scale60_lpc_1_to_bs ] * 10
+    bs_small_i,bs_small_j,bs_small_k = make_coords( 
+        BS_MIN_X, BS_MAX_X,
+        BS_MIN_Y+4, BS_MAX_Y,
+        BS_MIN_Z, BS_MAX_Z)
+    bs_small_coord = np.array([ bs_small_i, bs_small_j, bs_small_k ]).T
+    sl_lpc1_bs_small = bs_small_coord[np.random.choice(len(bs_small_coord),10)]
+    scale60 += [ SCALE60_LPC_1_TO_BS ] * 10
+    scale33 += [ SCALE33_LPC_TO_BS ] * 10
     
     np.random.seed(5)
     sl_bs_lpc2 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_lpc_to_bs ] * 20
+    scale33 += [ SCALE33_LPC_TO_BS ] * 20
     np.random.seed(5)
     sl_lpc2_bs = lpc60_2_coord[np.random.choice(len(left_pre_cen60_2_i),20)]
-    scale60 += [ scale60_lpc_2_to_bs ] * 20
+    scale60 += [ SCALE60_LPC_2_TO_BS ] * 20
     
     np.random.seed(6)
     sl_bs_rpc1 = bs_coord[np.random.choice(len(bs_i),20)]
-    scale33 += [ scale33_rpc_to_bs ] * 20
+    scale33 += [ SCALE33_RPC_TO_BS ] * 20
     np.random.seed(6)
     sl_rpc1_bs = rpc60_1_coord[np.random.choice(len(right_pre_cen60_1_i),20)]
-    scale60 += [ scale60_rpc_1_to_bs ] * 20
+    scale60 += [ SCALE60_RPC_1_TO_BS ] * 20
     
     np.random.seed(7)
     sl_bs_rpc2 = bs_coord[np.random.choice(len(bs_i),30)]
-    scale33 += [ scale33_rpc_to_bs ] * 30
+    scale33 += [ SCALE33_RPC_TO_BS ] * 30
     np.random.seed(7)
     sl_rpc2_bs = rpc60_2_coord[np.random.choice(len(right_pre_cen60_2_i),30)]
-    scale60 += [ scale60_rpc_2_to_bs ] * 30
+    scale60 += [ SCALE60_RPC_2_TO_BS ] * 30
     
     # create the streamlines from left pre central
     streamlines = []
-    streamlines += create_streamlines(sl_bs_lpc1, sl_lpc1_bs)
+    streamlines += create_streamlines(sl_bs_lpc1_small, sl_lpc1_bs_small)
     streamlines += create_streamlines(sl_bs_lpc2, sl_lpc2_bs)
     streamlines += create_streamlines(sl_bs_rpc1, sl_rpc1_bs)
     streamlines += create_streamlines(sl_bs_rpc2, sl_rpc2_bs)
     
-    tds1 = TrackDataset()
-    tds1.set_tracks(streamlines)
-
+    hdr = deepcopy(qsdr_trk_header)
+    hdr['n_count'] = len(streamlines)
+    tds1 = TrackDataset(header=hdr, tracks=streamlines)
     return tds1, np.array(scale33), np.array(scale60)
+
 tds2, tds2_scale33, tds2_scale60 = get_streamlines2()
 
-def test_create_data():
+@pytest.fixture()
+def create_test_data():
     from paths import test_input_data, input_data_json
+    if os.path.exists(test_input_data):
+        print "removing previous testing data"
+        shutil.rmtree(test_input_data)
+    print "creating new testing directory"
     os.makedirs(test_input_data)
     droot = test_input_data
     print "saving data to", droot, "sumary at", input_data_json
@@ -316,6 +395,7 @@ def test_create_data():
     with open(input_data_json,"w") as outfile:
         json.dump(json_data,outfile,indent=4)
     print "Saved", input_data_json
+    return input_data_json
 
 def mlab_show_test_dataset():
     from mayavi import mlab
