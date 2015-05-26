@@ -44,7 +44,7 @@ def mongo_db(request):
     request.addfinalizer(shutdown_mongod)
     return mongo_conn
     
-
+    
 @pytest.fixture(scope="session")
 def data_importer(request, create_test_data):
     """
@@ -62,10 +62,6 @@ def data_importer(request, create_test_data):
     for scan in ldi.datasets:
         assert create_missing_files(scan)
         # Check the pickle file
-        fop = open(scan.pkl_path,"rb")
-        test_pkl = pickle.load(fop)
-        fop.close()
-        assert type(test_pkl) is TrackDataset
         assert scan.scan_id in ("s1", "s2")
     
         
@@ -121,6 +117,20 @@ def data_importer(request, create_test_data):
     request.addfinalizer(finalize)
     return ldi
 
+@pytest.fixture(scope="session")
+def mni_wm_coords(data_importer):
+    # gets all coordinates covered by streamlines
+    scan = data_importer.datasets[0]
+    fop = open(scan.pkl_path,"rb")
+    mni_tds1 = pickle.load(fop)
+    fop.close()
+    scan = data_importer.datasets[1]
+    fop = open(scan.pkl_path,"rb")
+    mni_tds2 = pickle.load(fop)
+    fop.close()
+    all_coords = set(mni_tds1.tracks_at_ijk.keys()) | set(mni_tds2.tracks_at_ijk.keys()) 
+    return list(all_coords)
+
 def test_data_importer_save(data_importer,tmpdir):
     """ 
     tests that LocalDataImporter can save a file that is loadable
@@ -163,7 +173,7 @@ def test_data_sources(mongo_track_datasource,track_datasource):
     assert mds.get_subjects() == tds.get_subjects()
     
 from dsi2.aggregation import make_aggregator   
-def test_region_aggregator(mongo_track_datasource,track_datasource):
+def test_region_aggregator(mongo_track_datasource,track_datasource,mni_wm_coords):
     mds = mongo_track_datasource
     tds = track_datasource
     # Check that scale 60 is the same
@@ -205,7 +215,27 @@ def test_region_aggregator(mongo_track_datasource,track_datasource):
                 mds_agg_33.track_sets[1].tracks, tds_agg_33.track_sets[1].tracks)])
     
         
-    
+    # test individual sphere queries
+    print "TESTING COORDINATE QUERIES"
+    for ncoord, coord in enumerate(mni_wm_coords):
+        if ncoord % 100 == 0:
+            print ncoord, "/", len(mni_wm_coords)
+        mds_agg_60.set_track_sets(mds.query_ijk((coord,)))
+        mds_agg_60.update_clusters()
+        c1,v1 = mds_agg_60.connection_vector_matrix()
+        tds_agg_60.set_track_sets(mds.query_ijk((coord,)))
+        tds_agg_60.update_clusters()
+        c2,v2 = mds_agg_60.connection_vector_matrix()
+        assert c1 == c2
+        assert np.all(v1 == v2)
+        mds_agg_33.set_track_sets(mds.query_ijk((coord,)))
+        mds_agg_33.update_clusters()
+        c1,v1 = mds_agg_33.connection_vector_matrix()
+        tds_agg_33.set_track_sets(mds.query_ijk((coord,)))
+        tds_agg_33.update_clusters()
+        c2,v2 = mds_agg_33.connection_vector_matrix()
+        assert c1 == c2
+        assert np.all(v1 == v2)
     
     
     
