@@ -460,6 +460,7 @@ class MongoCreator(HasTraits):
     b_start = Button("Start mongod")
     restrict_ips = Bool(True)
     numactl_interleave = Bool(False)
+    port = Str("27017")
     
     def get_command(self):
         cmd = []
@@ -467,12 +468,16 @@ class MongoCreator(HasTraits):
             cmd += ["numactl", "--interleave=all" ]
         
         cmd += ["mongod", "--fork", "--dbpath", self.database_dir,
-                "--logpath", self.log_path ]
+                "--logpath", self.log_path, "--port", self.port ]
         
         if self.restrict_ips:
             cmd += ["--bind_ip", "127.0.0.1"]
         return cmd
         
+    def get_connection(self):
+        conn = pymongo.MongoClient(
+            port=int(self.port),host="localhost")
+        return conn
     def _b_start_fired(self):
         print "Starting mongod"
         cmd = self.get_command()
@@ -480,15 +485,25 @@ class MongoCreator(HasTraits):
         if not os.path.exists(self.database_dir):
             os.makedirs(self.database_dir)
         proc = subprocess.Popen(cmd,
-                                stdout = subprocess.PIPE)
+                stdout = subprocess.PIPE,shell=False)
         result = proc.communicate()
         print result
+        return result
+        
+    def shutdown(self):
+        conn = self.get_connection()
+        dba = conn.admin
+        try:
+            dba.command({"shutdown":1})
+        except Exception, e:
+            print e
         
     traits_view = View(
         VGroup(
             Item("database_dir"),
             Item("log_path"),
             Item("restrict_ips"),
+            Item("port"),
             Item("numactl_interleave"),
             Item("b_start")
             )
@@ -549,7 +564,7 @@ class LocalDataImporter(HasTraits):
     def _upload_to_mongodb_fired(self):
         print "Connecting to mongodb"
         try:
-            connection = pymongo.MongoClient()
+            connection = self.mongo_creator.get_connection()
         except Exception:
             print "unable to establish connection with mongod"
             return

@@ -332,8 +332,8 @@ def get_streamlines2():
 
 tds2, tds2_scale33, tds2_scale60 = get_streamlines2()
 
-@pytest.fixture()
-def create_test_data():
+@pytest.fixture(scope="session")
+def create_test_data(request):
     from paths import test_input_data, input_data_json
     if os.path.exists(test_input_data):
         print "removing previous testing data"
@@ -395,6 +395,10 @@ def create_test_data():
     with open(input_data_json,"w") as outfile:
         json.dump(json_data,outfile,indent=4)
     print "Saved", input_data_json
+    def teardown():
+        print "Teardown of test input data"
+        shutil.rmtree(test_input_data)
+    request.addfinalizer(teardown)
     return input_data_json
 
 def mlab_show_test_dataset():
