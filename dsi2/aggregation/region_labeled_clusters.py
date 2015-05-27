@@ -9,6 +9,7 @@ from traitsui.editors.tabular_editor import TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 import matplotlib.pyplot as plt
 from dsi2.config import dsi2_data_path
+from dsi2.ui.ltpa_result import LTPAResult, LTPAResults
 
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as td
@@ -19,6 +20,7 @@ from traits.api import HasTraits, Instance, Array, Enum, \
 from traitsui.api import View, Group, Item, RangeEditor, EnumEditor, OKButton, CancelButton
 from ..streamlines.track_math import region_pair_dict_from_roi_list
 import networkx as nx
+from dsi2.streamlines.track_dataset import join_tracks
 
 lausanne_scale_lookup = {
                   33:os.path.join(dsi2_data_path,
@@ -469,6 +471,82 @@ class RegionLabelAggregator(ClusterEditor):
         plt.subplots_adjust(bottom=0.45)
         fig.show()
         return fig
+    
+    def save_ltpa_results(self, group_ids, ltpa_results, fpath, radius,
+            min_n_coords=0, min_abnormal_percent=0.,color_a="maroon",color_b="blue",
+            coords_apply_to="A"):
+        """
+        Parameters:
+        ============
+
+        group_ids:np.ndarray
+          An array of the same length as the number of datasets in the 
+          track_source.  It contains integers representing the group 
+          membership of each 
+        
+        ltpa_results:dict  
+          A dictionary of 
+            {
+                connetion_id1: [(i1,j1,k1),(i2,2,k2),...(in,jn,kn)],
+                connetion_id2: [(i1,j1,k1),(i2,2,k2),...(in,jn,kn)],
+                ...
+                connetion_idN: [(i1,j1,k1),(i2,2,k2),...(in,jn,kn)]
+            }
+            
+        fpath:str
+          save LTPAResults object to ``fpath``
+          
+        radius:int
+          radius used for the LTPA search sphere
+          
+        min_n_coords:int
+          Only save connections where at least ``min_n_coords`` are found
+          to be abnormal
+          
+        min_abnormal_percent:float (0., 1.)
+          Total connection volume is estimated by  
+        """
+        group_ids = np.array(group_ids)
+        id_nums = np.unique(group_ids)
+        if not len(group_ids) == len(self.track_source):
+            raise ValueError("group_ids must be of the same length as the datasource")
+        if not len(id_nums) == 2:
+            raise ValueError("Can only save 2 unique groups")
+        
+        filtered_results = ltpa_results
+        if min_n_coords > 0:
+            filtered_results = dict([
+                (k,v) for k,v in ltpa_results.iteritems() if len(v) > min_n_coords]
+            )
+            
+        if min_abnormal_percent > 0.:
+            print "Not yet implemented"
+            
+        _results = []
+        for conn_id, coords in filtered_results.iteritems():
+            name = " ".join(self.index_to_region_pairs[conn_id])
+            conn_tracks = self.track_source.query_connection_id(conn_id)
+            tracks_a = join_tracks([trk for trk,gid in zip(conn_tracks,group_ids) \
+                                    if gid == id_nums[0]])
+            tracks_b = join_tracks([trk for trk,gid in zip(conn_tracks,group_ids) \
+                                    if gid == id_nums[0]])
+            _results.append(
+                LTPAResult(
+                    result_coords = np.array(coords),
+                    coord_radius = radius,
+                    tracksA = tracks_a,
+                    colorA = color_a,
+                    tracksB = tracks_b,
+                    colorB = color_b,
+                    coords_apply_to = coords_apply_to
+                )
+            )
+        ltpa_out = LTPAResults(results=_results)
+        fop = open(fpath,"wb")
+        pickle.dump(ltpa_out,fop)
+        fop.close()
+        print "saved", fpath 
+        
 
     def get_R_dat(self):
         """

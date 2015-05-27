@@ -505,8 +505,9 @@ class MongoCreator(HasTraits):
             Item("restrict_ips"),
             Item("port"),
             Item("numactl_interleave"),
-            Item("b_start")
-            )
+            Group(
+            Item("b_start"), show_labels=False)
+            ), title="MongoDB Connection"
         )
         
 class LocalDataImporter(HasTraits):
