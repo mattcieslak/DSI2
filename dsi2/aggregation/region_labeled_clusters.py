@@ -656,9 +656,11 @@ class RegionLabelAggregator(ClusterEditor):
               Item("atlas_name", editor= EnumEditor(name="possible_atlases")),
               Group(*tuple(groups)),
               # Actions for altering internals
+              Group(
               Item("b_plot_connection_vector"),
               Item("b_query_region_pairs"),
-              Item("b_change_postproc")
+              Item("b_change_postproc"),
+              show_labels=False,orientation="horizontal"),
             ),
             Group(
               Item("clusters",
