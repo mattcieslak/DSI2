@@ -73,7 +73,7 @@ def region_pair_dict_from_roi_list(roi_list):
 def connection_ids_from_tracks(msk_dset, trk_dset, 
                 region_ints=None, save_npy="", 
                 n_endpoints=3, scale_coords=np.array([1,1,1]),
-                correct_labels=None):
+                correct_labels=None,check_affines = False):
     """ Take a mask dataset and some tracks. For each track in the tracks
     make sure that the last point(s) is(are) in gray_regions and that at least
     one of its points is in `white_regions`. Make a new trk dataset with these
@@ -113,8 +113,24 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
     if region_ints is None:
         region_ints = msk_dset.roi_ids
     roi_pair_lookup = region_pair_dict_from_roi_list(region_ints)
-    maskdata = msk_dset.data.astype(np.int32)
 
+    # Check that the mapping from streamline coordinates to 
+    # voxels is is possible through division
+    mask_affine = msk_dset.dset.get_affine()
+    trk_affine = trk_dset.header["vox_to_ras"]
+    
+    if check_affines:
+        maskdata = msk_dset.data.astype(np.int32)
+        if not (trk_affine[0,0] > 0) == (mask_affine[0,0] > 0):
+            print "flipping roi volume x"
+            maskdata = maskdata[::-1,:,:]
+        if not (trk_affine[1,1] > 0) == (mask_affine[1,1] > 0):
+            print "flipping roi volume y"
+            maskdata = maskdata[:,::-1,:]
+        if not (trk_affine[2,2] > 0) == (mask_affine[2,2] > 0):
+            print "flipping roi volume z"
+            maskdata = maskdata[:,:,::-1]
+    
     for trknum, trk in enumerate(trk_dset):
         # Convert all points to their label vals
         pt = np.floor(trk/scale_coords).astype(np.int32)
