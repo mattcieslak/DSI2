@@ -119,17 +119,20 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
     mask_affine = msk_dset.dset.get_affine()
     trk_affine = trk_dset.header["vox_to_ras"]
     
+    maskdata = msk_dset.data.astype(np.int32)
     if check_affines:
-        maskdata = msk_dset.data.astype(np.int32)
-        if not (trk_affine[0,0] > 0) == (mask_affine[0,0] > 0):
-            print "flipping roi volume x"
-            maskdata = maskdata[::-1,:,:]
-        if not (trk_affine[1,1] > 0) == (mask_affine[1,1] > 0):
-            print "flipping roi volume y"
-            maskdata = maskdata[:,::-1,:]
-        if not (trk_affine[2,2] > 0) == (mask_affine[2,2] > 0):
-            print "flipping roi volume z"
-            maskdata = maskdata[:,:,::-1]
+        if np.abs(trk_affine).sum() == 0:
+            print "Warning: No vox_to_ras in header, skipping affine check"
+        else:
+            if not (trk_affine[0,0] > 0) == (mask_affine[0,0] > 0):
+                print "flipping roi volume x"
+                maskdata = maskdata[::-1,:,:]
+            if not (trk_affine[1,1] > 0) == (mask_affine[1,1] > 0):
+                print "flipping roi volume y"
+                maskdata = maskdata[:,::-1,:]
+            if not (trk_affine[2,2] > 0) == (mask_affine[2,2] > 0):
+                print "flipping roi volume z"
+                maskdata = maskdata[:,:,::-1]
     
     for trknum, trk in enumerate(trk_dset):
         # Convert all points to their label vals
