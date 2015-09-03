@@ -2,6 +2,7 @@ from dsi2.ui.local_data_importer import LocalDataImporter
 from dsi2.streamlines.track_math import region_pair_dict_from_roi_list
 from dsi2.volumes import graphml_from_label_source
 from pkg_resources import Requirement, resource_filename
+from dipy.utils.tracking import density_map
 from scipy.io.matlab import savemat
 import networkx as nx
 import nibabel as nib
@@ -54,17 +55,25 @@ print "done."
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.streamlines.track_dataset import TrackDataset
 from dsi2.streamlines.track_math import connection_ids_from_tracks
-def save_connectivity_matrices(scan):
+def save_connectivity_matrices(scan,compute_voxels=True):
     """
     Doesn't require that a pkl has been made for the streamlines.  Instead it loads
     the trk files and volumes to compute connectivity.
     """
     out_data = {}
     opath = scan.pkl_trk_path + ".mat"
+    tds =  TrackDataset(scan.trk_file)
+    trk_scalars = {}
+    for scalar in scan.track_scalar_items:
+        fop = open(scalar.txt_path,"r")
+        _scalars = np.array(
+            [np.fromstring(line,sep=" ").mean() for line in fop] )
+        fop.close()
+        # Load the actual array
+        trk_scalars[scalar.name] = _scalars
+        
     for lnum, label_source in enumerate(scan.track_label_items):
         mds = MaskDataset(label_source.qsdr_volume_path)
-        tds =  TrackDataset(scan.trk_file)
-        
         # Make a prefix
         prefix = "_".join(
             ["%s_%s" % (k,v) for k,v in label_source.parameters.iteritems()]) + "_"
@@ -90,19 +99,7 @@ def save_connectivity_matrices(scan):
               check_affines=True
               )
         
-        # Loop over the track scalars, creating .npy files as needed
-        print "\t Dumping trakl GFA/QA values"
-        for label_source in scan.track_scalar_items:
-            # File containing the corresponding label vector
-            print "\t\t++ Done."
-            
         for scalar in scan.track_scalar_items:
-            fop = open(scalar.txt_path,"r")
-            _scalars = np.array(
-                [np.fromstring(line,sep=" ").mean() for line in fop] )
-            fop.close()
-            # Load the actual array
-            scalars[prefix + scalar.name] = _scalars
             # Empty matrix for 
             out_data[prefix + scalar.name] = np.zeros((len(regions),len(regions)))
             out_data[prefix + scalar.name + "_sd"] = np.zeros((len(regions),len(regions)))
@@ -110,9 +107,13 @@ def save_connectivity_matrices(scan):
         # extract the streamline lengths and put them into an array
         out_data[prefix+'length'] = np.zeros((len(regions),len(regions)))
         out_data[prefix+'length_sd'] = np.zeros((len(regions),len(regions)))
-        streams, hdr = nib.trackvis.read(scan.trk_file)
-        lengths = np.array([len(arr) for arr in streams])
-        
+        lengths = np.array([len(arr) for arr in tds.tracks])
+       
+        if compute_voxels: 
+            outdata[prefix+"unique_voxels"][i,j] = np.zeros((len(regions),len(regions)))
+            outdata[prefix+"singular_voxels"][i,j] = np.zeros((len(regions),len(regions)))
+            outdata[prefix+"mean_density"][i,j] = np.zeros((len(regions),len(regions)))
+            
         # extract the streamline scalar index
         for conn, (_i,_j) in graphml_data["index_to_region_pairs"].iteritems():
             i,j = _i-1, _j-1
@@ -123,9 +124,18 @@ def save_connectivity_matrices(scan):
             out_data[prefix+'length'][i,j] = out_data[prefix+'length'][j,i] = lengths[indexes].mean()
             out_data[prefix+'length_sd'][i,j] = out_data[prefix+'length_sd'][j,i] = lengths[indexes].std()
             
+            if compute_voxels:
+                dm = density_map(tds.tracks[indexes],
+                                               map(int,mds.dset.get_shape()),
+                                               mds.dset.get_affine())
+                # Store number of unique voxels
+                outdata[prefix+"unique_voxels"][i,j] = outdata[prefix+"unique_voxels"][j,i] = (dm>0).sum()
+                outdata[prefix+"singular_voxels"][i,j] = outdata[prefix+"singular_voxels"][j,i] = (dm==0).sum()
+                outdata[prefix+"mean_density"][i,j] = outdata[prefix+"mean_density"][j,i] = (dm[dm>0]).mean()
+            
             # Fill in the average scalar value
             for scalar_name, scalar_data in scalars.iteritems():
-                scalars_vals = scalars[scalar_name][indexes]
+                scalars_vals = trk_scalars[scalar_name][indexes]
                 scalar_mean = scalars_vals.mean()
                 out_data[scalar_name][i,j] = out_data[scalar_name][j,i] = scalar_mean
                 scalar_std = scalars_vals.std()
