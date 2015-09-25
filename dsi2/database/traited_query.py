@@ -79,6 +79,28 @@ class TrackScalarSource(HasTraits):
             self.parameters = get_builtin_atlas_parameters(self.b0_volume_path)
         print self.parameters
         
+    def get_scalars(self):
+        # If the array already exists in numpy format, use it
+        if os.path.exists(self.numpy_path):
+            return self.load_array()
+        if not os.path.exists(self.txt_path):
+            raise ValueError(self.txt_path + " must exist, but it doesn't")
+        # Check to see if it's already summary data (one number per line)
+        fop = open(self.txt_path, "r")
+        for line in fop:
+            break
+        fop.close()
+        if len(line.strip().split()) == 1:
+            try:
+                return np.loadtxt(self.txt_path)
+            except Exception, e: pass
+        fop = open(self.txt_path,"r")
+        _scalars = np.array(
+            [np.fromstring(line,sep=" ").mean() for line in fop] )
+        fop.close()
+        return _scalars
+                
+        
     def to_json(self):
         return {
             "name" : self.name,
@@ -183,13 +205,15 @@ class Scan(Dataset):
     max_b_value     = Int(5000)
     pkl_path        = File("") # Hashed tracks in MNI152
     pkl_trk_path    = File("") # corresponding trk file to check.
+    connectivity_matrix_path=File("")
     atlases         = Dict({})
     label           = Int
     #data_dir        = File("") # Data used by dsi2 package
     #pkl_dir         = File("") # data root for pickle files
     trk_file        = File("") # path to the trk file
     fib_file        = File("") # path to the DSI Studio's .fib.gz
-    trk_space       = Enum("qsdr", "mni") # Which space is it in?
+    trk_space       = Enum("qsdr", "mni","native","custom") # Which space is it in?
+    template_vol       =  File("")
     # ROI labels and scalar (GFA/QA) values
     track_labels    = List(Dict)
     track_scalars   = List(Dict)
@@ -216,6 +240,7 @@ class Scan(Dataset):
                 Item("study"),
                 Item("scan_group"),
                 Item("fib_file"),
+                Item("connectivity_matrix_path"),
                 Item("pkl_path"),
                 Item("pkl_trk_path"),
                 orientation="vertical",
@@ -233,6 +258,7 @@ class Scan(Dataset):
                 Item("length_max"),
                 Item("trk_file"),
                 Item("trk_space"),
+                Item("template_vol",visible_when="trk_space=='custom'"),
                 orientation="vertical",
                 show_border=True,
                 label="Reconstruction Information"
@@ -284,11 +310,15 @@ class Scan(Dataset):
             tsi.parent = self
             
     def get_track_dataset(self):
-        pkl_file = self.pkl_path
-        print "load:", pkl_file
-        fop = open(pkl_file, "rb")
-        _trkds = pickle.load(fop)
-        _trkds.properties = self
+        if os.path.exists(self.pkl_path):
+            pkl_file = self.pkl_path
+            print "load:", pkl_file
+            fop = open(pkl_file, "rb")
+            _trkds = pickle.load(fop)
+            _trkds.properties = self
+        elif os.path.exists(self.trk_file):
+            from dsi2.streamlines.track_dataset import TrackDataset
+            _trkds = TrackDataset(self.trk_file, properties=self)
         
         # Loop over the scalar items
         for scalar_item in self.track_scalar_items:

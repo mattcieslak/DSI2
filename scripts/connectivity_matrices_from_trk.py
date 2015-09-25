@@ -73,7 +73,10 @@ def save_connectivity_matrices(scan,compute_voxels=True):
         trk_scalars[scalar.name] = _scalars
         
     for lnum, label_source in enumerate(scan.track_label_items):
-        mds = MaskDataset(label_source.qsdr_volume_path)
+        if scan.trk_space == "qsdr":
+            mds = MaskDataset(label_source.qsdr_volume_path)
+        else:
+            mds = MaskDataset(label_source.b0_volume_path)
         # Make a prefix
         prefix = "_".join(
             ["%s_%s" % (k,v) for k,v in label_source.parameters.iteritems()]) + "_"
@@ -146,7 +149,7 @@ def save_connectivity_matrices(scan,compute_voxels=True):
 
             
 if __name__ == "__main__":
-    json_file = "/extra/cieslak/partitions/data/test_orientation.json"
+    json_file = "/extra/cieslak/partitions/.trips_native.json"
     from dsi2.database.local_data import get_local_data
     local_data = get_local_data(json_file)
     save_connectivity_matrices(local_data[0])
