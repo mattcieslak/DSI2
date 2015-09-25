@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import numpy as np
+import warnings
 from itertools import chain
 from scipy.io.matlab import savemat as sm
+import nibabel as nib
+from dipy.tracking.streamline import transform_streamlines
 
 def symmetricize(network):
     if not np.sum(np.tril(network,-1)):
@@ -24,6 +27,150 @@ def voxel_downsampler(tracks,voxel_size=np.array((2.,2.,2.))):
 def triu_indices_from(X):
     sz = X.shape[0]
     return zip(*triu_indices(sz))
+
+def trackvis_header_from_info(
+                    streamline_orientation, tracking_volume_shape,
+                    tracking_volume_voxel_size):
+    
+    # Empty header to be filled
+    hdr = nib.trackvis.empty_header(version=2)
+    
+    # Set up the zooms for the tracking volume
+    try:
+        hdr["voxel_size"] = tracking_volume_voxel_size
+    except ValueError:
+        raise ValueError("tracking_volume_voxel_size must be an iterable"
+                         " of length 3. Got " + str(tracking_volume_voxel_size))
+    hdr["vox_to_ras"][(0,1,2),(0,1,2)] = tracking_volume_voxel_size
+    hdr["vox_to_ras"][-1,-1] = 1
+    
+    # Set up the zooms for the tracking volume
+    try:
+        hdr["dim"] = tracking_volume_shape
+    except ValueError:
+        raise ValueError("tracking_volume_shape must be an iterable"
+                         " of length 3. Got " + str(tracking_volume_shape))
+    
+    # Set up the voxel order of the tracking volume
+    slo = streamline_orientation.upper()
+    def ori_error():
+        raise ValueError("No trackvis header supplied, so attempted to use other" + \
+                         "streamline_orientation must be [RL][AP][IS]. Got " + \
+                         slo )
+    if not slo[0] in ("R","L"): ori_error()
+    if slo[0] == "L":
+        hdr['vox_to_ras'][0,0] = -hdr['vox_to_ras'][0,0]
+    if not slo[1] in ("A","P"): ori_error()
+    if slo[1] == "P":
+        hdr['vox_to_ras'][1,1] = -hdr['vox_to_ras'][1,1]
+    if not slo[2] in ("I","S"): ori_error()
+    if slo[2] == "I":
+        hdr['vox_to_ras'][2,2] = -hdr['vox_to_ras'][2,2]
+    hdr["voxel_order"] = slo
+    
+    return hdr
+    
+
+
+def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
+                    streamline_space="voxmm",  return_coordinates=False,
+                    streamline_orientation="LPS", tracking_volume_shape=(),
+                    tracking_volume_voxel_size=()
+                    ):
+    """
+    The one place to convert streamlines to voxels.  Properties of the streamlines can 
+    either be supplied by a nibabel trackvis header file via the ``trackvis_header`` 
+    argument OR through the ``streamline_orientation``, ``tracking_volume_shape``,
+    and ``tracking_volume_voxel_size``
+    
+    If you want the coordinates to be returned, set ``return_coordinates`` to True.
+    Otherwise sequentially unique voxels will be returned.
+    
+    
+    Parameters:
+    -----------------
+    streams:list or object array of (N,3) np.ndarrays
+      Streamlines to be converted to voxel indices
+    target_volume:nibabel.nifti1Image
+      output voxel_space
+    trackvis_header:recarray
+      used to define properties of the streamline coordinates
+    """
+    ref_affine = target_volume.get_affine()
+    img_voxel_size = np.array(target_volume.get_header().get_zooms())
+    
+    # Create a trackvis header if none is given
+    if trackvis_header is None:
+        warnings.warn("Approximating a trackvis header from vol info")
+        trackvis_header = trackvis_header_from_info(streamline_orientation,
+                                                    tracking_volume_shape, tracking_volume_voxel_size)
+        
+    trk_affine = trackvis_header['vox_to_ras']
+    # Perform basic checks to make sure the tracks
+    # and image are compatible
+    if not np.all(np.array(target_volume.get_shape()) == trackvis_header['dim']):
+        raise ValueError("Shape mismatch between streamlines and volume")
+    
+    if not np.all(trackvis_header['voxel_size']==img_voxel_size):
+        raise ValueError("Size mismatch between streamlines and volume voxels")
+    # Check for valid affines
+    if np.any(np.diag(ref_affine)==0):
+        raise ValueError("invalid affine in target_vol")
+    if np.any(np.diag(trk_affine) == 0):
+        raise ValueError("invalid trackvis header, update dsi studio")
+        
+    # Do the volume orientations match?
+    orientation_match = (np.sign(np.diag(ref_affine)) == \
+            np.sign(np.diag(trk_affine)))[:3]
+    flipx, flipy, flipz = np.logical_not(orientation_match)
+
+    
+    # Convert the streamlines to voxel coordinates
+    extents = img_voxel_size * (trackvis_header['dim'] -1)
+    ijk = []
+    for _stream in streams:
+        stream = _stream.copy()
+        if flipx:
+            stream[:,0] = extents[0] - stream[:,0]
+        if flipy:
+            stream[:,1] = extents[1] - stream[:,1]
+        if flipz:
+            stream[:,2] = extents[2] - stream[:,2]
+            
+        coords = stream / trackvis_header['voxel_size'] + 0.5
+        if not return_coordinates:
+            coords = remove_sequential_duplicates(coords.astype(np.int))
+        ijk.append(coords)
+    
+    return np.array(ijk,dtype=np.object)
+    
+def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=None,
+                    streamline_space="voxmm",
+                    streamline_orientation="LPS", tracking_volume_shape=(),
+                    tracking_volume_voxel_size=()
+                    ):
+    ijk_streamlines = streamlines_to_ijk(streams, target_volume,
+                    trackvis_header=trackvis_header,
+                    streamline_space=streamline_space,  return_coordinates=True,
+                    )
+    ref_affine = target_volume.get_affine()
+    ref_shape = target_volume.get_shape()
+    # ITK uses LPS
+    # Convert voxel indices to LPS
+    flipx,flipy,flipz = np.sign(ref_affine[(0,1,2),(0,1,2)]) != np.array([-1,-1,1])
+    LPS_affine = np.eye(4)
+    if flipx:
+        LPS_affine[0,0] = -1
+        LPS_affine[0,-1] = ref_shape[0]
+    if flipy:
+        LPS_affine[1,1] = -1
+        LPS_affine[1,-1] = ref_shape[1]
+    if flipz:
+        LPS_affine[2,2] = -1
+        LPS_affine[2,-1] = ref_shape[2]
+    final_affine = LPS_affine * ref_affine    
+    
+    return transform_streamlines(ijk_streamlines,final_affine)
 
 def euclidean_len(track,total_distance=True):
     """compute the length along all points of a track
@@ -50,6 +197,11 @@ def remove_duplicates(a):
     is_uniq[1:] = np.abs(a[:-1] - a[1:]).sum(1) > 0
     return a[is_uniq]
 
+def remove_sequential_duplicates(a):
+    uniq = np.array([True] * a.shape[0])
+    uniq[1:] = -np.all(a[:-1] == a[1:],axis=1)
+    return a[uniq]
+
 """
 Functions that involve both a track dataset AND a mask dataset
 """
@@ -70,6 +222,42 @@ def region_pair_dict_from_roi_list(roi_list):
           np.array(np.triu_indices(len(roi_ids))).T) ]
        )
 
+def connection_ids_from_voxel_coordinates( voxel_streamlines, 
+                atlas_voxels=None,  roi_pair_lookup=None, atlas_label_int_array=None, save_npy="", 
+                correct_labels=None):
+
+    # Configure data structures for labeling connections
+    labeled = np.zeros((len(voxel_streamlines),))
+    maskdata = atlas_voxels.astype(np.int)
+    
+    # Configure ROI pair mapper
+    if roi_pair_lookup is None:
+        if atlas_label_int_array is None:
+            import warnings
+            warnings.warn("No roi pair mapping or region list provided")
+            atlas_label_int_array = np.unique(atlas_voxels[atlas_voxels > 0])
+        roi_pair_lookup = region_pair_dict_from_roi_list(atlas_label_int_array)
+        
+    # Label the streamlines
+    endpoints = np.zeros(len(voxel_streamlines),dtype=np.int)
+    for trknum, trk in enumerate(voxel_streamlines):
+        # Convert all points to their label vals
+        labels = atlas_voxels[trk[:,0], trk[:,1], trk[:,2]]
+        # Must terminate in gray regions
+        lbl = labels[labels > 0]
+
+        # Are there any regions found in this track?
+        if not len(lbl) > 1: continue
+        startpoint, endpoint = lbl[0], lbl[-1]
+        stoppers = sorted([startpoint,endpoint])
+        roi_id = roi_pair_lookup[tuple(stoppers)]
+        if not (correct_labels is None):
+            assert correct_labels[trknum] == roi_id
+        endpoints[trknum] = roi_id
+    
+    if save_npy: np.save(save_npy,endpoints)
+    return endpoints
+
 def connection_ids_from_tracks(msk_dset, trk_dset, 
                 region_ints=None, save_npy="", 
                 n_endpoints=3, scale_coords=np.array([1,1,1]),
@@ -80,7 +268,7 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
     tracks if `savetrk`.
     Parameters:
     ===========
-    msk_dset:dsi2.mask_dataset.MaskDataset
+    msk_dset:dsi2.mask_dataset.MaskDataset or list
       labeled voxels to use as the "atlas"
     trk_dset:dsi2.track_dataset.TrackDataset
       TrackDataset you want to use for the fibers
@@ -136,7 +324,8 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
     
     for trknum, trk in enumerate(trk_dset):
         # Convert all points to their label vals
-        pt = np.floor(trk/scale_coords).astype(np.int32)
+        # Add 0.5 to the voxel index to conform to DICOM standard
+        pt = np.floor(trk/scale_coords + 0.5).astype(np.int32)
         labels = maskdata[pt[:,0],pt[:,1],pt[:,2]]
 
         # Must terminate in gray regions

@@ -226,7 +226,39 @@ def create_streamlines(from_coords, to_coords):
         )
     return streamlines
 
-
+def create_fake_fib_file(fname, 
+                                             volume_shape = np.array([50,50,50]),
+                                             voxel_size=np.array([2.0,2.0,2.0]),
+                                             n_odfs=10,
+                                             odf_resolution=3
+                                             ):
+    """
+    Creates a small fib.gz file
+    """
+    import gzip
+    from scipy.io.matlab import savemat
+    from dipy.core.subdivide_octahedron import create_unit_sphere
+    
+    sphere = create_unit_sphere(odf_resolution)
+    fa0 = np.zeros(np.prod(volume_shape))
+    index0 = np.zeros(np.prod(volume_shape))
+    fa0[:n_odfs] = 1
+    index0[:n_odfs] = 1
+    
+    fop = gzip.open(fname,"wb")
+    savemat(fop, {
+            "dimension": volume_shape,
+            "fa0": fa0,
+            "odf_vertices": sphere.vertices,
+            "odf_faces": sphere.faces,
+            "index0":index0,
+            "voxel_size":voxel_size
+            },
+        format="4"
+        )
+    fop.close()
+    
+    
 def get_streamlines1():
     """simulated control dataset"""
     scale33 = []
