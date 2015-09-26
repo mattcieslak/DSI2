@@ -12,7 +12,8 @@ from paths import (
     input_data_json, local_trackdb_dir,
     local_mongodb_dir, local_mongodb_log )
 from dsi2.ui.local_data_importer import LocalDataImporter, create_missing_files, \
-     get_region_ints_from_graphml, graphml_from_label_source, MongoCreator
+     graphml_from_label_source, MongoCreator
+from dsi2.volumes import get_region_ints_from_graphml
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.streamlines.track_math import connection_ids_from_tracks
 from dsi2.streamlines.track_dataset import TrackDataset
