@@ -1,9 +1,17 @@
 import nibabel as nib
 import os
+import gzip
 import numpy as np
 from dsi2.config import dsi2_data_path
 from dsi2.streamlines.track_math import region_pair_dict_from_roi_list
 import networkx as nx
+
+def get_region_ints_from_graphml(graphml):
+    """
+    Returns an array of region ints from a graphml file.
+    """
+    graph = nx.read_graphml(graphml)
+    return sorted(map(int, graph.nodes()))
 
 def get_MNI152_path():
     return os.path.join(dsi2_data_path,
@@ -11,26 +19,6 @@ def get_MNI152_path():
 
 def get_MNI152():
     return nib.load(get_MNI152_path())
-
-
-def save_coords_to_volume(coords,outpath):
-    """
-    Parameters:
-    -----------------
-    coords: List of 3-tuples
-    outpath:path to output (.nii[.gz])
-    """
-    img = get_MNI152()
-    data = np.zeros_like(img.get_data())
-    hdr = img.get_header()
-    affine = img.get_affine()
-    ix, jx, kx = np.array(coords).T
-    
-    data[ix,jx,kx] = 1
-    
-    new_img = nib.Nifti1Image(data, affine=affine, header=hdr)
-    new_img.to_filename(outpath)
-    
 
 def get_NTU90():
     return nib.load(
@@ -132,3 +120,54 @@ def load_lausanne_graphml(graphml):
         (value,key) for key,value in graphml_data['index_to_region_pairs'].iteritems()
     ])
     return graphml_data
+
+def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
+    """
+    Creates a qsdr atlas from a DSI Studio fib file and a b0 atlas.
+    """
+    # Load the mapping from the fib file
+    fibf = gzip.open(fib_file,"rb")
+    m = loadmat(fibf)
+    fibf.close()
+    volume_dimension = m['dimension'].squeeze().astype(int)
+    mx = m['mx'].squeeze().astype(int)
+    my = m['my'].squeeze().astype(int)
+    mz = m['mz'].squeeze().astype(int)
+
+    # Labels in b0 space
+    _old_atlas = nib.load(b0_atlas)
+    old_atlas = _old_atlas.get_data()
+    old_aff = _old_atlas.get_affine()
+    # QSDR maps from RAS+ space.  Force the input volume to conform
+    if old_aff[0,0] > 0:
+        print "\t\t+++ Flipping X"
+        old_atlas = old_atlas[::-1,:,:]
+    if old_aff[1,1] > 0:
+        print "\t\t+++ Flipping Y"
+        old_atlas = old_atlas[:,::-1,:]
+    if old_aff[2,2] < 0:
+        print "\t\t+++ Flipping Z"
+        old_atlas = old_atlas[:,:,::-1]
+        
+    # XXX: there is an error when importing some of the HCP datasets where the
+    # map-from index is out of bounds from the b0 image. This will check for
+    # any indices that would cause an index error and sets them to 0.
+    bx, by, bz = old_atlas.shape
+    idx_err_x = np.flatnonzero( mx >= bx)
+    if len(idx_err_x):
+        print "\t\t+++ WARNING: %d voxels are out of original data x range" % len(idx_err_x)
+        mx[idx_err_x] = 0
+    idx_err_y = np.flatnonzero( my >= by)
+    if len(idx_err_y):
+        print "\t\t+++ WARNING: %d voxels are out of original data y range" % len(idx_err_y)
+        my[idx_err_y] = 0
+    idx_err_z = np.flatnonzero( mz >= bz)
+    if len(idx_err_z):
+        print "\t\t+++ WARNING: %d voxels are out of original data z range" % len(idx_err_z)
+        mz[idx_err_z] = 0
+        
+    
+    # Fill up the output atlas with labels from b0, collected through the fib mappings
+    new_atlas = old_atlas[mx,my,mz].reshape(volume_dimension,order="F")
+    onim = nib.Nifti1Image(new_atlas,QSDR_AFFINE)
+    onim.to_filename(output_v)
