@@ -125,7 +125,8 @@ def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
     flipx, flipy, flipz = np.logical_not(orientation_match)
 
     
-    # Convert the streamlines to voxel coordinates
+    # Convert the streamlines to voxel coordinates.
+    # First convert the voxmm coordinates to the correct orientation
     extents = img_voxel_size * (trackvis_header['dim'] -1)
     ijk = []
     for _stream in streams:
@@ -136,7 +137,7 @@ def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
             stream[:,1] = extents[1] - stream[:,1]
         if flipz:
             stream[:,2] = extents[2] - stream[:,2]
-            
+        #
         coords = stream / trackvis_header['voxel_size'] + 0.5
         if not return_coordinates:
             coords = remove_sequential_duplicates(coords.astype(np.int))
@@ -168,9 +169,51 @@ def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=
     if flipz:
         LPS_affine[2,2] = -1
         LPS_affine[2,-1] = ref_shape[2]
-    final_affine = LPS_affine * ref_affine    
+    final_affine = LPS_affine * ref_affine
     
     return transform_streamlines(ijk_streamlines,final_affine)
+
+def voxels_to_streamlines(voxel_coordinates, nib_img, 
+                          voxmm_orientation="LPS"):
+    """
+    Transforms voxel indexes to corresponding streamline coordinates in
+    voxmm.
+    """
+    ref_affine = nib_img.get_affine()
+    ref_shape = nib_img.get_shape()
+    ref_zooms = np.array(nib_img.get_header().get_zooms())
+    if np.any(ref_affine[(0,1,2),(0,1,2)] == 0): raise ValueError("Invalid affine")
+    
+    # Flip voxels to desired trk orientation
+    ijk_affine = np.eye(4)
+    xvoxel = ref_affine[0,0]
+    xtrk = voxmm_orientation[0]
+    flipi = xvoxel < 0 and xtrk == "R" or xvoxel > 0 and xtrk == "L"
+    yvoxel = ref_affine[1,1]
+    ytrk = voxmm_orientation[1]
+    flipj = yvoxel < 0 and ytrk == "A" or yvoxel > 0 and ytrk == "P"
+    zvoxel = ref_affine[2,2]
+    ztrk = voxmm_orientation[2]
+    flipk = zvoxel < 0 and ztrk == "S" or zvoxel > 0 and ztrk == "I"
+    if flipi:
+        ijk_affine[0,0] = -1
+        ijk_affine[0,-1] = ref_shape[0] - 1
+    if flipj:
+        ijk_affine[1,1] = -1
+        ijk_affine[1,-1] = ref_shape[1] -1
+    if flipk:
+        ijk_affine[2,2] = -1
+        ijk_affine[2,-1] = ref_shape[2] -1
+    if any([flipi, flipj,flipk]):
+        corrected_ijk = transform_streamlines(voxel_coordinates, ijk_affine)
+    else:
+        corrected_ijk = voxel_coordinates
+        
+    # apply the voxel size scaling to the voxel coordinates
+    return [ref_zooms *  cijk   for cijk in corrected_ijk]
+        
+
+
 
 def euclidean_len(track,total_distance=True):
     """compute the length along all points of a track

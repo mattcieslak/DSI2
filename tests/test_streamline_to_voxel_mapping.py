@@ -3,10 +3,13 @@ import nibabel as nib
 from dipy.tracking import utils
 import numpy as np
 from dsi2.streamlines.track_math  import (trackvis_header_from_info,streamlines_to_ijk,
-                                          streamlines_to_itk_world_coordinates)
+                streamlines_to_itk_world_coordinates, voxels_to_streamlines)
 from create_testing_data import create_fake_fib_file
 import os
-from dipy.tracking.streamline import transform_streamlines    
+from dipy.tracking.streamline import transform_streamlines
+from dsi2.volumes import find_graphml_from_b0, load_lausanne_graphml
+from scipy.io.matlab import loadmat
+
 
 VOLUME_SHAPE = np.array([50, 50, 50])
 VOXEL_SIZE = np.array([2.0, 2.0, 2.0])
@@ -17,10 +20,14 @@ REFERENCE_VOL=FAKE_FIB_FILE + ".fa0.nii.gz"
 TDI_OUTPUT=FAKE_TRK_FILE + ".tdi.nii.gz"
 NUM_SIMULATIONS=1000
 TDI_CSV=TDI_OUTPUT+".csv"
+TEMP_ATLAS="temp_atlas.nii.gz"
+CONN_TRK="fake_conn.trk"
+FRANK_CONN=CONN_TRK + ".connectivity.mat"
 
 all_rm = [FAKE_FIB_FILE,FAKE_TRK_FILE,TDI_OUTPUT,
          REFERENCE_VOL, TDI_CSV]
 sim_rm = [FAKE_TRK_FILE,TDI_OUTPUT, TDI_CSV]
+con_rm = [CONN_TRK, TEMP_ATLAS,FRANK_CONN]
 
 
 def rm(to_rm):
@@ -38,6 +45,7 @@ os.system("/home/cieslak/projects/bin/dsi_studio "
 ref_output = nib.load(REFERENCE_VOL)
 ref_affine = ref_output.get_affine()
 ref_shape = ref_output.get_shape()
+ref_voxel_size = ref_output.get_header().get_zooms()
 
 def get_coordinate_from_ants(volume):
     os.system("ImageMath 3 " + \
@@ -47,7 +55,7 @@ def get_coordinate_from_ants(volume):
     return coord[:3]
 
 
-def simulate(test_ants_coord=True):
+def test_coordinate_transforms():
     rm(sim_rm)
     # Get a header for the test data and create a random coordinate
     header = trackvis_header_from_info( STREAMLINE_ORI, 
@@ -71,6 +79,9 @@ def simulate(test_ants_coord=True):
     my_voxel = ijk_streamlines[0][0]
 
     assert np.all(my_voxel == franks_voxel)
+    vox2vmm = voxels_to_streamlines(ijk_streamlines,ref_output,STREAMLINE_ORI)
+    
+    assert np.all( np.abs(test_coord - vox2vmm[0][0]) < ref_voxel_size)
     
     # Check that DSI Studio uses the same affine for TDI and fa0
     assert np.allclose(ref_affine,from_frank.get_affine())
@@ -79,4 +90,79 @@ def simulate(test_ants_coord=True):
     ants_coord = get_coordinate_from_ants(TDI_OUTPUT)
     
     my_coord = streamlines_to_itk_world_coordinates(
-                          voxmm_streamlines,from_frank,trackvis_header=header)
+                          voxmm_streamlines,from_frank,trackvis_header=header)[0][0]
+    assert np.all( np.abs(ants_coord - my_coord) < ref_voxel_size)
+
+                                                    
+def simulated_atlas(scale=33):
+    graphml = find_graphml_from_b0("scale%d" % scale)
+    node_data = load_lausanne_graphml(graphml)
+    regions = node_data['regions']
+    
+    subvolume = VOLUME_SHAPE - 2
+    available_voxels = np.prod(subvolume)
+    voxels_per_region = available_voxels // len(regions)
+    if voxels_per_region == 0: 
+        raise ValueError("Volume is not big enough to contain all regions")
+    
+    label_data = np.zeros(available_voxels)
+    labels = np.repeat(regions, voxels_per_region)
+    label_data[:len(labels)] = labels
+    
+    new_atlas = np.zeros(VOLUME_SHAPE)
+    new_atlas[1:-1,1:-1,1:-1] = label_data.reshape(subvolume)
+    return nib.Nifti1Image(new_atlas,ref_affine), regions
+
+
+def simulate_connection(nib_atlas_img, regions, 
+                        n_streamlines=5, curvy=False, points_per_streamline=10):
+    """
+    pick two regions to create a streamlines between
+    """
+    rm(con_rm)
+    
+    label_cube = nib_atlas_img.get_data()
+    target_regions = np.random.choice(regions,size=2,replace=False)
+    regA_voxels = [np.array(np.nonzero(label_cube == target_regions[0])).T]
+    regA_streamline_coords = voxels_to_streamlines(regA_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
+    regB_voxels = [np.array(np.nonzero(label_cube == target_regions[1])).T]
+    regB_streamline_coords = voxels_to_streamlines(regB_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
+    
+    np.random.seed(0)
+    streamlines = []
+    regA_choices = np.random.choice(np.arange(len(regA_streamline_coords)),n_streamlines)
+    regB_choices = np.random.choice(np.arange(len(regB_streamline_coords)),n_streamlines)
+    for coord_indexA, coord_indexB in  zip(regA_choices,regB_choices):
+        coordA = regA_streamline_coords[coord_indexA]
+        coordB = regB_streamline_coords[coord_indexB]
+        if curvy:
+            raise NotImplementedError("someday...")
+        else:
+            streamlines.append(
+                np.array([
+                               np.linspace(coordA[0],coordB[0],points_per_streamline),
+                               np.linspace(coordA[1],coordB[1],points_per_streamline),
+                               np.linspace(coordA[2],coordB[2],points_per_streamline)
+                               ]).T
+                )                
+    header = trackvis_header_from_info( STREAMLINE_ORI, 
+                                        VOLUME_SHAPE, VOXEL_SIZE)
+                                        
+    nib.trackvis.write(CONN_TRK, [(sl,None,None) for sl in streamlines], hdr_mapping=header)    
+    nib_atlas_img.to_filename(TEMP_ATLAS)
+    
+    os.system("/home/cieslak/projects/bin/dsi_studio " 
+          "--action=ana --tract=" + CONN_TRK + " " 
+          "--source=" +  FAKE_FIB_FILE + " --end=" + TEMP_ATLAS + " "
+          "--export=connectivity")          
+    m = loadmat(FRANK_CONN)
+    assert m['connectivity'].max() == n_streamlines
+    frank_maxes = np.unravel_index(m['connectivity'].argmax(),m['connectivity'].shape)
+    for reg in target_regions:
+        assert reg-1 in frank_maxes
+    
+    
+def test_connectivity_matrix():
+    for scale in [33, 60,125,250]:
+        fake_atlas,regions = simulated_atlas(scale=scale)
+        simulate_connection(fake_atlas, regions)
