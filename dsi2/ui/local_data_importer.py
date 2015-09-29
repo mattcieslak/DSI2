@@ -114,6 +114,77 @@ class LocalDataImporter(HasTraits):
         if self.n_processors > 1:
             print "Using %d processors" % self.n_processors
             pool = multiprocessing.Pool(processes=self.n_processors)
+    if not os.path.isabs(scan.pkl_trk_path):
+        abs_pkl_trk_file = os.path.join(output_dir,scan.pkl_trk_path)
+    else:
+        abs_pkl_trk_file = scan.pkl_trk_path
+    print "\t+ Dumping MNI152 hash table"
+    tds.tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
+    return True
+
+
+scan_table = TableEditor(
+    columns =
+    [   ObjectColumn(name="scan_id",editable=True),
+        ObjectColumn(name="study",editable=True),
+        ObjectColumn(name="scan_group",editable=True),
+        ObjectColumn(name="streamline_space",editable=True),
+    ],
+    deletable  = True,
+    auto_size  = True,
+    show_toolbar = True,
+    edit_view="import_view",
+    row_factory=Scan
+    #edit_view_height=500,
+    #edit_view_width=500,
+    )
+
+
+
+class LocalDataImporter(HasTraits):
+    """
+    Holds a list of Scan objects. These can be loaded from
+    and saved to a json file.
+    """
+    json_file = File()
+    datasets = List(Instance(Scan))
+    save = Button()
+    mongo_creator = Instance(MongoCreator)
+    upload_to_mongodb = Button()
+    connect_to_mongod = Button()
+    process_inputs = Button()
+    input_directory = File()
+    output_directory = File()
+    n_processors = Int(1)
+    def _connect_to_mongod_fired(self):
+        self.mongo_creator.edit_traits()
+        
+    def _mongo_creator_default(self):
+        return MongoCreator()
+    
+    def _json_file_changed(self):
+        if not os.path.exists(self.json_file):
+            print "no such file", self.json_file
+            return
+        fop = open(self.json_file, "r")
+        jdata = json.load(fop)
+        fop.close()
+        self.datasets = [
+          Scan(pkl_dir=self.output_directory,
+               data_dir="", **d) for d in jdata]
+        
+    def _save_fired(self):
+        json_data = [scan.to_json() for scan in self.datasets]
+        with open(self.json_file,"w") as outfile:
+            json.dump(json_data,outfile,indent=4)
+        print "Saved", self.json_file
+        pass
+    
+    def _process_inputs_fired(self):
+        print "Processing input data"
+        if self.n_processors > 1:
+            print "Using %d processors" % self.n_processors
+            pool = multiprocessing.Pool(processes=self.n_processors)
             result = pool.map(create_missing_files, self.datasets)
             pool.close()
             pool.join()

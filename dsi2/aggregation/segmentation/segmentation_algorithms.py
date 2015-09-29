@@ -2,7 +2,11 @@
 import numpy as np
 from ...streamlines.track_dataset import Segment
 from .segmentation_ui import SegmentationEditor
+<<<<<<< HEAD
 from ...streamlines.track_math import streamlines_to_ijk
+=======
+from ...streamlines.track_math import voxel_downsampler
+>>>>>>> 5f301978de247396fe16814cceca7685a4395934
 
 from traits.api import HasTraits, Instance, Array, \
     Bool, Dict, Range, Color, List, Int, Property, File, Button

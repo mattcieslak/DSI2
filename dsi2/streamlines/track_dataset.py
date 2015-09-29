@@ -19,7 +19,6 @@ from mayavi.core.ui.api import SceneEditor
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from mayavi import mlab
 import gzip
-
 from .track_math import tracks_to_endpoints
 from mayavi.core.api import PipelineBase, Source
 
@@ -458,7 +457,11 @@ class TrackDataset(HasTraits):
            set of fibers that fail to intersect ijk's. Only
            returned if return_fail_fibers == True
         """
+<<<<<<< HEAD
         if not hasattr(self,"tracks_at_ijk"): raise ValueError("no voxel mapping available")
+=======
+        if not hasattr(self,"tracks_at_ijk"): self.hash_voxels_to_tracks()
+>>>>>>> 5f301978de247396fe16814cceca7685a4395934
         roi_fibers = set()
         for _ijk in ijks:
             roi_fibers.update(self.tracks_at_ijk[_ijk])

@@ -34,6 +34,7 @@ class TrackLabelSource(HasTraits):
     b0_volume_path = File("")
     template_volume_path = File("")
     qsdr_volume_path = File("")
+    qsdr_volume_path = File("")
 
     scalars = Array
 
@@ -141,7 +142,6 @@ class TemplateVolumeColumn(ObjectColumn):
         if os.path.exists(object.template_volume_path):
             return "white"
         return "red"
-    
 class txtColumn(ObjectColumn):
     def get_cell_color(self,object):
         if os.path.exists(object.txt_path):
@@ -217,13 +217,11 @@ class Dataset(HasTraits):
     max_b_value     = List([5000, 1000])
     bvals           = List()
     bvecs           = List()
-    
 
 
     def __init__(self,**traits):
         super(Dataset,self).__init__(**traits)
 
-    
 
 class Scan(Dataset):
     scan_gender     = Str("")
@@ -532,6 +530,7 @@ class Scan(Dataset):
             _trkds = pickle.load(fop)
             _trkds.properties = self
         elif os.path.exists(self.trk_file):
+            from dsi2.streamlines.track_dataset import TrackDataset
             _trkds = TrackDataset(self.trk_file, properties=self)
         
         # Loop over the scalar items

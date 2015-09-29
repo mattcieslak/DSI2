@@ -114,7 +114,6 @@ def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
     
     if not np.all(trackvis_header['voxel_size']==img_voxel_size):
         raise ValueError("Size mismatch between streamlines and volume voxels")
-    
     # Check for valid affines
     if np.any(np.diag(ref_affine)==0):
         raise ValueError("invalid affine in target_vol")

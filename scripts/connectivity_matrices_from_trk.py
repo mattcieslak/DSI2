@@ -42,6 +42,30 @@ def save_connectivity_matrices(scan,compute_voxels=True):
     for lnum, label_source in enumerate(scan.track_label_items):
         if scan.streamline_space == "qsdr":
             mds = MaskDataset(label_source.qsdr_volume_path)
+
+from dsi2.volumes.mask_dataset import MaskDataset
+from dsi2.streamlines.track_dataset import TrackDataset
+from dsi2.streamlines.track_math import connection_ids_from_tracks
+def save_connectivity_matrices(scan,compute_voxels=True):
+    """
+    Doesn't require that a pkl has been made for the streamlines.  Instead it loads
+    the trk files and volumes to compute connectivity.
+    """
+    out_data = {}
+    opath = scan.pkl_trk_path + ".mat"
+    tds =  TrackDataset(scan.trk_file)
+    trk_scalars = {}
+    for scalar in scan.track_scalar_items:
+        fop = open(scalar.txt_path,"r")
+        _scalars = np.array(
+            [np.fromstring(line,sep=" ").mean() for line in fop] )
+        fop.close()
+        # Load the actual array
+        trk_scalars[scalar.name] = _scalars
+        
+    for lnum, label_source in enumerate(scan.track_label_items):
+        if scan.streamline_space == "qsdr":
+            mds = MaskDataset(label_source.qsdr_volume_path)
         else:
             mds = MaskDataset(label_source.b0_volume_path)
         # Make a prefix

@@ -32,6 +32,9 @@ def find_graphml_from_filename(b0_path):
     aname = os.path.split(b0_path)[-1].lower()
     atlas_lut = {
         "scale33":"lausanne2008/resolution83/resolution83.graphml",
+    aname = os.path.split(b0_path)[-1].lower()
+    atlas_lut = {
+        "scale33":"lausanne2008/resolution83/resolution83.graphml",
         "scale60":"lausanne2008/resolution150/resolution150.graphml",
         "scale125":"lausanne2008/resolution258/resolution258.graphml",
         "scale250":"lausanne2008/resolution500/resolution500.graphml",

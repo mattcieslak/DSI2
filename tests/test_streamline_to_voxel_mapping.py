@@ -4,7 +4,6 @@ from dipy.tracking import utils
 import numpy as np
 from dsi2.streamlines.track_math  import (trackvis_header_from_info,streamlines_to_ijk,
                 streamlines_to_itk_world_coordinates, voxels_to_streamlines,
-                region_pair_dict_from_roi_list,connection_ids_from_voxel_coordinates)
 from create_testing_data import create_fake_fib_file
 import os
 from dipy.tracking.streamline import transform_streamlines
@@ -101,6 +100,9 @@ def simulated_atlas(scale=33):
     node_data = load_lausanne_graphml(graphml)
     regions = node_data['regions']
     
+    node_data = load_lausanne_graphml(graphml)
+    regions = node_data['regions']
+    
     subvolume = VOLUME_SHAPE - 2
     available_voxels = np.prod(subvolume)
     voxels_per_region = available_voxels // len(regions)
@@ -126,6 +128,8 @@ def simulate_connection(nib_atlas_img, regions,
     label_cube = nib_atlas_img.get_data()
     target_regions = np.random.choice(regions,size=2,replace=False)
     test_conn_id = region_pair_dict_from_roi_list(regions)[tuple(sorted(target_regions))]
+    regA_voxels = [np.array(np.nonzero(label_cube == target_regions[0])).T]
+    regA_streamline_coords = voxels_to_streamlines(regA_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
     regA_voxels = [np.array(np.nonzero(label_cube == target_regions[0])).T]
     regA_streamline_coords = voxels_to_streamlines(regA_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
     regB_voxels = [np.array(np.nonzero(label_cube == target_regions[1])).T]
@@ -168,11 +172,6 @@ def simulate_connection(nib_atlas_img, regions,
     assert set(max_rois) == set(target_regions)
     
     # Check that connection_ids_from_voxel_coordinates agrees
-    ijk_streamlines = streamlines_to_ijk(streamlines, nib_atlas_img, trackvis_header=header)
-    conn_ids = connection_ids_from_voxel_coordinates(ijk_streamlines,nib_atlas_img.get_data(), 
-                                          atlas_label_int_array=regions)
-    assert np.all(np.diff(conn_ids) == 0)
-    assert conn_ids[0] == test_conn_id
     
     
 def test_connectivity_matrix():
