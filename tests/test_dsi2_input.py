@@ -56,9 +56,9 @@ def data_importer(request, create_test_data):
     """
     if os.path.exists(local_trackdb_dir):
         print "Removing local trackdb dir:", local_trackdb_dir
-        shutil.rmtree(local_trackdb_dir)
+        shutil.rmtree(local_trackdb_dir, ignore_errors=True)
     os.makedirs(local_trackdb_dir)
-    ldi = LocalDataImporter(json_file=create_test_data)
+    ldi = LocalDataImporter(json_file=create_test_data(None))
     assert len(ldi.datasets) == 2
     for scan in ldi.datasets:
         assert create_missing_files(scan)

@@ -5,6 +5,7 @@ import numpy as np
 from dsi2.config import dsi2_data_path
 from dsi2.streamlines.track_math import region_pair_dict_from_roi_list
 import networkx as nx
+from scipy.io.matlab import loadmat
 
 def get_region_ints_from_graphml(graphml):
     """
@@ -26,8 +27,8 @@ def get_NTU90():
                    "NTU90_QA.nii.gz")
             )
 
-def find_graphml_from_b0(b0_path):
-    if not b0_path: raise ValueError("Must provide a b0 volume path")
+def find_graphml_from_filename(b0_path):
+    if not b0_path: raise ValueError("Must provide a  volume path")
     aname = os.path.split(b0_path)[-1].lower()
     atlas_lut = {
         "scale33":"lausanne2008/resolution83/resolution83.graphml",
@@ -57,7 +58,7 @@ def graphml_from_label_source(label_source):
         print "\t\t++ Loading user supplied graphml path"
         return atlas_name
     
-    return find_graphml_from_b0(label_source.b0_volume_path)
+    return find_graphml_from_filename(label_source.b0_volume_path)
 
 
 def get_builtin_atlas_parameters(label_source):
@@ -92,6 +93,7 @@ QSDR_AFFINE = np.array(
        [  0.,  -2.,   0.,  76.],
        [  0.,   0.,   2., -50.],
        [  0.,   0.,   0.,   1.]])
+QSDR_VOXEL_SIZE=np.array([2.0, 2.0, 2.0])
 
 
 def load_lausanne_graphml(graphml):
@@ -121,24 +123,67 @@ def load_lausanne_graphml(graphml):
     ])
     return graphml_data
 
+def get_lausanne_spec(scale):
+    
+    lausanne_scale_lookup = {
+                  33:resource_filename(Requirement.parse("dsi2"),
+                    "dsi2/example_data/lausanne2008/resolution83/resolution83.graphml"),
+                  60:resource_filename(Requirement.parse("dsi2"),
+                    "dsi2/example_data/lausanne2008/resolution150/resolution150.graphml"),
+                  125:resource_filename(Requirement.parse("dsi2"),
+                    "dsi2/example_data/lausanne2008/resolution258/resolution258.graphml"),
+                  250:resource_filename(Requirement.parse("dsi2"),
+                    "dsi2/example_data/lausanne2008/resolution500/resolution500.graphml"),
+                  500:resource_filename(Requirement.parse("dsi2"),
+                    "dsi2/example_data/lausanne2008/resolution1015/resolution1015.graphml")
+                  }
+
+    return load_lausanne_graphml(lausanne_scale_lookup[scale])
+
+def get_fib(fib):
+    if isinstance(fib_file,basestring):
+        if fib.endswith("gz"):
+            fibf = gzip.open(fib_file,"rb")
+        else:
+            fibf = gzip.open(fib_file,"rb")
+        m = loadmat(fibf)
+        fibf.close()
+        return m
+    elif isinstance(fib, dict):
+        return m
+    else:
+        raise ValueError("Unable to load " + fib)
+
 def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     """
     Creates a qsdr atlas from a DSI Studio fib file and a b0 atlas.
+    
+    Parameters:
+    =======
+    fib_file:str or dict
+      Either the path to a fib file on disk, or a loaded fib file
+    b0_atlas:str or nib.Nifti1Image
+      Path to an atlas nifti file OR a nib.Nifti1Image
+    output_v:str or nib.Nifti1Image
+      Path where output resides
     """
     # Load the mapping from the fib file
-    fibf = gzip.open(fib_file,"rb")
-    m = loadmat(fibf)
-    fibf.close()
+    m = get_fib(fib_file)
     volume_dimension = m['dimension'].squeeze().astype(int)
-    mx = m['mx'].squeeze().astype(int)
-    my = m['my'].squeeze().astype(int)
-    mz = m['mz'].squeeze().astype(int)
+    if 'mx'  in m.keys():
+        xvar, yvar,zvar = "mx", "my", "mx"
+    elif "_x" in m.keys():
+        xvar, yvar,zvar = "_x", "_y", "_x"
+        
+    mx = m[xvar].squeeze().astype(int)
+    my = m[yvar].squeeze().astype(int)
+    mz = m[zvar].squeeze().astype(int)
 
     # Labels in b0 space
     _old_atlas = nib.load(b0_atlas)
     old_atlas = _old_atlas.get_data()
     old_aff = _old_atlas.get_affine()
-    # QSDR maps from RAS+ space.  Force the input volume to conform
+    # QSDR maps from LPS+ space.  Force the input volume to conform
     if old_aff[0,0] > 0:
         print "\t\t+++ Flipping X"
         old_atlas = old_atlas[::-1,:,:]

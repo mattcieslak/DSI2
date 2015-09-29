@@ -20,7 +20,7 @@ from dsi2.volumes import get_NTU90
 import os
 import json
 import os.path as op
-from dsi2.volumes import QSDR_SHAPE, QSDR_AFFINE, find_graphml_from_b0, load_lausanne_graphml
+from dsi2.volumes import QSDR_SHAPE, QSDR_AFFINE, find_graphml_from_filename, load_lausanne_graphml
 from dsi2.database.traited_query import Scan, TrackLabelSource, TrackScalarSource
 from dsi2.aggregation import make_aggregator
 import shutil
@@ -50,9 +50,9 @@ qsdr_trk_header = np.array(
              ('swap_zx', 'S1'), ('n_count', '<i4'), ('version', '<i4'), 
              ('hdr_size', '<i4')])
 
-scale33_graphml = find_graphml_from_b0("scale33")
+scale33_graphml = find_graphml_from_filename("scale33")
 scale33_data = load_lausanne_graphml(scale33_graphml)
-scale60_graphml = find_graphml_from_b0("scale60")
+scale60_graphml = find_graphml_from_filename("scale60")
 scale60_data = load_lausanne_graphml(scale60_graphml)
 
 ORIG_SHAPE = (79,95,69) # Shape of original data
@@ -366,10 +366,11 @@ tds2, tds2_scale33, tds2_scale60 = get_streamlines2()
 
 @pytest.fixture(scope="session")
 def create_test_data(request):
-    from paths import test_input_data, input_data_json
-    if os.path.exists(test_input_data):
-        print "removing previous testing data"
-        shutil.rmtree(test_input_data)
+    from paths import test_input_data, input_data_json, test_output_data
+    for directory in [test_input_data,test_output_data]:
+        if os.path.exists(directory):
+            print "removing previous testing data"
+            shutil.rmtree(directory)
     print "creating new testing directory"
     os.makedirs(test_input_data)
     droot = test_input_data
@@ -395,7 +396,7 @@ def create_test_data(request):
                 study="testing",
                 scan_group="fake_brain",
                 scan_gender="F",
-                trk_space="qsdr",
+                streamline_space="qsdr",
                 software="DSI Studio",
                 reconstruction="qsdr",
                 pkl_path=op.join(subjdir,subjname+".pkl"),
@@ -430,7 +431,10 @@ def create_test_data(request):
     def teardown():
         print "Teardown of test input data"
         shutil.rmtree(test_input_data)
-    request.addfinalizer(teardown)
+        shutil.rmtree(test_output_data)
+    if not request is None:
+        request.addfinalizer(teardown)
+    
     return input_data_json
 
 def mlab_show_test_dataset():

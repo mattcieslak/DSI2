@@ -2,7 +2,7 @@
 import numpy as np
 from ...streamlines.track_dataset import Segment
 from .segmentation_ui import SegmentationEditor
-from ...streamlines.track_math import voxel_downsampler
+from ...streamlines.track_math import streamlines_to_ijk
 
 from traits.api import HasTraits, Instance, Array, \
     Bool, Dict, Range, Color, List, Int, Property, File, Button
@@ -13,7 +13,6 @@ import tempfile
 import subprocess
 import os
 
-MNI_mm = np.array([182., 218., 182.])
 class ReebGraphSegmentation(SegmentationEditor):
     
     parameters = ["epsilon", "delta", "voxel_size"]
@@ -35,6 +34,9 @@ class ReebGraphSegmentation(SegmentationEditor):
                           )
     voxel_size = Range(low=0., high=5., value = 2., auto_set=False, name="voxel_size",
                        desc="How big should voxels be? If 0, then original coordinate streams are used",
+                       parameter = True)
+    volume_dimensions = Array(np.array([182, 218, 182]), shape=(3,), name="volume_dimensions",
+                       desc="Shape of the voxel grid in mm",
                        parameter = True)
     show_noise = Bool(True, name="show_noise", 
                       desc="Render segments that have been classified as noise",
@@ -86,8 +88,9 @@ class ReebGraphSegmentation(SegmentationEditor):
         """
         # Put streamlines into a format that reebgen can use
         print "\t\t\t+++Downsampling streamlines"
-        tracks = voxel_downsampler(ttracks.tracks,
-                            voxel_size=np.array([self.voxel_size]*3))
+        tracks = ttracks.streamlines_to_ijk(
+                            tracking_volume_voxel_size=np.array([self.voxel_size]*3),
+                            tracking_volume_shape=self.volume_dimensions)
         ttracks.set_tracks(tracks)
         
         # Write the temporary track file

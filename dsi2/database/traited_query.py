@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 import numpy as np
+import warnings
 import sys, os
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
-     on_trait_change, Button, Set, File, Int, CInt
+     on_trait_change, Button, Set, File, Int, CInt, cached_property
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn
 from traitsui.extras.checkbox_column import CheckboxColumn
 #
 from ..ui.ui_extras import colormaps
+from dsi2.volumes import get_fib, find_graphml_from_filename
+from dsi2.streamlines.track_math import streamlines_to_ijk
 import cPickle as pickle
 import re
 from ..volumes import get_builtin_atlas_parameters
@@ -29,6 +32,7 @@ class TrackLabelSource(HasTraits):
     graphml_path = File("")
     volume_path = File("")
     b0_volume_path = File("")
+    template_volume_path = File("")
     qsdr_volume_path = File("")
 
     scalars = Array
@@ -44,6 +48,18 @@ class TrackLabelSource(HasTraits):
             self.parameters = get_builtin_atlas_parameters(self.b0_volume_path)
         print self.parameters
         
+    def get_tracking_image_filename(self):
+        if self.parent.streamline_space == "native":
+            atlas_key = "b0_volume_path"
+        elif self.parent.streamline_space == "qsdr":
+            atlas_key = "qsdr_volume_path"
+        elif self.parent.streamline_space == "custom template":
+            atlas_key = "template_volume_path"
+        else:
+            warnings.warn("Unrecognized streamline space, using 'template_volume_path' key")
+            atlas_key = "template_volume_path"
+        return getattr(self,atlas_key)
+        
     def to_json(self):
         return {
             "name" : self.name,
@@ -52,7 +68,8 @@ class TrackLabelSource(HasTraits):
             "numpy_path" : self.numpy_path,
             "graphml_path" : self.graphml_path,
             "b0_volume_path" : self.b0_volume_path,
-            "qsdr_volume_path" : self.qsdr_volume_path
+            "qsdr_volume_path" : self.qsdr_volume_path,
+            "template_volume_path" : self.template_volume_path
         }
     
 class TrackScalarSource(HasTraits):
@@ -119,6 +136,12 @@ class b0VolumeColumn(ObjectColumn):
             return "white"
         return "red"
     
+class TemplateVolumeColumn(ObjectColumn):
+    def get_cell_color(self,object):
+        if os.path.exists(object.template_volume_path):
+            return "white"
+        return "red"
+    
 class txtColumn(ObjectColumn):
     def get_cell_color(self,object):
         if os.path.exists(object.txt_path):
@@ -133,6 +156,8 @@ class NumpyPathColumn(ObjectColumn):
     
 class QSDRVolumeColumn(ObjectColumn):
     def get_cell_color(self,object):
+        if object.parent.streamline_space != 'qsdr':
+            return "gray"
         if os.path.exists(object.qsdr_volume_path):
             return "white"
         if object.parent is None:
@@ -152,7 +177,8 @@ label_table = TableEditor(
     deletable  = True,
     auto_size  = True,
     show_toolbar = True,
-    row_factory = TrackLabelSource
+    row_factory = TrackLabelSource,
+    columns_name="input_paths_columns"
     )
 
 scalar_table = TableEditor(
@@ -191,11 +217,13 @@ class Dataset(HasTraits):
     max_b_value     = List([5000, 1000])
     bvals           = List()
     bvecs           = List()
+    
 
 
     def __init__(self,**traits):
         super(Dataset,self).__init__(**traits)
 
+    
 
 class Scan(Dataset):
     scan_gender     = Str("")
@@ -208,12 +236,20 @@ class Scan(Dataset):
     connectivity_matrix_path=File("")
     atlases         = Dict({})
     label           = Int
-    #data_dir        = File("") # Data used by dsi2 package
-    #pkl_dir         = File("") # data root for pickle files
     trk_file        = File("") # path to the trk file
     fib_file        = File("") # path to the DSI Studio's .fib.gz
-    trk_space       = Enum("qsdr", "mni","native","custom") # Which space is it in?
-    template_vol       =  File("")
+    
+    streamlines = Property()
+    voxelized_streamlines = Property()
+    
+    # Specify the volume associated with 
+    trk_space       = Enum("qsdr", "mni","custom","native") # Which space is it in?
+    streamline_space  = Enum("qsdr", "mni", "custom template", "native") # Which space is it in?
+    streamline_space_name = Str("template name")
+    template_voxel_size                = Array
+    template_volume_shape         =  Array
+    template_affine                       =  Array
+    template_volume_path            =  File("")
     # ROI labels and scalar (GFA/QA) values
     track_labels    = List(Dict)
     track_scalars   = List(Dict)
@@ -228,7 +264,32 @@ class Scan(Dataset):
     unlabeled_track_style  = Enum(["Colored","Invisible","White"])
     # raw data from the user
     original_json     = Dict
+    
+    #
+    atlas_key = Property(Str)
 
+    input_paths_columns = Property(depends_on="streamline_space")
+    
+    def _get_input_paths_columns(self):
+        if self.streamline_space == 'qsdr':
+            return [   ObjectColumn(name="name"),
+                b0VolumeColumn(name="b0_volume_path"),
+                QSDRVolumeColumn(name="qsdr_volume_path"),
+                NumpyPathColumn(name="numpy_path"),
+                ObjectColumn(name="description")
+                       ]
+        if self.streamline_space in ("mni", 'custom template'):
+            return [   ObjectColumn(name="name"),
+                TemplateVolumeColumn(name="template_volume_path"),
+                NumpyPathColumn(name="numpy_path"),
+                ObjectColumn(name="description")
+                       ]
+        if self.streamline_space == 'native':
+            return [   ObjectColumn(name="name"),
+                b0VolumeColumn(name="b0_volume_path"),
+                NumpyPathColumn(name="numpy_path"),
+                ObjectColumn(name="description")
+                       ]
     import_view = View(
         Group(
           Group(
@@ -257,8 +318,9 @@ class Scan(Dataset):
                 Item("length_min"),
                 Item("length_max"),
                 Item("trk_file"),
-                Item("trk_space"),
-                Item("template_vol",visible_when="trk_space=='custom'"),
+                Item("streamline_space"),
+                Item("streamline_space_name",visible_when="streamline_space=='custom template'"),
+                Item("template_volume_path",visible_when="streamline_space=='custom template'"),
                 orientation="vertical",
                 show_border=True,
                 label="Reconstruction Information"
@@ -282,6 +344,95 @@ class Scan(Dataset):
         
     )
 
+    def _transform_qsdr_atlases(self, overwrite=False):
+        """ Loops over the atlas labels, mapping them to qsdr space"""
+        if not os.path.exists(self.fib_file):
+            raise ValueError("fib file could not be found")
+        loaded_fib_file = get_fib(self.fib_file)
+        for lnum, label_source in enumerate(scan.track_label_items):
+            abs_qsdr_path = label_source.qsdr_volume_path
+            abs_b0_path = label_source.b0_volume_path 
+            # If neither volume exists, the data is incomplete
+            if not os.path.exists(abs_b0_path):
+                print "\t\t++ [%s] ERROR: must have a b0"%self.scan_id
+                continue
+            # Only overwrite existing data if requested
+            ostring = ""
+            if os.path.exists(abs_qsdr_path):
+                if overwrite: ostring = "(OVERWRITING)"
+                else: 
+                    print "\t\t++ [%s] skipping mapping b0 label %s to qsdr space"%(
+                                                                                        self.scan_id, abs_b0_path)
+                    continue
+            print "\t\t++ [%s] mapping %s b0 label %s to qsdr space"%(self.scan_id, ostring, abs_b0_path)
+            b0_to_qsdr_map(loaded_fib_file, abs_b0_path,
+                           abs_qsdr_path)
+
+    def load_streamline_scalars(self):
+        for label_source in scan.track_scalar_items:
+            # File containing the corresponding label vector
+            npy_path = label_source.numpy_path if \
+                os.path.isabs(label_source.numpy_path) else \
+                os.path.join(scan.pkl_dir,label_source.numpy_path)
+            if os.path.exists(npy_path):
+                print npy_path, "already exists"
+                continue
+            print "\t\t++ saving values to", npy_path
+            fop = open(label_source.txt_path,"r")
+            scalars = np.array(
+                [np.fromstring(line,sep=" ").mean() for line in fop] )
+            fop.close()
+            np.save(npy_path,scalars)
+            print "\t\t++ Done."
+        pass
+
+    def label_streamlines(self,overwrite="False"):
+        
+        # Configure the voxel grid        
+        self.load_template_vol() 
+        
+        # Load any scalar items associated with the streamlines
+        self. load_streamline_scalars()
+        
+        # Perform qsdr mapping if necessary
+        if self.streamline_space == "qsdr":
+            self._transform_qsdr_atlases(overwrite=overwrite)
+            
+        # Loop over the track labels, creating .npy files as needed
+        n_labels = len(scan.track_label_items)
+        print "\t+ [%s] Intersecting"%sid, n_labels, "label datasets"
+        for lnum, label_source in enumerate(scan.track_label_items):
+            # File containing the corresponding label array
+            npy_path = label_source.numpy_path 
+            print "\t\t++ [%s] Ensuring %s exists" % (sid, npy_path)
+            if os.path.exists(npy_path):
+                print "\t\t++ [%s]"%sid, npy_path, "already exists"
+                if not overwrite:    continue
+            # Load the volume
+            abs_vol_path = label_source.get_tracking_image_filename()
+            print "\t\t++ [%s] Loading volume %d/%d:\n\t\t\t %s" % (
+                    sid, lnum + 1, n_labels, abs_vol_path )
+            mds = MaskDataset(abs_vol_path)
+        
+            # Get the region labels from the parcellation
+            graphml = find_graphml_from_filename(label_source)
+            if graphml is None:
+                print "\t\t++ [%s] No graphml exists: using unique region labels"%sid
+                regions = mds.roi_ids
+            else:
+                print "\t\t++ [%s] Recognized atlas name, using Lausanne2008 atlas"%sid, graphml
+                regions = get_region_ints_from_graphml(graphml)
+    
+            # Save it.
+            conn_ids = connection_ids_from_voxel_coordinates(
+                                                                  mds, self.voxelized_streamlines,
+                                                                  save_npy=npy_path,
+                                                                  scale_coords=tds.tds.header['voxel_size'],
+                                                                  region_ints=regions)
+            print "\t\t++ [%s] Saved %s" % (sid, npy_path)
+            print "\t\t\t*** [%s] %.2f percent streamlines not accounted for by regions"%( sid, 100. * np.sum(conn_ids==0)/len(conn_ids) )
+        
+        
     def __init__(self,**traits):
         """
         Holds the information OF A SINGLE SCAN.
@@ -298,8 +449,56 @@ class Scan(Dataset):
             [ (d['name'],
                {  "graphml_path":d.get('graphml_path',None),
                   "numpy_path":d['numpy_path'],
-                } )\
+                } ) \
                for d in self.track_labels ])
+        
+    def load_template_vol(self):
+        """Loads the template voxel grid and makes sure all atlases match"""
+        # Configure the output volume space
+        if self.streamline_space == "custom_template":
+            try:
+                template_vol = nib.load(self.template_volume_path)
+            except Exception,e:
+                raise ValueError("Cannot open template image at " + \
+                                 template_vol_path + ": " + e)
+            # Load template information into the headers
+            self.template_voxel_size = np.array(template_vol.get_header().get_zooms())
+            self.template_volume_shape = template_vol.shape
+            self.template_affine = template_vol.get_affine()
+            
+        elif self.streamline_space == "qsdr":
+            from dsi2.volumes import QSDR_SHAPE, QSDR_AFFINE, QSDR_VOXEL_SIZE
+            self.template_voxel_size = QSDR_VOXEL_SIZE
+            self.template_volume_shape = np.array(QSDR_SHAPE)
+            self.template_affine = QSDR_AFFINE
+            
+        elif self.streamline_space == "mni":
+            from dsi2.volumes import get_MNI152
+            template_vol = get_MNI152()
+            self.template_voxel_size = np.array(template_vol.get_header().get_zooms())
+            self.template_volume_shape = template_vol.shape
+            self.template_affine = template_vol.get_affine()
+            warnings.warn("If your tracking was done on a qsdr dataset you should"
+                          "use 'qsdr' as the streamline space")
+                                                  
+        # If native space atlases, make sure that they all have the same grid
+        if self.streamline_space == "native":
+            if not len(self.track_label_items):
+                raise ValueError("must supply b0 space label images")
+            example = nib.load(self.track_label_items[0].b0_volume_path)
+            self.template_affine = example.get_affine()
+            self.template_volume_shape = example.shape
+            self.template_voxel_size = example.get_header().get_zooms()
+            
+        # Check that all the atlases match the output template
+        for label in self.track_label_items:
+            img = nib.load(getattr(label, self.atlas_key))
+            affines_match = np.allclose(self.template_affine, img.get_affine())
+            grids_match = np.all(self.template_volume_shape == img.shape)
+            if not affines_match and grids_match:
+                raise ValueError("All native space atlases must be on the same grid"
+                        " but " + label.name + " " + label.description + "does not match" )
+                
 
     @on_trait_change("track_scalar_items,track_label_items")
     def make_me_parent(self):
@@ -309,7 +508,23 @@ class Scan(Dataset):
         for tsi in self.track_scalar_items:
             tsi.parent = self
             
-    def get_track_dataset(self):
+    def __len__(self):
+        return 1
+    
+    @cached_property
+    def _get_voxelized_streamlines(self):
+        ijk_streamlines = streamlines_to_ijk(
+                                       self.streamlines.tracks, trackvis_header=self.streamlines.header,
+                                       tracking_volume_shape=self.template_volume_shape,
+                                       tracking_volume_voxel_size=self.template_voxel_size,
+                                       tracking_volume_affine=self.template_affine,
+                                       return_coordinates=False
+        )
+        return ijk_streamlines
+    
+    @cached_property
+    def _get_streamlines(self):
+        from dsi2.streamlines.track_dataset import TrackDataset
         if os.path.exists(self.pkl_path):
             pkl_file = self.pkl_path
             print "load:", pkl_file
@@ -317,7 +532,6 @@ class Scan(Dataset):
             _trkds = pickle.load(fop)
             _trkds.properties = self
         elif os.path.exists(self.trk_file):
-            from dsi2.streamlines.track_dataset import TrackDataset
             _trkds = TrackDataset(self.trk_file, properties=self)
         
         # Loop over the scalar items
@@ -351,7 +565,7 @@ class Scan(Dataset):
             "bvals": self.bvals,
             "bvecs": self.bvecs,
             "label": self.label,
-            "trk_space": self.trk_space,
+            "streamline_space": self.streamline_space,
             "pkl_trk_path":self.pkl_trk_path,
             "pkl_path":self.pkl_path,
             "trk_file":self.trk_file,
@@ -391,7 +605,7 @@ class MongoScan(Scan):
         self.bvals = self.mongo_result["bvals"]
         self.bvecs = self.mongo_result["bvecs"]
         self.label = self.mongo_result["label"]
-        self.trk_space = self.mongo_result["trk_space"]
+        self.streamline_space = self.mongo_result["streamline_space"]
     
         
         

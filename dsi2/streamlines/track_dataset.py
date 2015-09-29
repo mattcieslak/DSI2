@@ -13,35 +13,15 @@ from traitsui.api import View, Item, VGroup, HGroup, Group, \
 
 from traits.api import HasTraits, Instance, Array, \
     CInt, Color, Bool, List, Int, Str, Instance, Any, Enum, \
-    DelegatesTo, on_trait_change, Button
+    DelegatesTo, on_trait_change, Button,Str, Enum
 import cPickle as pickle
 from mayavi.core.ui.api import SceneEditor
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from mayavi import mlab
 import gzip
 
-
 from .track_math import tracks_to_endpoints
 from mayavi.core.api import PipelineBase, Source
-
-mni_hdr = trackvis.empty_header()
-mni_hdr['dim'] = np.array([91,109,91],dtype="int16")
-mni_hdr['voxel_order'] = 'LAS'
-mni_hdr['voxel_size'] = np.array([ 2.,  2.,  2.], dtype='float32')
-mni_hdr['image_orientation_patient'] = np.array(
-                     [ 1.,  0.,  0.,  0.,  -1.,  0.], dtype='float32')
-mni_hdr['vox_to_ras'] = \
-           np.array([[ -2.,  0.,  0.,   90.],
-                     [  0.,  2.,  0., -126.],
-                     [  0.,  0.,  2.,  -72.],
-                     [  0.,  0.,  0.,    1.]], dtype='float32')
-
-qsdr_hdr = trackvis.empty_header(version=1)
-qsdr_hdr['dim'] = np.array([79, 95, 69],dtype="int16")
-qsdr_hdr['voxel_order'] = 'LPS'
-qsdr_hdr['voxel_size'] = np.array([ 2.,  2.,  2.], dtype='float32')
-qsdr_hdr['image_orientation_patient'] = np.array(
-                     [ 1.,  0.,  0.,  0.,  1.,  0.], dtype='float32')
 
 def join_tracks(args):
     """
@@ -128,6 +108,12 @@ class TrackDataset(HasTraits):
     properties = Any
     segments = List(Instance(Segment))
     #original_track_indices = Array(np.array([]))
+    
+    # Holds metadata
+    coordinate_units = Enum("voxmm", "voxels", "world")
+    orientation = Str("LPS")
+    voxel_size = Array
+    volume_shape = Array
 
     # Are the glyphs already rendered?
     tracks_drawn = Bool(False)
@@ -143,6 +129,7 @@ class TrackDataset(HasTraits):
     static_color = DelegatesTo('properties')
     color_map  = DelegatesTo('properties')
     unlabeled_track_style = DelegatesTo('properties')
+    
 
     def _static_color_changed(self):
         if not self.dynamic_color_clusters:
@@ -246,14 +233,31 @@ class TrackDataset(HasTraits):
             elif fname.endswith("mat"):
                 pass
 
-        if not hasattr(self,"header"):
-            self.header = trackvis.empty_header()
         if properties is None:
             from dsi2.database.traited_query import Scan
             print "Warning: using default properties"
             self.properties = Scan()
         else:
             self.properties = properties
+            
+        # Configure the coordinate system
+        if not hasattr(self,"header"):
+            if self.voxel_size.size == 0 or self.volume_shape.size == 0:
+                raise ValueError("Unable to determine streamline orientation")
+            self.header = trackvis.empty_header()
+            self.header['voxel_size'] = self.voxel_size
+            self.header['dim'] = self.voxel_size
+        else:
+            # Change the header if voxel size or volume shape are requested
+            if self.voxel_size.size > 0:
+                warnings.warn("Overwriting header info with keyword arg voxel_size")
+                self.header['voxel_size'] = self.voxel_size
+            if self.volume_shape.size > 0:
+                warnings.warn("Overwriting header info with keyword arg voxel_size")
+                self.header['dim'] = self.voxel_size
+        # Finally, sync the header and attrs
+        self.voxel_size = self.header['voxel_size']
+        self.volume_shape = self.header['dim']
 
         self.connections = connections
         self.clusters = []
@@ -416,51 +420,6 @@ class TrackDataset(HasTraits):
                                qa=qa, gfa=gfa
                             )
 
-    def voxmm_to_ijk(self, trk, to_order= "", floor=True):
-        """Converts from trackvis voxmm to ijk.
-        Parameters:
-        ===========
-        trk:np.ndarray (N,3) or int
-          if ndarray, it will be treated as a list of xyz coordinates. If an
-          int, it will return the ijk coordinates of that track id
-        to_order: "[LR]" + "[AP]" + "[IS]"
-          index value increases in the direction of the value.
-          This string specifies how you want ijk to work in the OUTPUT.
-          Data is flipped from the order specified in self.header['voxel_order']
-        floor:bool
-          Should the data be truncated to an integer? This is required if the purpose
-          is to create a hash table. Otherwise, you can get a pretty track for display
-          if this is set to False.
-        Returns:
-        ========
-        (N,3) ndarray of ijk indices
-
-        NOTE:
-        =====
-         REQUIRES that this trackdataset came from a trk file, as the header is
-         essential to transforming tracks to ijk.
-
-        """
-        # as per voxmm standard, simply divide x,y,z by voxel size.
-        ijk = trk.astype(np.float64) / self.header['voxel_size']
-
-        # the goal is to hash the tracks, take them to ints using floor
-        if floor:
-            ijk = np.floor(ijk).astype(np.int32)
-
-        # Do any of the axes need to be flipped?
-        if len(to_order)==3:
-            voxmm_order = str(self.header['voxel_order'])
-            if not voxmm_order[0] == to_order[0]:
-                ijk[:,0] = self.header['dim'][0] - ijk[:,0]
-            if not voxmm_order[1] == to_order[1]:
-                ijk[:,1] = self.header['dim'][1] - ijk[:,1]
-            if not voxmm_order[2] == to_order[2]:
-                ijk[:,2] = self.header['dim'][2] - ijk[:,2]
-        if floor:
-            unq = track_math.remove_duplicates(ijk).astype(np.int32)
-            return unq
-        return ijk
 
     def get_tracks_by_connection_id(self,connection_id,return_fail_fibers=False):
         """Get a set of all fiber_ids that are labeled
@@ -499,7 +458,7 @@ class TrackDataset(HasTraits):
            set of fibers that fail to intersect ijk's. Only
            returned if return_fail_fibers == True
         """
-        if not hasattr(self,"tracks_at_ijk"): self.hash_voxels_to_tracks()
+        if not hasattr(self,"tracks_at_ijk"): raise ValueError("no voxel mapping available")
         roi_fibers = set()
         for _ijk in ijks:
             roi_fibers.update(self.tracks_at_ijk[_ijk])
@@ -515,15 +474,12 @@ class TrackDataset(HasTraits):
 
     def hash_voxels_to_tracks(self, **kwargs):
         """
-        If no arguments are given, voxmm coordinates are simply
-        divided by the voxel size in the header. Otherwise
-
+        specify a volume for streamlines to get linked to.
         """
-        #self.tracks_at_ijk = streamline_mapping(self.tracks,
-        ijk_tracks = np.array([
-            self.voxmm_to_ijk(trk,**kwargs) for trk in self],
-                              dtype=object)
-
+        kwargs["return_coordinates"] = False
+        ijk_tracks = track_math.streamlines_to_ijk(self.tracks, trackvis_header=self.header,
+                                                   **kwargs)
+        
         # index tracks by the voxels they pass through
         tracks_at_ijk = defaultdict(set)
         for trknum, ijk in enumerate(ijk_tracks):
@@ -531,65 +487,6 @@ class TrackDataset(HasTraits):
             for _ijk in ijk:
                 tracks_at_ijk[tuple(_ijk)].update(data)
         self.tracks_at_ijk = tracks_at_ijk
-
-    def dump_qsdr2MNI_track_lookup(self, output, savetrk=False):
-        """Converts from trackvis voxmm to ijk.
-        Parameters:
-        ===========
-        output:str
-          .pkl file where the voxel to streamline id mapping is saved
-        savetrk:str
-          path to where the trackvis file will be saved.
-
-        NOTE:
-        =====
-         REQUIRES that this trackdataset came from a trk file, as the header is
-         essential to transforming tracks to ijk.
-
-         From experience, tracks brought into alignment with the MNI152 template
-         via DTK's track_transform appear as LAS -> LPS in trackvis's dataset info panel.
-         I have been able to get qsdr2MNI to look correct in trackvis by converting
-         it to LAS ordering. LAS also relates voxmm coordinates to MNI152 ijk by
-         a scalar factor.
-
-        """
-        # index tracks by the voxels they pass through
-        mni_voxel_size = np.array([2.]*3)
-        tracks_at_ijk = defaultdict(set)
-        output_voxmm = []
-        for trknum, trk in enumerate(self.tracks):
-            data = set([trknum])
-            # convert voxmm to LAS
-            ijk = self.voxmm_to_ijk(trk, to_order="LAS")
-            pretty_ijk = self.voxmm_to_ijk(trk, to_order="LAS", floor=False)
-            # QSDR from DSI Studio has a different bounding box.
-            ijk = ijk + np.array([6,7,11])
-            pretty_ijk = pretty_ijk + np.array([6,7,11])
-
-            output_voxmm.append(pretty_ijk*mni_voxel_size)
-            # Floor at the end?
-            unq = track_math.remove_duplicates(ijk).astype(np.int32)
-            for _ijk in unq:
-                tracks_at_ijk[tuple(_ijk)].update(data)
-        self.tracks_at_ijk = tracks_at_ijk
-        print "original", self.tracks.shape, "tracks"
-        self.tracks = np.array(output_voxmm)
-        print "replaced by", self.tracks.shape, "tracks"
-
-        # Save the hash dump
-        fop = open(output,"wb")
-        pickle.dump(self,fop,pickle.HIGHEST_PROTOCOL)
-        fop.close()
-
-        # Write out a new trackvis file
-        if savetrk:
-            # Actually write a trk file so we can check against the
-            #   MNI brain in trackvis
-            trackvis.write(
-                savetrk,
-                ((stream*mni_hdr['voxel_size'],None,None) for stream in output_voxmm),
-                np.array(mni_hdr)
-                )
 
     def save(self,fname,use_mni_header=False,use_qsdr_header=False):
         """Save the object as a .trk file"""
@@ -616,9 +513,9 @@ class TrackDataset(HasTraits):
         fop.close()
 
 
-    #==============================================================
+    #==================================
     # Functions from the former TraitedTrackDataset
-    #==============================================================
+    #==================================
     def _name_default(self):
         return self.properties.scan_id
 

@@ -14,16 +14,6 @@ def symmetricize(network):
 
 triu_indices = lambda x, y=0: zip(*list(chain(*[[(i, j) for j in range(i + y, x)] for i in range(x - y)])))
 
-def voxel_downsampler(tracks,voxel_size=np.array((2.,2.,2.))):
-    new_trks = []
-    for trk in tracks:
-        # get downsampled_indices
-        a = np.floor(trk/voxel_size)
-        b = a.ravel().view(np.dtype((np.void, a.dtype.itemsize*a.shape[1])))
-        _, unique_idx = np.unique(b, return_index=True)
-        new_trks.append(trk[np.sort(unique_idx)])
-    return new_trks
-
 def triu_indices_from(X):
     sz = X.shape[0]
     return zip(*triu_indices(sz))
@@ -72,10 +62,10 @@ def trackvis_header_from_info(
     
 
 
-def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
+def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
                     streamline_space="voxmm",  return_coordinates=False,
                     streamline_orientation="LPS", tracking_volume_shape=(),
-                    tracking_volume_voxel_size=()
+                    tracking_volume_voxel_size=(), tracking_volume_affine=()
                     ):
     """
     The one place to convert streamlines to voxels.  Properties of the streamlines can 
@@ -96,8 +86,6 @@ def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
     trackvis_header:recarray
       used to define properties of the streamline coordinates
     """
-    ref_affine = target_volume.get_affine()
-    img_voxel_size = np.array(target_volume.get_header().get_zooms())
     
     # Create a trackvis header if none is given
     if trackvis_header is None:
@@ -105,14 +93,28 @@ def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
         trackvis_header = trackvis_header_from_info(streamline_orientation,
                                                     tracking_volume_shape, tracking_volume_voxel_size)
         
+    # If no volume is given, use the info from the trackvis header    
+    if target_volume is None:
+        if not len(tracking_volume_affine) or not len(tracking_volume_voxel_size) \
+           or not len(tracking_volume_shape):
+            raise ValueError("Insufficient information to determine tracking volume")
+        ref_affine = tracking_volume_affine
+        img_voxel_size = tracking_volume_voxel_size
+        ref_vol_shape = tracking_volume_shape
+    else:
+        ref_affine = target_volume.get_affine()
+        img_voxel_size = np.array(target_volume.get_header().get_zooms())
+        ref_vol_shape = np.array(target_volume.get_shape())
+        
     trk_affine = trackvis_header['vox_to_ras']
     # Perform basic checks to make sure the tracks
     # and image are compatible
-    if not np.all(np.array(target_volume.get_shape()) == trackvis_header['dim']):
+    if not np.all( ref_vol_shape == trackvis_header['dim']):
         raise ValueError("Shape mismatch between streamlines and volume")
     
     if not np.all(trackvis_header['voxel_size']==img_voxel_size):
         raise ValueError("Size mismatch between streamlines and volume voxels")
+    
     # Check for valid affines
     if np.any(np.diag(ref_affine)==0):
         raise ValueError("invalid affine in target_vol")
@@ -123,21 +125,24 @@ def streamlines_to_ijk(streams, target_volume,trackvis_header=None,
     orientation_match = (np.sign(np.diag(ref_affine)) == \
             np.sign(np.diag(trk_affine)))[:3]
     flipx, flipy, flipz = np.logical_not(orientation_match)
-
+    any_flip = any((flipx, flipy,flipz))
     
     # Convert the streamlines to voxel coordinates.
     # First convert the voxmm coordinates to the correct orientation
     extents = img_voxel_size * (trackvis_header['dim'] -1)
     ijk = []
     for _stream in streams:
-        stream = _stream.copy()
-        if flipx:
-            stream[:,0] = extents[0] - stream[:,0]
-        if flipy:
-            stream[:,1] = extents[1] - stream[:,1]
-        if flipz:
-            stream[:,2] = extents[2] - stream[:,2]
-        #
+        if any_flip:
+            stream = _stream.copy()
+            if flipx:
+                stream[:,0] = extents[0] - stream[:,0]
+            if flipy:
+                stream[:,1] = extents[1] - stream[:,1]
+            if flipz:
+                stream[:,2] = extents[2] - stream[:,2]
+        else:
+            stream = _stream
+        
         coords = stream / trackvis_header['voxel_size'] + 0.5
         if not return_coordinates:
             coords = remove_sequential_duplicates(coords.astype(np.int))
@@ -211,29 +216,6 @@ def voxels_to_streamlines(voxel_coordinates, nib_img,
         
     # apply the voxel size scaling to the voxel coordinates
     return [ref_zooms *  cijk   for cijk in corrected_ijk]
-        
-
-
-
-def euclidean_len(track,total_distance=True):
-    """compute the length along all points of a track
-    Parameters:
-    -----------
-    track:np.ndarray n,3
-      3d coordinates of points on the track
-    total_distance:bool
-      Return the total distance along the track, or the
-      distance between each point?
-
-    """
-    if track.dtype == object:
-        #case of the single track
-        track = track.astype("<f8")
-    #sq_points_diff = (x1-x2)^2+(y1-y2)^2+(z1-z2)^2
-    points_dist = np.sqrt(np.sum(np.diff(track,axis=0)**2,axis=1))
-    if not total_distance:
-        return points_dist
-    return np.sum(points_dist)
 
 def remove_duplicates(a):
     is_uniq = np.array([True]*a.shape[0])
@@ -284,6 +266,7 @@ def connection_ids_from_voxel_coordinates( voxel_streamlines,
     # Label the streamlines
     endpoints = np.zeros(len(voxel_streamlines),dtype=np.int)
     for trknum, trk in enumerate(voxel_streamlines):
+        trk = trk.astype(np.int)
         # Convert all points to their label vals
         labels = atlas_voxels[trk[:,0], trk[:,1], trk[:,2]]
         # Must terminate in gray regions
@@ -347,23 +330,6 @@ def connection_ids_from_tracks(msk_dset, trk_dset,
 
     # Check that the mapping from streamline coordinates to 
     # voxels is is possible through division
-    mask_affine = msk_dset.dset.get_affine()
-    trk_affine = trk_dset.header["vox_to_ras"]
-    
-    maskdata = msk_dset.data.astype(np.int32)
-    if check_affines:
-        if np.abs(trk_affine).sum() == 0:
-            print "Warning: No vox_to_ras in header, skipping affine check"
-        else:
-            if not (trk_affine[0,0] > 0) == (mask_affine[0,0] > 0):
-                print "flipping roi volume x"
-                maskdata = maskdata[::-1,:,:]
-            if not (trk_affine[1,1] > 0) == (mask_affine[1,1] > 0):
-                print "flipping roi volume y"
-                maskdata = maskdata[:,::-1,:]
-            if not (trk_affine[2,2] > 0) == (mask_affine[2,2] > 0):
-                print "flipping roi volume z"
-                maskdata = maskdata[:,:,::-1]
     
     for trknum, trk in enumerate(trk_dset):
         # Convert all points to their label vals

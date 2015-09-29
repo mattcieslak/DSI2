@@ -75,7 +75,7 @@ class MongoTrackDataSource(TrackDataSource):
         for scan_id in self.scan_ids:
             results = list(self.db.scans.find({"scan_id":scan_id}))
             if len(results) != 1:
-                raise ValueError("scans collection does not contain exactly 1 " + scan+id)
+                raise ValueError("scans collection does not contain exactly 1 " + scan_id)
             result = results[0]
             properties.append(MongoScan(mongo_result=result))
         self.track_dataset_properties = properties

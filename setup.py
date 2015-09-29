@@ -5,7 +5,7 @@ from os import path
 
 # Version
 MAJOR="0"
-MINOR="5"
+MINOR="6"
 MICRO="0"
 VERSION= MAJOR + "." + MINOR + "." + MICRO
 

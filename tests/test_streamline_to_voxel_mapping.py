@@ -3,12 +3,14 @@ import nibabel as nib
 from dipy.tracking import utils
 import numpy as np
 from dsi2.streamlines.track_math  import (trackvis_header_from_info,streamlines_to_ijk,
-                streamlines_to_itk_world_coordinates, voxels_to_streamlines)
+                streamlines_to_itk_world_coordinates, voxels_to_streamlines,
+                region_pair_dict_from_roi_list,connection_ids_from_voxel_coordinates)
 from create_testing_data import create_fake_fib_file
 import os
 from dipy.tracking.streamline import transform_streamlines
-from dsi2.volumes import find_graphml_from_b0, load_lausanne_graphml
+from dsi2.volumes import find_graphml_from_filename, load_lausanne_graphml
 from scipy.io.matlab import loadmat
+
 
 
 VOLUME_SHAPE = np.array([50, 50, 50])
@@ -95,7 +97,7 @@ def test_coordinate_transforms():
 
                                                     
 def simulated_atlas(scale=33):
-    graphml = find_graphml_from_b0("scale%d" % scale)
+    graphml = find_graphml_from_filename("scale%d" % scale)
     node_data = load_lausanne_graphml(graphml)
     regions = node_data['regions']
     
@@ -123,6 +125,7 @@ def simulate_connection(nib_atlas_img, regions,
     
     label_cube = nib_atlas_img.get_data()
     target_regions = np.random.choice(regions,size=2,replace=False)
+    test_conn_id = region_pair_dict_from_roi_list(regions)[tuple(sorted(target_regions))]
     regA_voxels = [np.array(np.nonzero(label_cube == target_regions[0])).T]
     regA_streamline_coords = voxels_to_streamlines(regA_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
     regB_voxels = [np.array(np.nonzero(label_cube == target_regions[1])).T]
@@ -151,6 +154,7 @@ def simulate_connection(nib_atlas_img, regions,
     nib.trackvis.write(CONN_TRK, [(sl,None,None) for sl in streamlines], hdr_mapping=header)    
     nib_atlas_img.to_filename(TEMP_ATLAS)
     
+    
     os.system("/home/cieslak/projects/bin/dsi_studio " 
           "--action=ana --tract=" + CONN_TRK + " " 
           "--source=" +  FAKE_FIB_FILE + " --end=" + TEMP_ATLAS + " "
@@ -158,8 +162,17 @@ def simulate_connection(nib_atlas_img, regions,
     m = loadmat(FRANK_CONN)
     assert m['connectivity'].max() == n_streamlines
     frank_maxes = np.unravel_index(m['connectivity'].argmax(),m['connectivity'].shape)
-    for reg in target_regions:
-        assert reg-1 in frank_maxes
+    # Convert 'names'
+    names = "".join(m['name'].view("S2")[0]).split("\n")
+    max_rois = [int(names[i].lstrip("region")) for i in frank_maxes]
+    assert set(max_rois) == set(target_regions)
+    
+    # Check that connection_ids_from_voxel_coordinates agrees
+    ijk_streamlines = streamlines_to_ijk(streamlines, nib_atlas_img, trackvis_header=header)
+    conn_ids = connection_ids_from_voxel_coordinates(ijk_streamlines,nib_atlas_img.get_data(), 
+                                          atlas_label_int_array=regions)
+    assert np.all(np.diff(conn_ids) == 0)
+    assert conn_ids[0] == test_conn_id
     
     
 def test_connectivity_matrix():

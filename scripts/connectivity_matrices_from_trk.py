@@ -1,6 +1,6 @@
 from dsi2.ui.local_data_importer import LocalDataImporter
 from dsi2.streamlines.track_math import region_pair_dict_from_roi_list
-from dsi2.volumes import graphml_from_label_source
+from dsi2.volumes import graphml_from_label_source, get_lausanne_spec
 from pkg_resources import Requirement, resource_filename
 from dipy.utils.tracking import density_map
 from scipy.io.matlab import savemat
@@ -11,46 +11,13 @@ import os
 
 N_PROCS=8
 
-lausanne_scale_lookup = {
-                  33:resource_filename(Requirement.parse("dsi2"),
-                    "dsi2/example_data/lausanne2008/resolution83/resolution83.graphml"),
-                  60:resource_filename(Requirement.parse("dsi2"),
-                    "dsi2/example_data/lausanne2008/resolution150/resolution150.graphml"),
-                  125:resource_filename(Requirement.parse("dsi2"),
-                    "dsi2/example_data/lausanne2008/resolution258/resolution258.graphml"),
-                  250:resource_filename(Requirement.parse("dsi2"),
-                    "dsi2/example_data/lausanne2008/resolution500/resolution500.graphml"),
-                  500:resource_filename(Requirement.parse("dsi2"),
-                    "dsi2/example_data/lausanne2008/resolution1015/resolution1015.graphml")
-                  }
 
 print "caching connection id lookup tables..."
 lookup_cache = {}
 for scale in [33, 60, 125, 250, 500]:
-    atlas_graphml = lausanne_scale_lookup[scale]
-    print "\t\t+ loading regions from", atlas_graphml
     graph = nx.read_graphml(atlas_graphml)
-    lookup_cache[scale] = {'region_labels':{},
-                    'region_pairs_to_index':{},
-                    'index_to_region_pairs':{},
-                    'region_pair_strings_to_index':{},
-                    'regions':[]}
-    graphml_data = lookup_cache[scale]
-    
-    for roi_id,roi_data in graph.nodes(data=True):
-        graphml_data['region_labels'][roi_id] = roi_data
-    graphml_data['regions'] = np.array(sorted(map( int,graph.nodes() )))
-    graphml_data['region_pairs_to_index'] = region_pair_dict_from_roi_list(
-                                                       graphml_data['regions'])
-    # Which regionpairs map to which unique id in this dataset?
-    graphml_data['index_to_region_pairs'] = dict(
-        [ (idxnum,(id1, id2)) for (id1,id2), idxnum in graphml_data['region_pairs_to_index'].iteritems()
-        ]
-    )
-    graphml_data['region_pair_strings_to_index'] = dict([
-        (value,key) for key,value in graphml_data['index_to_region_pairs'].iteritems()
-    ])
-print "done."
+    lookup_cache[scale] = get_lausanne_spec(scale)
+print "done"
 
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.streamlines.track_dataset import TrackDataset
@@ -73,7 +40,7 @@ def save_connectivity_matrices(scan,compute_voxels=True):
         trk_scalars[scalar.name] = _scalars
         
     for lnum, label_source in enumerate(scan.track_label_items):
-        if scan.trk_space == "qsdr":
+        if scan.streamline_space == "qsdr":
             mds = MaskDataset(label_source.qsdr_volume_path)
         else:
             mds = MaskDataset(label_source.b0_volume_path)

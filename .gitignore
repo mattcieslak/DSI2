@@ -1,4 +1,5 @@
 .dropbox
+.eggs
 *.pyc
 *.src.gz
 *.trk

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import pymongo
 from bson.binary import Binary
+from traits.api import HasTraits, File, Button, Bool, Str
+from traitsui.api import View,Group, VGroup, Item
+import logging
+import os
+import subprocess
 
 def init_db(db):
     """
@@ -156,7 +161,7 @@ def upload_scan_info(db, trackds, sc):
                     "bvals":sc.bvals,
                     "bvecs":sc.bvecs,
                     "label":sc.label,
-                    "trk_space":sc.trk_space,
+                    "streamline_space":sc.streamline_space,
                     "atlases":list(set(atlases)),
                     "sls": len(trackds.tracks),
                     "header":Binary(pickle.dumps(trackds.header,protocol=2)),
