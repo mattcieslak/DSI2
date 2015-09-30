@@ -140,19 +140,19 @@ def get_lausanne_spec(scale):
 
     return load_lausanne_graphml(lausanne_scale_lookup[scale])
 
-def get_fib(fib):
+def get_fib(fib_file):
     if isinstance(fib_file,basestring):
-        if fib.endswith("gz"):
+        if fib_file.endswith("gz"):
             fibf = gzip.open(fib_file,"rb")
         else:
             fibf = gzip.open(fib_file,"rb")
         m = loadmat(fibf)
         fibf.close()
         return m
-    elif isinstance(fib, dict):
+    elif isinstance(fib_file, dict):
         return m
     else:
-        raise ValueError("Unable to load " + fib)
+        raise ValueError("Unable to load " + fib_file)
 
 def b0_to_qsdr_map(fib_file, b0_atlas, output_v):
     """

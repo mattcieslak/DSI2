@@ -26,29 +26,9 @@ from dsi2.aggregation import make_aggregator
 import shutil
 from copy import deepcopy
 import pytest
+from dsi2.streamlines import qsdr_2mm_trk_header as qsdr_trk_header
 
 
-qsdr_trk_header = np.array(
-        ('TRACK', [79, 95, 69], [2.0, 2.0, 2.0], 
-         [0.0, 0.0, 0.0], 0, 
-         ['', '', '', '', '', '', '', '', '', ''], 0, 
-         ['', '', '', '', '', '', '', '', '', ''], 
-         [[-2.0, 0.0, 0.0, 0.0], [0.0, -2.0, 0.0, 0.0], 
-          [0.0, 0.0, -2.0, 0.0], [0.0, 0.0, 0.0, 1.0]], 
-         '', 'LPS', 'LPS', [1.0, 0.0, 0.0, 0.0, 1.0, 0.0], 
-         '', '', '', '', '', '', '', 100000, 2, 1000), 
-      dtype=[('id_string', 'S6'), ('dim', '<i2', (3,)), 
-             ('voxel_size', '<f4', (3,)), 
-             ('origin', '<f4', (3,)), 
-             ('n_scalars', '<i2'), ('scalar_name', 'S20', (10,)), 
-             ('n_properties', '<i2'), ('property_name', 'S20', (10,)), 
-             ('vox_to_ras', '<f4', (4, 4)), ('reserved', 'S444'), 
-             ('voxel_order', 'S4'), ('pad2', 'S4'), 
-             ('image_orientation_patient', '<f4', (6,)), 
-             ('pad1', 'S2'), ('invert_x', 'S1'), ('invert_y', 'S1'), 
-             ('invert_z', 'S1'), ('swap_xy', 'S1'), ('swap_yz', 'S1'), 
-             ('swap_zx', 'S1'), ('n_count', '<i4'), ('version', '<i4'), 
-             ('hdr_size', '<i4')])
 
 scale33_graphml = find_graphml_from_filename("scale33")
 scale33_data = load_lausanne_graphml(scale33_graphml)
@@ -370,7 +350,7 @@ def create_test_data(request):
     for directory in [test_input_data,test_output_data]:
         if os.path.exists(directory):
             print "removing previous testing data"
-            shutil.rmtree(directory)
+            os.system("rm -rf " + directory)
     print "creating new testing directory"
     os.makedirs(test_input_data)
     droot = test_input_data
@@ -389,6 +369,8 @@ def create_test_data(request):
         tracks.save(trk_pth,use_qsdr_header=True)
         get_scale33_nim().to_filename(scale33)
         get_scale60_nim().to_filename(scale60)
+        get_scale33_nim().to_filename(scale33_q)
+        get_scale60_nim().to_filename(scale60_q)
         save_fake_fib(fib)
         sc =  Scan(
                 scan_id=subjname,

@@ -136,7 +136,7 @@ class ReebGraphSegmentation(SegmentationEditor):
             xx =np.array( map(int, line.strip().split()))
             xx[xx==-1] = -100
             collected.append(xx)
-        labels = np.array(collected,dtype=np.object)
+        labels = np.asanyarray(collected)
         fop.close()
         
         #TODO: Read the bmap file

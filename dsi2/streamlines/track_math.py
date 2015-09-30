@@ -5,6 +5,7 @@ from itertools import chain
 from scipy.io.matlab import savemat as sm
 import nibabel as nib
 from dipy.tracking.streamline import transform_streamlines
+from collections import defaultdict
 
 def symmetricize(network):
     if not np.sum(np.tril(network,-1)):
@@ -63,7 +64,7 @@ def trackvis_header_from_info(
 
 
 def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
-                    streamline_space="voxmm",  return_coordinates=False,
+                    streamline_space="voxmm",  return_coordinates="voxel_index",
                     streamline_orientation="LPS", tracking_volume_shape=(),
                     tracking_volume_voxel_size=(), tracking_volume_affine=()
                     ):
@@ -85,6 +86,7 @@ def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
       output voxel_space
     trackvis_header:recarray
       used to define properties of the streamline coordinates
+    return_coordinates: "voxel_index", "voxel_coordinates", "both"
     """
     
     # Create a trackvis header if none is given
@@ -144,11 +146,26 @@ def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
             stream = _stream
         
         coords = stream / trackvis_header['voxel_size'] + 0.5
-        if not return_coordinates:
-            coords = remove_sequential_duplicates(coords.astype(np.int))
         ijk.append(coords)
-    
-    return np.array(ijk,dtype=np.object)
+    if return_coordinates == "voxel_coordinates":
+        return np.array(ijk)#,dtype=np.object)
+    voxel_idx = []
+    for stream in ijk:
+        voxel_idx.append(
+            remove_sequential_duplicates(stream.astype(np.int)))
+    if return_coordinates == "voxel_index":
+        return np.array(voxel_idx)#, dtype=np.object)
+    #return np.array(ijk),dtype=np.object), np.array(voxel_idx)
+    return np.array(ijk), np.array(voxel_idx)
+
+def streamline_voxel_lookup(voxelized_streamlines):
+        # index tracks by the voxels they pass through
+        tracks_at_ijk = defaultdict(set)
+        for trknum, ijk in enumerate(voxelized_streamlines):
+            data = set([trknum])
+            for _ijk in ijk:
+                tracks_at_ijk[tuple(_ijk)].update(data)
+        return tracks_at_ijk
     
 def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=None,
                     streamline_space="voxmm",
@@ -157,7 +174,7 @@ def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=
                     ):
     ijk_streamlines = streamlines_to_ijk(streams, target_volume,
                     trackvis_header=trackvis_header,
-                    streamline_space=streamline_space,  return_coordinates=True,
+                    streamline_space=streamline_space,  return_coordinates="voxel_coordinates"
                     )
     ref_affine = target_volume.get_affine()
     ref_shape = target_volume.get_shape()
@@ -178,15 +195,25 @@ def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=
     
     return transform_streamlines(ijk_streamlines,final_affine)
 
-def voxels_to_streamlines(voxel_coordinates, nib_img, 
-                          voxmm_orientation="LPS"):
+def voxels_to_streamlines(voxel_coordinates, nib_img=None, volume_affine=None,
+                          volume_shape=None,volume_voxel_size=None,  voxmm_orientation="LPS"):
     """
     Transforms voxel indexes to corresponding streamline coordinates in
     voxmm.
     """
-    ref_affine = nib_img.get_affine()
-    ref_shape = nib_img.get_shape()
-    ref_zooms = np.array(nib_img.get_header().get_zooms())
+    if nib_img is None:
+        if (volume_shape is None or volume_voxel_size is None or volume_affine is None):
+            raise ValueError("Must provide a nibel image or volume description")
+        ref_affine = volume_affine
+        ref_shape = volume_shape
+        ref_zooms = volume_voxel_size
+    else:
+        if not (volume_shape is None and volume_voxel_size is None \
+                and volume_affine is None):
+            warnings.warn("ignoring volume shape/size arguments and using image provided")
+        ref_affine = nib_img.get_affine()
+        ref_shape = nib_img.get_shape()
+        ref_zooms = np.array(nib_img.get_header().get_zooms())
     if np.any(ref_affine[(0,1,2),(0,1,2)] == 0): raise ValueError("Invalid affine")
     
     # Flip voxels to desired trk orientation

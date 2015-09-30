@@ -2,7 +2,7 @@
 from nibabel import trackvis
 import numpy as np
 from copy import deepcopy
-from ..streamlines import track_math
+from ..streamlines import track_math,qsdr_2mm_trk_header
 from ..volumes.mask_dataset import MaskDataset
 from collections import defaultdict
 import cPickle as pickle
@@ -219,17 +219,16 @@ class TrackDataset(HasTraits):
                     fl = open(fname,"r")
                 streams, self.header = trackvis.read(fl)
                 # Convert voxmm to ijk
-                self.set_tracks(np.array([stream[0] for stream in streams],
-                                     dtype=np.object))
+                self.set_tracks(np.asanyarray([stream[0] for stream in streams]))
                 fl.close()
                 # Check for scalars, support them someday
                 if self.header['n_scalars'] > 0:
                     print "WARNING: Ignoring track scalars in %s"%fname
             elif fname.endswith("txt"):
                 fop = open(fname,"r")
-                self.set_tracks( np.array(
+                self.set_tracks( np.asanyarray(
                     [np.array(map(float, line.strip().split())).reshape(-1,3) for \
-                     line in fop ], dtype=np.object ))
+                     line in fop ] ))
             elif fname.endswith("mat"):
                 pass
 
@@ -308,7 +307,7 @@ class TrackDataset(HasTraits):
             elif type(tracklist[0]) == np.ndarray:
                 # it is a list of arrays
                 #print "Setting new tracks from list of tracks"
-                new_tracks = np.array(tracklist,dtype=np.object)
+                new_tracks = np.asanyarray(tracklist)
         elif type(tracklist) == np.ndarray:
             if not tracklist.size: return
             if tracklist.dtype in (object,np.float64):
@@ -472,28 +471,13 @@ class TrackDataset(HasTraits):
                                        )
             return roi_fibers, set(fail_fibers.tolist())
 
-    def hash_voxels_to_tracks(self, **kwargs):
-        """
-        specify a volume for streamlines to get linked to.
-        """
-        kwargs["return_coordinates"] = False
-        ijk_tracks = track_math.streamlines_to_ijk(self.tracks, trackvis_header=self.header,
-                                                   **kwargs)
-        
-        # index tracks by the voxels they pass through
-        tracks_at_ijk = defaultdict(set)
-        for trknum, ijk in enumerate(ijk_tracks):
-            data = set([trknum])
-            for _ijk in ijk:
-                tracks_at_ijk[tuple(_ijk)].update(data)
-        self.tracks_at_ijk = tracks_at_ijk
 
     def save(self,fname,use_mni_header=False,use_qsdr_header=False):
         """Save the object as a .trk file"""
         if use_mni_header:
             header = mni_hdr
         elif use_qsdr_header:
-            header=qsdr_hdr
+            header=qsdr_2mm_trk_header
         else:
             header= self.header
             
@@ -503,14 +487,6 @@ class TrackDataset(HasTraits):
             np.array(header)
         )
         
-    def dump_voxel_track_lookup(self, output,**kwargs):
-        """dumps this TrackDataset with all its lookup tables
-        into a binary pickle file.
-        """
-        self.hash_voxels_to_tracks(**kwargs)
-        fop = open(output,"wb")
-        pickle.dump(self,fop,pickle.HIGHEST_PROTOCOL)
-        fop.close()
 
 
     #==================================
@@ -569,7 +545,7 @@ class TrackDataset(HasTraits):
             return
 
         # TODO: Make scaling automatic
-        self.x,self.y,self.z = np.vstack(allpts).T/2
+        self.x,self.y,self.z = np.vstack(allpts).T
         #self.x,self.y,self.z = np.vstack(allpts).T
         self.links = np.vstack(connect)
 

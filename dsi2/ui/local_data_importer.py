@@ -41,14 +41,8 @@ def create_missing_files(scan):
     
     # Perform all operations necessary to get labels from each label item
     scan.label_streamlines()
-    
-    # 
-    if not os.path.isabs(scan.pkl_trk_path):
-        abs_pkl_trk_file = os.path.join(output_dir,scan.pkl_trk_path)
-    else:
-        abs_pkl_trk_file = scan.pkl_trk_path
-    print "\t+ Dumping MNI152 hash table"
-    tds.tds.dump_qsdr2MNI_track_lookup(abs_pkl_file,abs_pkl_trk_file)
+    # write out a trk file that's usable by dsi studio
+    scan.save_streamline_lookup_in_template_space()
     return True
 
 
@@ -85,6 +79,7 @@ class LocalDataImporter(HasTraits):
     input_directory = File()
     output_directory = File()
     n_processors = Int(1)
+    overwrite = Bool(False)
     def _connect_to_mongod_fired(self):
         self.mongo_creator.edit_traits()
         
@@ -102,14 +97,16 @@ class LocalDataImporter(HasTraits):
           Scan(pkl_dir=self.output_directory,
                data_dir="", **d) for d in jdata]
         
-    def _save_fired(self):
+    def save_json(self):
         json_data = [scan.to_json() for scan in self.datasets]
         with open(self.json_file,"w") as outfile:
             json.dump(json_data,outfile,indent=4)
         print "Saved", self.json_file
-        pass
-    
-    def _process_inputs_fired(self):
+        
+    def _save_fired(self):
+        self.save_json()
+        
+    def process_inputs(self):
         print "Processing input data"
         if self.n_processors > 1:
             print "Using %d processors" % self.n_processors
@@ -121,6 +118,9 @@ class LocalDataImporter(HasTraits):
             for scan in self.datasets:
                 create_missing_files(scan)
         print "Finished!"
+    
+    def _process_inputs_fired(self):
+        self.process_inputs()
     
     def _upload_to_mongodb_fired(self):
         print "Connecting to mongodb"
@@ -159,7 +159,12 @@ class LocalDataImporter(HasTraits):
                 orientation="horizontal",
                 show_labels=False
                 ),
-            Item("n_processors"),
+            Group(
+                Item("overwrite"),
+                Item("n_processors"),
+                orientation="horizontal",
+                show_labels=True
+                ),
         resizable=True,
         width=900,
         height=500,
