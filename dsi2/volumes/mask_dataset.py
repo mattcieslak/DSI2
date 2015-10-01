@@ -3,10 +3,12 @@ import os, re, sys
 import numpy as np
 import nibabel as nib
 import subprocess
+import warnings
 from dsi2.config import dsi2_data_path
+from skimage.measure import marching_cubes, mesh_surface_area
 
 class MaskDataset(object):
-    def __init__(self, fpath, label_table=None,secondary_msk=None):
+    def __init__(self, volume, region_int_labels=[], region_names=[]):
         """ Holds a 3d Mask image and offers operations on its grid.
         Parameters
         ----------
@@ -21,50 +23,32 @@ class MaskDataset(object):
 
         And a lookup tables will be created for ROIname<->id<->voxel_ijk's
         """
-        # Load actual data
-        self.dset = nib.load(fpath)
+        if isinstance(volume, basestring):
+            self.dset = nib.load(volume)
+        else:
+            self.dset = volume
+        self.voxel_size = self.dset.get_header().get_zooms()
         self.data = self.dset.get_data()
-        self.in_mask_voxel_ijk = np.array(np.nonzero(self.data)).T
         self.roi_ids = []
         self.roi_names = []
         self.roi_ijk = {}
-
-        if secondary_msk:
-            try:
-                nim = nib.load(secondary_mask)
-            except:
-                print "ERROR: unable to load",secondary_msk
-                sys.exit(1)
-            # apply mask to the atlas's data
-            msk2 = nim.get_data()
-            oldsum = np.sum(self.data)
-            self.data = (msk2.get_data()>0)*self.data
-            newsum = np.sum(self.data)
-            if oldsum == newsum:
-                print "WARNING: masking operation did not change the data"
-            elif newsum == 0:
-                print "FATAL: no voxels survive secondary masking"
-                sys.exit(1)
-
-        if label_table is not None:
-            # Load the roi_id table
-            fop = open(label_table,'r')
-            for line in fop:
-                try:
-                    spl = line.split()
-                    roi_id = int(spl[0])
-                    roi_name = " ".join(spl[1:])
-                except:
-                    print "Unable to label regions, improper file format"
-                    break
-                self.roi_ids.append(roi_id)
-                self.roi_names.append(roi_name)
-                self.roi_ijk[roi_id] = map(tuple,np.array(np.nonzero(self.data==roi_id)).T)
-        else:
+        
+        # Configure the region ints and names
+        if not len(region_int_labels):
             for _id in np.unique(self.data[self.data>0]).astype(int):
                 self.roi_ids.append(_id)
+            if not len(region_names):
+                warnings.warn("No usable region names provided - making them up")
                 self.roi_names.append("region%i"%_id)
-                self.roi_ijk[_id] = map(tuple,np.array(np.nonzero(self.data==_id)).T)
+            else:
+                self.roi_names=region_names
+        else:
+            if not len(region_names) == len(region_int_labels):
+                raise ValueError("region_names does not match region_int_labels")
+            self.roi_ids = region_int_labels
+            self.roi_names = region_names
+        for _id in self.roi_ids:        
+            self.roi_ijk[_id] = np.array(np.nonzero(self.data==_id)).T
 
     def empty_copy(self):
         """Returns an empty (all zero) NIfTI-1 file of the same shape and affine
@@ -90,8 +74,43 @@ class MaskDataset(object):
 
     def region_centers(self):
         """Returns an n_rois x 3 ndarray of ROi centers"""
-        return np.row_stack(
-           [np.array(self.get_roi_ijk(roi)).mean(axis=0) for roi in self.roi_ids])
+        centers = []        
+        for roi in self.roi_ids:
+            voxels = self.get_roi_ijk(roi)
+            if voxels.shape == (0,):
+                centers.append(-np.ones(3))
+            else:
+                centers.append(voxels.mean(axis=0))
+        return np.array(centers)
+    
+    def region_volume(self):
+        """Returns an n_rois x 3 ndarray of ROi centers"""
+        voxel_volume = np.prod(self.voxel_size)
+        return np.array(
+           [self.get_roi_ijk(roi).shape[0] * voxel_volume for roi in self.roi_ids])
+    
+    def compute_surface_area(self):
+        surface_area = []
+        for roi_id in self.roi_ids:
+            msk = (self.data == roi_id).astype(np.int)
+            if msk.sum() == 0:
+                surface_area.append(0)
+                continue
+            verts, faces = marching_cubes(msk,spacing=self.voxel_size)
+            surface_area.append(
+                mesh_surface_area(verts,faces))
+        return np.array(surface_area)
+            
+    def get_stats(self):
+        surface_area = self.compute_surface_area()
+        region_centers = self.region_centers()
+        region_volume = region_volume()
+        return {
+            "surface_area_mm2":surface_area, 
+            "region_centers_voxel_coords":region_centers, 
+             "region_volume_mm3":region_volume
+            }
+            
 
 def get_MNI_wm_mask():
     return MaskDataset(os.path.join(dsi2_data_path, "MNI_BRAIN_MASK_FLOAT.nii.gz"))

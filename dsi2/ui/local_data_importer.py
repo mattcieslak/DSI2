@@ -6,7 +6,7 @@ from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      on_trait_change, Button, Set, File, Int, Bool, cached_property
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
-     CheckListEditor, ObjectColumn
+     CheckListEditor, ObjectColumn, SetEditor
 from ..database.traited_query import Scan
 from ..streamlines.track_dataset import TrackDataset
 from ..streamlines.track_math import connection_ids_from_tracks
@@ -41,6 +41,8 @@ def create_missing_files(scan):
     
     # Perform all operations necessary to get labels from each label item
     scan.label_streamlines()
+    # Read in aux data for streamlines
+    scan.load_scalars()
     # write out a trk file that's usable by dsi studio
     scan.save_streamline_lookup_in_template_space()
     return True
@@ -63,6 +65,18 @@ scan_table = TableEditor(
     )
 
 
+class ConnectivityMatrixCalculator(HasTraits):
+    unord_ma_set = List( editor = SetEditor(
+        values = [ "Streamline Count", 'Scalar(s) Mean', 'Scalar(s) Std. Dev',
+                         'Scalar(s) Median',  "Scalar(s) MAD",
+                         "Length Mean", 'Length Median',
+                         "Length Std. Dev", "Length MAD",
+                         "Streamline Volume", "Streamline Density Mean",
+                         "Streamline Density Median"],
+        left_column_title  = 'Available Fruit',
+        right_column_title = 'Exotic Fruit Bowl' ) )    
+
+
 
 class LocalDataImporter(HasTraits):
     """
@@ -75,7 +89,7 @@ class LocalDataImporter(HasTraits):
     mongo_creator = Instance(MongoCreator)
     upload_to_mongodb = Button()
     connect_to_mongod = Button()
-    process_inputs = Button()
+    b_process_inputs = Button()
     input_directory = File()
     output_directory = File()
     n_processors = Int(1)
@@ -119,7 +133,7 @@ class LocalDataImporter(HasTraits):
                 create_missing_files(scan)
         print "Finished!"
     
-    def _process_inputs_fired(self):
+    def _b_process_inputs_fired(self):
         self.process_inputs()
     
     def _upload_to_mongodb_fired(self):
@@ -153,7 +167,7 @@ class LocalDataImporter(HasTraits):
                 ),
             Group(
                 Item("save"),
-                Item("process_inputs"),
+                Item("b_process_inputs"),
                 Item("connect_to_mongod"),
                 Item("upload_to_mongodb"),
                 orientation="horizontal",

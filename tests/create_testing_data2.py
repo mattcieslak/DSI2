@@ -56,7 +56,6 @@ def simulated_connection(nib_atlas_img, output_trk_filename="",
     regB_voxels = [np.array(np.nonzero(label_cube == target_regions[1])).T]
     regB_streamline_coords = voxels_to_streamlines(regB_voxels,nib_atlas_img,STREAMLINE_ORI)[0]
     
-    #np.random.seed(0)
     streamlines = []
     regA_choices = np.random.choice(np.arange(len(regA_streamline_coords)),n_streamlines)
     regB_choices = np.random.choice(np.arange(len(regB_streamline_coords)),n_streamlines)
@@ -140,7 +139,15 @@ def simulated_subject(droot,subject_number):
             pkl_trk_path=pkl_trk_pth
     )
     
-    
+def generate_scalars_files(streamlines,out_txtfile_name):
+    """
+    generates text files like DSI Studio for GFA/QA/etc
+    """
+    fop = open(out_txtfile_name,"w")
+    for nstream, stream in enumerate(streamlines):
+        fop.write(" ".join([str(nstream)] * len(stream)) + "\n")
+    fop.close()
+
 def simulated_custom_template_subject(droot,subject_number,template_volume_path,
                                       volume_affine,volume_shape,
                                       volume_voxel_size):
@@ -170,12 +177,32 @@ def simulated_custom_template_subject(droot,subject_number,template_volume_path,
         
     # generate the streamlines
     chosen_atlas = random.choice(scan.track_label_items)
-    targeted_regions = simulated_connection(
+    targeted_regions, streamlines = simulated_connection(
                   nib.load(chosen_atlas.template_volume_path),
-                  output_trk_filename=scan.trk_file)
+                  output_trk_filename=scan.trk_file, return_streamlines=True)
     # Attach the correct answer to the chosen label dataset
     chosen_atlas.targeted_regions = targeted_regions
+    
+    # Generate some scalar data
+    for scalar in ["gfa", "qa"]:
+        scalar_txt = op.join(subjdir, scalar+".txt")
+        generate_scalars_files(streamlines,scalar_txt)
+        scan.track_scalar_items.append(
+            TrackScalarSource(
+                name=scalar,
+                txt_path=scalar_txt,
+                numpy_path=scalar_txt + ".npy"
+                )
+            )
     return scan
+
+def check_scalars(scan):
+    for scalar in scan.track_scalar_items:
+        assert op.exists(scalar.numpy_path)
+        vals = scalar.get_scalars()
+        assert np.all(vals == np.arange(len(vals)))
+    return True
+
 
 def check_mapping(scans, test_data_importer):
     tds = TrackDataSource(track_datasets = [scan.get_track_dataset() for \
@@ -219,6 +246,9 @@ def test_custom_template():
     ldi.process_inputs()
     ldi.json_file = json_out
     ldi.save_json()
+    
+    for scan in ldi.datasets:
+        assert check_scalars(scan)
     
     test_data_importer = LocalDataImporter(json_file=json_out)
     

@@ -41,8 +41,7 @@ class TrackLabelSource(HasTraits):
     scalars = Array
 
     def load_array(self):
-        self.scalars = np.load(
-            os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
+        self.scalars = np.load(self.numpy_path).astype(np.uint64)
         return self.scalars
     
     @on_trait_change("b0_volume_path")
@@ -87,19 +86,18 @@ class TrackScalarSource(HasTraits):
     numpy_path = File("")
     txt_path = File("")
     scalars = Array
+    
+    def __init__(self,**traits):
+        super(TrackScalarSource,self).__init__(**traits)
+        self.__scalars = None
 
     def load_array(self):
-        self.scalars = np.load(
-            os.path.join(self.base_dir, self.numpy_path)).astype(np.uint64)
+        self.scalars = np.load(self.numpy_path)
         return self.scalars
     
-    @on_trait_change("b0_volume_path")
-    def update_params(self):
-        if len(self.parameters) == 0:
-            self.parameters = get_builtin_atlas_parameters(self.b0_volume_path)
-        print self.parameters
         
     def get_scalars(self):
+        if not self.__scalars is None: return self.__scalars
         # If the array already exists in numpy format, use it
         if os.path.exists(self.numpy_path):
             return self.load_array()
@@ -118,7 +116,9 @@ class TrackScalarSource(HasTraits):
         _scalars = np.array(
             [np.fromstring(line,sep=" ").mean() for line in fop] )
         fop.close()
-        return _scalars
+        np.save(self.numpy_path, _scalars)
+        self.__scalars = _scalars
+        return self.__scalars
                 
         
     def to_json(self):
@@ -245,6 +245,7 @@ class Scan(Dataset):
     # Lazy load the data for labelline
     #streamlines =Instance(Any()) 
     #voxelized_streamlines = Instance(Any())
+    from_pkl= Bool(False)
     
     # Specify the volume associated with 
     trk_space       = Enum("qsdr", "mni","custom","native") # Which space is it in?
@@ -375,9 +376,9 @@ class Scan(Dataset):
                 regions = get_region_ints_from_graphml(graphml)
     
             # Save it.
-            tds = self.__get_streamlines()
+            tds = self.get_streamlines()
             conn_ids = connection_ids_from_voxel_coordinates(
-                                                                  self.__get_voxelized_streamlines(),
+                                                                  self.get_voxel_coordinate_streamlines(),
                                                                   mds.dset.get_data(),
                                                                   save_npy=npy_path,
                                                                   atlas_label_int_array=regions)
@@ -424,6 +425,7 @@ class Scan(Dataset):
         super(Scan,self).__init__(**traits)
         self.__streamlines = None
         self.__voxelized_streamlines = None
+        self.__voxel_coordinate_streamlines = None
         
         self.track_label_items = \
             [TrackLabelSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
@@ -441,7 +443,7 @@ class Scan(Dataset):
     def load_template_vol(self):
         """Loads the template voxel grid and makes sure all atlases match"""
         # Configure the output volume space
-        if self.streamline_space == "custom_template":
+        if self.streamline_space == "custom template":
             try:
                 template_vol = nib.load(self.template_volume_path)
             except Exception,e:
@@ -497,9 +499,14 @@ class Scan(Dataset):
     def __len__(self):
         return 1
     
-    def __get_voxelized_streamlines(self):
+    def get_voxelized_streamlines(self):
         if self.__voxelized_streamlines is None:
-            streamlines = self.__get_streamlines()
+            _ = self.get_voxel_coordinate_streamlines()
+        return self.__voxelized_streamlines
+    
+    def get_voxel_coordinate_streamlines(self):
+        if self.__voxel_coordinate_streamlines is None:
+            streamlines = self.get_streamlines()
             self.__voxel_coordinate_streamlines, self.__voxelized_streamlines = \
                 streamlines_to_ijk(
                                            streamlines.tracks, trackvis_header=streamlines.header,
@@ -512,7 +519,7 @@ class Scan(Dataset):
         return self.__voxelized_streamlines
     
     
-    def __get_streamlines(self):
+    def get_streamlines(self):
         if self.__streamlines is None:
             print "getting streamlines"
             from dsi2.streamlines.track_dataset import TrackDataset
@@ -522,6 +529,7 @@ class Scan(Dataset):
                 fop = open(pkl_file, "rb")
                 _trkds = pickle.load(fop)
                 _trkds.properties = self
+                self.from_pkl = True
             elif os.path.exists(self.trk_file):
                 _trkds = TrackDataset(self.trk_file, properties=self)
             self.__streamlines=_trkds
@@ -531,12 +539,12 @@ class Scan(Dataset):
     def load_scalars(self):
         # Loop over the scalar items
         for scalar_item in self.track_scalar_items:
-            setattr(self.__get_streamlines(),
+            setattr(self.get_streamlines(),
                     scalar_item.name,
                     scalar_item.get_scalars())
                 
     def get_track_dataset(self):
-        return self.__get_streamlines()
+        return self.get_streamlines()
     
     def to_json(self):
         track_labels = [tl.to_json() for tl in self.track_label_items]
@@ -564,6 +572,7 @@ class Scan(Dataset):
             "bvecs": self.bvecs,
             "label": self.label,
             "streamline_space": self.streamline_space,
+            "streamline_space_name": self.streamline_space_name,
             "pkl_trk_path":self.pkl_trk_path,
             "pkl_path":self.pkl_path,
             "trk_file":self.trk_file,
