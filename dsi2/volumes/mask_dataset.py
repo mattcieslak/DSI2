@@ -38,7 +38,7 @@ class MaskDataset(object):
             for _id in np.unique(self.data[self.data>0]).astype(int):
                 self.roi_ids.append(_id)
             if not len(region_names):
-                warnings.warn("No usable region names provided - making them up")
+                #warnings.warn("No usable region names provided - making them up")
                 self.roi_names.append("region%i"%_id)
             else:
                 self.roi_names=region_names
@@ -96,7 +96,7 @@ class MaskDataset(object):
             if msk.sum() == 0:
                 surface_area.append(0)
                 continue
-            verts, faces = marching_cubes(msk,spacing=self.voxel_size)
+            verts, faces = marching_cubes(msk,0,spacing=self.voxel_size)
             surface_area.append(
                 mesh_surface_area(verts,faces))
         return np.array(surface_area)
@@ -104,7 +104,7 @@ class MaskDataset(object):
     def get_stats(self):
         surface_area = self.compute_surface_area()
         region_centers = self.region_centers()
-        region_volume = region_volume()
+        region_volume = self.region_volume()
         return {
             "surface_area_mm2":surface_area, 
             "region_centers_voxel_coords":region_centers, 

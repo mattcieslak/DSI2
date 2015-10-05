@@ -148,14 +148,13 @@ def streamlines_to_ijk(streams, target_volume=None, trackvis_header=None,
         coords = stream / trackvis_header['voxel_size'] + 0.5
         ijk.append(coords)
     if return_coordinates == "voxel_coordinates":
-        return np.array(ijk)#,dtype=np.object)
+        return np.array(ijk)
     voxel_idx = []
     for stream in ijk:
         voxel_idx.append(
             remove_sequential_duplicates(stream.astype(np.int)))
     if return_coordinates == "voxel_index":
-        return np.array(voxel_idx)#, dtype=np.object)
-    #return np.array(ijk),dtype=np.object), np.array(voxel_idx)
+        return np.array(voxel_idx)
     return np.array(ijk), np.array(voxel_idx)
 
 def streamline_voxel_lookup(voxelized_streamlines):
@@ -195,8 +194,12 @@ def streamlines_to_itk_world_coordinates(streams, target_volume,trackvis_header=
     
     return transform_streamlines(ijk_streamlines,final_affine)
 
-def voxels_to_streamlines(voxel_coordinates, nib_img=None, volume_affine=None,
-                          volume_shape=None,volume_voxel_size=None,  voxmm_orientation="LPS"):
+def voxels_to_streamlines(*args, **kwargs):
+    return list(voxels_to_streamline_generator(*args, **kwargs))
+
+def voxels_to_streamline_generator(voxel_coordinates, nib_img=None, volume_affine=None,
+                          volume_shape=None,volume_voxel_size=None,  voxmm_orientation="LPS",
+                          for_writing=False):
     """
     Transforms voxel indexes to corresponding streamline coordinates in
     voxmm.
@@ -236,13 +239,16 @@ def voxels_to_streamlines(voxel_coordinates, nib_img=None, volume_affine=None,
     if flipk:
         ijk_affine[2,2] = -1
         ijk_affine[2,-1] = ref_shape[2] -1
-    if any([flipi, flipj,flipk]):
-        corrected_ijk = transform_streamlines(voxel_coordinates, ijk_affine)
-    else:
-        corrected_ijk = voxel_coordinates
         
-    # apply the voxel size scaling to the voxel coordinates
-    return [ref_zooms *  cijk   for cijk in corrected_ijk]
+    for  stream in voxel_coordinates:
+        if any([flipi, flipj,flipk]):
+            corrected_ijk = transform_streamlines(stream, ijk_affine)
+        else:
+            corrected_ijk = stream
+        if for_writing:
+            yield  ref_zooms*corrected_ijk, None, None
+        else:
+            yield  ref_zooms*corrected_ijk
 
 def remove_duplicates(a):
     is_uniq = np.array([True]*a.shape[0])

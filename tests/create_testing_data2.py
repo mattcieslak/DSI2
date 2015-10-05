@@ -148,6 +148,50 @@ def generate_scalars_files(streamlines,out_txtfile_name):
         fop.write(" ".join([str(nstream)] * len(stream)) + "\n")
     fop.close()
 
+def simulated_native_space_subject(droot,subject_number,
+                                      volume_affine,volume_shape,
+                                      volume_voxel_size):
+    # Set the streamline space and path to custom template
+    scan = simulated_subject(droot, subject_number)
+    subjdir = op.join(droot,scan.scan_id)
+    scan.streamline_space = "native"
+    
+    # generate the atlases
+    for scale in [33,60,125,250]:
+        native_nii_path = op.join(subjdir,scan.scan_id+"b0.scale%d.nii.gz" % scale)
+        img,_ = simulated_atlas(scale=scale, volume_shape=volume_shape, 
+                        volume_affine=volume_affine)
+        img.to_filename(native_nii_path)
+        scan.track_label_items.append(
+                    TrackLabelSource(
+                        name="Lausanne2008",
+                        parameters={"scale":scale,"thick":1},
+                        numpy_path=op.join(subjdir,"b0.scale%d.npy" % scale),
+                        b0_volume_path=native_nii_path
+                        )
+                    )
+        
+    # generate the streamlines
+    chosen_atlas = random.choice(scan.track_label_items)
+    targeted_regions, streamlines = simulated_connection(
+                  nib.load(chosen_atlas.b0_volume_path),
+                  output_trk_filename=scan.trk_file, return_streamlines=True)
+    # Attach the correct answer to the chosen label dataset
+    chosen_atlas.targeted_regions = targeted_regions
+    
+    # Generate some scalar data
+    for scalar in ["gfa", "qa"]:
+        scalar_txt = op.join(subjdir, scalar+".b0.txt")
+        generate_scalars_files(streamlines,scalar_txt)
+        scan.track_scalar_items.append(
+            TrackScalarSource(
+                name=scalar,
+                txt_path=scalar_txt,
+                numpy_path=scalar_txt + ".b0.npy"
+                )
+            )
+    return scan
+
 def simulated_custom_template_subject(droot,subject_number,template_volume_path,
                                       volume_affine,volume_shape,
                                       volume_voxel_size):
@@ -230,6 +274,26 @@ volume_affine = np.array([[2.,0.,0.,0.],
 volume_voxel_size= np.array([2.,2.,2.])
 nscans=5
 
+def test_native_space():
+    
+    json_out = os.path.join(test_input_data,"native_space.json")
+    scans = [simulated_native_space_subject(test_input_data,x, volume_affine,
+                                volume_shape,volume_voxel_size) for x in xrange(nscans)]    
+    
+    # Test the local data importer
+    ldi = LocalDataImporter(datasets=scans)
+    ldi.process_inputs()
+    ldi.json_file = json_out
+    ldi.save_json()
+    
+    for scan in ldi.datasets:
+        assert check_scalars(scan)
+    
+    test_data_importer = LocalDataImporter(json_file=json_out)
+    
+    check_mapping(scans, test_data_importer)
+    
+    
 def test_custom_template():
     
     json_out = os.path.join(test_input_data,"custom_template.json")

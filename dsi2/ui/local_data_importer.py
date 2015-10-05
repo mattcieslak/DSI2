@@ -16,10 +16,108 @@ import numpy as np
 import multiprocessing
 from dsi2.volumes import get_region_ints_from_graphml, b0_to_qsdr_map
 from dsi2.database.mongodb import MongoCreator
+from dsi2.database.mongodb import upload_local_scan, init_db
 
+import time                                                
 
+def timeit(method):
 
-def create_missing_files(scan):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+
+        print '%r: %2.2f sec' % \
+              (method.__name__, te-ts)
+        return result
+
+    return timed
+
+from dipy.tracking.metrics import length as _length
+@timeit
+def length(tds):
+    return np.array(
+        [_length(stream) for stream in tds])
+
+from dipy.tracking.metrics import winding as _winding
+@timeit
+def winding(tds):
+    return np.array(
+        [_winding(stream) for stream in tds])
+
+from dipy.tracking.metrics import mean_curvature
+@timeit
+def curvature(tds):
+    return np.array(
+        [mean_curvature(stream) for stream in tds])
+
+from dipy.tracking.metrics import center_of_mass as _center_of_mass
+@timeit
+def center_of_mass(tds):
+    return np.array(
+        [_center_of_mass(stream) for stream in tds])
+
+    
+function_registry = {
+        "Length (voxels)":length, 
+        "Winding":winding, 
+        "Curvature":curvature,
+        "Center of Mass":center_of_mass,
+        #"Voxel Density":voxel_density
+}
+
+def matlab_variable(label_item):
+    return  "_".join(
+        ["%s_%s" % (k,v) for k,v in label_item.parameters.iteritems()]) + "_"
+
+def measure_variable(s):
+    return s.replace(" ","_").replace("(","").replace(")","").lower()
+
+import multiprocessing, random, sys, os, time
+# found http://stackoverflow.com/questions/23937189/how-do-i-use-subprocesses-to-force-python-to-release-memory/24126616#24126616
+def _get_voxelized_and_properties(scan, state, measures):
+    t0 = time.time()
+    streamline_measures = {}
+    streamlines = scan.get_voxel_coordinate_streamlines()
+    # Calculate the measurements requested
+    for func_name in measures:
+        save_name = measure_variable(func_name)
+        filename = scan.pkl_path+"."+save_name+".npy"
+        if os.path.exists(filename):
+            print "Loading", filename, "from disk" 
+            streamline_measures[save_name] = np.load(filename)
+        else:
+            print "running",  func_name
+            computation = function_registry[func_name]
+            result = computation(streamlines)
+            print "saving", filename
+            np.save(filename,result)
+            streamline_measures[save_name] = result
+    state['streamline_measures'] = streamline_measures
+    state['voxelized_streamlines'] = scan.get_voxelized_streamlines()
+    t1 = time.time()
+    state['time'] = t1 - t0
+
+def create_connectivity_matrix(scan):
+    print scan.connectivity_matrix_path
+    if os.path.exists(scan.connectivity_matrix_path):
+        print scan.connectivity_matrix_path, "exists - skipping"
+        return
+    from dsi2.aggregation.connectivity_matrix import ConnectivityMatrixCalculator
+    manager = multiprocessing.Manager()
+    state = manager.dict(streamline_properties={},voxelized_streamlines=[],time=0)  # shared state
+    p = multiprocessing.Process(target=_get_voxelized_and_properties, args=(scan,state,function_registry.keys()))
+    p.start()
+    p.join()
+    print 'time to sort: %.3f' % state['time']
+    cmc= ConnectivityMatrixCalculator(
+                        voxelized_steramlines=state['voxelized_streamlines'],
+                        streamline_properties=state['streamline_properties'],
+                        scan = scan)
+    cmc.process_connectivity()
+    cmc.save()
+
+def create_missing_files(scan,overwrite=False):
     """
     """
 
@@ -42,9 +140,10 @@ def create_missing_files(scan):
     # Perform all operations necessary to get labels from each label item
     scan.label_streamlines()
     # Read in aux data for streamlines
-    scan.load_scalars()
+    scan.load_streamline_scalars()
     # write out a trk file that's usable by dsi studio
     scan.save_streamline_lookup_in_template_space()
+    scan.clearmem()
     return True
 
 
@@ -64,20 +163,6 @@ scan_table = TableEditor(
     #edit_view_width=500,
     )
 
-
-class ConnectivityMatrixCalculator(HasTraits):
-    unord_ma_set = List( editor = SetEditor(
-        values = [ "Streamline Count", 'Scalar(s) Mean', 'Scalar(s) Std. Dev',
-                         'Scalar(s) Median',  "Scalar(s) MAD",
-                         "Length Mean", 'Length Median',
-                         "Length Std. Dev", "Length MAD",
-                         "Streamline Volume", "Streamline Density Mean",
-                         "Streamline Density Median"],
-        left_column_title  = 'Available Fruit',
-        right_column_title = 'Exotic Fruit Bowl' ) )    
-
-
-
 class LocalDataImporter(HasTraits):
     """
     Holds a list of Scan objects. These can be loaded from
@@ -89,16 +174,35 @@ class LocalDataImporter(HasTraits):
     mongo_creator = Instance(MongoCreator)
     upload_to_mongodb = Button()
     connect_to_mongod = Button()
-    b_process_inputs = Button()
+    b_process_inputs = Button(label="Process Local Data")
+    b_create_connectivity_matrices = Button(label="Create Connectivity Matrices")
     input_directory = File()
     output_directory = File()
     n_processors = Int(1)
     overwrite = Bool(False)
+    downsample_before_upload = Enum("Approximate Polygon","Approdimate MDL","None")
+    
     def _connect_to_mongod_fired(self):
         self.mongo_creator.edit_traits()
         
     def _mongo_creator_default(self):
         return MongoCreator()
+    
+    def create_connectivity_matrices(self):
+        print "Creating connectivity matrices"
+        if self.n_processors > 1:
+            print "Using %d processors" % self.n_processors
+            pool = multiprocessing.Pool(processes=self.n_processors)
+            result = pool.map(create_connectivity_matrix, self.datasets)
+            pool.close()
+            pool.join()
+        else:    
+            for scan in self.datasets:
+                create_connectivity_matrix(scan)
+        print "Finished!"
+    
+    def _b_create_connectivity_matrices_fired(self):
+        self.create_connectivity_matrices()
     
     def _json_file_changed(self):
         if not os.path.exists(self.json_file):
@@ -150,11 +254,10 @@ class LocalDataImporter(HasTraits):
         print "Uploading to MongoDB"
         for scan in self.datasets:
             print "\t+ Uploading", scan.scan_id
-            if not check_scan_for_files(scan):
-                raise ValueError("Missing files found for " + scan.scan_id)
-            upload_succeeded, because = upload_local_scan(db, scan)
-            if not upload_succeeded:
-                raise ValueError(because)
+            p = multiprocessing.Process(target=upload_local_scan, 
+                                        args=(db,scan,self.downsample_before_upload))
+            p.start()
+            p.join()
             
 
     # UI definition for the local db
@@ -170,12 +273,14 @@ class LocalDataImporter(HasTraits):
                 Item("b_process_inputs"),
                 Item("connect_to_mongod"),
                 Item("upload_to_mongodb"),
+                Item("b_create_connectivity_matrices"),
                 orientation="horizontal",
                 show_labels=False
                 ),
             Group(
                 Item("overwrite"),
                 Item("n_processors"),
+                Item("downsample_before_upload"),
                 orientation="horizontal",
                 show_labels=True
                 ),

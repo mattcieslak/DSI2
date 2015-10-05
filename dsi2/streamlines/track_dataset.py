@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import warnings
 from nibabel import trackvis
 import numpy as np
 from copy import deepcopy
@@ -255,8 +256,13 @@ class TrackDataset(HasTraits):
                 warnings.warn("Overwriting header info with keyword arg voxel_size")
                 self.header['dim'] = self.voxel_size
         # Finally, sync the header and attrs
-        self.voxel_size = self.header['voxel_size']
-        self.volume_shape = self.header['dim']
+        try:
+            self.voxel_size = self.header['voxel_size']
+            self.volume_shape = self.header['dim']
+        except Exception, e:
+            warnings.warn("unable to load header")
+            self.voxel_size = np.array([1,1,1])
+            self.volume_shape = np.array([100,100,100])
 
         self.connections = connections
         self.clusters = []

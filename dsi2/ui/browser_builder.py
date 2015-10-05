@@ -3,7 +3,7 @@ import numpy as np
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
-     on_trait_change, Button, Set, File
+     on_trait_change, Button, Set, File, cached_property
 from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn, OKButton, CancelButton
@@ -45,7 +45,7 @@ class BrowserBuilder(HasTraits):
     local_json = File
     local_scans = List([])
     # Connection parameters for mongodb
-    client = Instance(pymongo.MongoClient)
+    client = Property(Instance(pymongo.MongoClient),depends_on="mongo_host,mongo_port")
     mongo_host = Str("127.0.0.1")
     mongo_port = Int(27017)
     db_name=Str("dsi2")
@@ -62,7 +62,8 @@ class BrowserBuilder(HasTraits):
         elif self.data_source == "Local Data":
             self.local_find_datasets()
             
-    def _client_default(self):
+    @cached_property
+    def _get_client(self):
         try:
             client = pymongo.MongoClient("mongodb://%s:%d/" %(
                  self.mongo_host, self.mongo_port))
@@ -71,9 +72,10 @@ class BrowserBuilder(HasTraits):
             try:
                 print "Constructing vanilla client"
                 return pymongo.MongoClient()
-            except:
+            except Exception:
                 return
         
+    
     def mongo_find_datasets(self):
         """ Queries a mongodb instance to find scans that match
         the study

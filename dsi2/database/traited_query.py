@@ -15,7 +15,8 @@ from ..ui.ui_extras import colormaps
 from dsi2.volumes import get_fib, find_graphml_from_filename
 from dsi2.volumes.mask_dataset import MaskDataset
 from dsi2.streamlines.track_math import (streamlines_to_ijk, connection_ids_from_voxel_coordinates, 
-                                         trackvis_header_from_info, voxels_to_streamlines)
+                            remove_sequential_duplicates, trackvis_header_from_info, 
+                            voxels_to_streamlines, voxels_to_streamline_generator,streamline_voxel_lookup)
 import cPickle as pickle
 import re
 from ..volumes import get_builtin_atlas_parameters, get_region_ints_from_graphml
@@ -348,7 +349,7 @@ class Scan(Dataset):
         self.load_template_vol() 
         
         # Load any scalar items associated with the streamlines
-        self. load_streamline_scalars()        
+        self.load_streamline_scalars()        
             
         # Loop over the track labels, creating .npy files as needed
         n_labels = len(self.track_label_items)
@@ -386,46 +387,77 @@ class Scan(Dataset):
             print "\t\t\t*** [%s] %.2f percent streamlines not accounted for by regions"%( 
                                 self.scan_id, 100. * np.sum(conn_ids==0)/len(conn_ids) )
             
-    def save_streamline_lookup_in_template_space(self):
+    def get_voxel_hash(self):
+        if not self._voxel_hash is None: return self._voxel_hash
+        self._voxel_hash = streamline_voxel_lookup(self.get_voxelized_streamlines())
+        return self._voxel_hash
+    
+    def save_streamline_lookup_in_template_space(self,overwrite=False):
         """
         Writes a final .pkl file to disk containing the streamlines and their mapping to
         template voxel voordinates.
         """
         if not len(self.pkl_path): raise AttributeError("No path sepcified for pkl output")
-        ori_x = "R" if self.template_affine[0,0] > 0 else "L"
-        ori_y = "A" if self.template_affine[1,1] > 0 else "P"
-        ori_z = "S" if self.template_affine[2,2] > 0 else "I"
-        output_header = trackvis_header_from_info(ori_x + ori_y + ori_z,
-                                                  self.template_volume_shape,
-                                                  self.template_voxel_size)
-        from dsi2.streamlines.track_dataset import TrackDataset
-        output_tds = TrackDataset(tracks=self.__voxel_coordinate_streamlines,
-                                  header=output_header, coordinate_units="voxels")
-        from dsi2.streamlines.track_math import streamline_voxel_lookup
-        output_tds.tracks_at_ijk = streamline_voxel_lookup(self.__voxelized_streamlines)
-        # Write out the pkl file
-        fop = open(self.pkl_path,"wb")
-        pickle.dump(output_tds,fop,pickle.HIGHEST_PROTOCOL)
-        fop.close()
+        needs_pkl = True
+        if os.path.exists(self.pkl_path):
+            print "pkl "+self.pkl_path + " exists"
+            if not overwrite:
+                needs_pkl = False
+            else: print "overwriting..."
+        if needs_pkl:
+            ori_x = "R" if self.template_affine[0,0] > 0 else "L"
+            ori_y = "A" if self.template_affine[1,1] > 0 else "P"
+            ori_z = "S" if self.template_affine[2,2] > 0 else "I"
+            output_header = trackvis_header_from_info(ori_x + ori_y + ori_z,
+                                                      self.template_volume_shape,
+                                                      self.template_voxel_size)
+            from dsi2.streamlines.track_dataset import TrackDataset
+            output_tds = TrackDataset(tracks=self.get_voxel_coordinate_streamlines(),
+                                      header=output_header, coordinate_units="voxels",properties=self)
+            output_tds.tracks_at_ijk = self.get_voxel_hash()
+            # Write out the pkl file
+            print "saving pkl file"
+            fop = open(self.pkl_path,"wb")
+            pickle.dump(output_tds,fop,pickle.HIGHEST_PROTOCOL)
+            fop.close()
         
         # Save out a trk file that is readable by dsi studio
+        print "Saving final streamlines in DSI Studio format"
         if len(self.pkl_trk_path):
-            dsi_studio_streamlines = voxels_to_streamlines(self.__voxel_coordinate_streamlines,
-                                        volume_affine=self.template_affine, volume_shape=self.template_volume_shape,
-                                        volume_voxel_size=self.template_voxel_size, voxmm_orientation="LPS")
-            dsi_studio_header = trackvis_header_from_info("LPS", self.template_volume_shape,
-                                                          self.template_voxel_size)
-            dsi_studio_tds = TrackDataset(tracks=dsi_studio_streamlines,header=dsi_studio_header)
-            dsi_studio_tds.save(self.pkl_trk_path)
+            needs_trk = True
+            if os.path.exists(self.pkl_path):
+                print "pkl trk exists"
+                if overwrite: print "overwriting..."
+                else: needs_trk = False
+            if needs_trk:
+                dsi_studio_header = trackvis_header_from_info("LPS", self.template_volume_shape,
+                                                              self.template_voxel_size)
+                nib.trackvis.write(self.pkl_trk_path, voxels_to_streamline_generator(self.get_voxel_coordinate_streamlines(),
+                                            volume_affine=self.template_affine, volume_shape=self.template_volume_shape,
+                                            volume_voxel_size=self.template_voxel_size, voxmm_orientation="LPS",for_writing=True),
+                                   dsi_studio_header)
+            
+    def clearmem(self):
+        del self._streamlines
+        self._streamlines = None
+        del self._voxel_coordinate_streamlines
+        self._voxel_coordinate_streamlines = None
+        del self._voxelized_streamlines
+        self._voxelized_streamlines = None
+        del self._voxel_hash
+        self._voxel_hash = None
+        
+            
         
     def __init__(self,**traits):
         """
         Holds the information OF A SINGLE SCAN.
         """
         super(Scan,self).__init__(**traits)
-        self.__streamlines = None
-        self.__voxelized_streamlines = None
-        self.__voxel_coordinate_streamlines = None
+        self._streamlines = None
+        self._voxelized_streamlines = None
+        self._voxel_coordinate_streamlines = None
+        self._voxel_hash = None
         
         self.track_label_items = \
             [TrackLabelSource(base_dir=self.pkl_dir, parent=self, **item) for item in \
@@ -500,48 +532,53 @@ class Scan(Dataset):
         return 1
     
     def get_voxelized_streamlines(self):
-        if self.__voxelized_streamlines is None:
-            _ = self.get_voxel_coordinate_streamlines()
-        return self.__voxelized_streamlines
+        if self._voxelized_streamlines is None:
+            print "calculating voxelized streamlines"
+            self._voxelized_streamlines = np.array([
+                remove_sequential_duplicates(stream.astype(np.int)) for stream in \
+                                                                self.get_voxel_coordinate_streamlines()])
+        return self._voxelized_streamlines
     
     def get_voxel_coordinate_streamlines(self):
-        if self.__voxel_coordinate_streamlines is None:
+        if self._voxel_coordinate_streamlines is None:
             streamlines = self.get_streamlines()
-            self.__voxel_coordinate_streamlines, self.__voxelized_streamlines = \
+            # If loaded from a pkl, we're already in voxel coordinates
+            if self.from_pkl: return streamlines.tracks
+            self._voxel_coordinate_streamlines = \
                 streamlines_to_ijk(
                                            streamlines.tracks, trackvis_header=streamlines.header,
                                            tracking_volume_shape=self.template_volume_shape,
                                            tracking_volume_voxel_size=self.template_voxel_size,
                                            tracking_volume_affine=self.template_affine,
-                                           return_coordinates="both"
-            )
-             
-        return self.__voxelized_streamlines
+                                           return_coordinates="voxel_coordinates")
+        return self._voxel_coordinate_streamlines
     
     
     def get_streamlines(self):
-        if self.__streamlines is None:
-            print "getting streamlines"
-            from dsi2.streamlines.track_dataset import TrackDataset
-            if os.path.exists(self.pkl_path):
-                pkl_file = self.pkl_path
-                print "load:", pkl_file
-                fop = open(pkl_file, "rb")
-                _trkds = pickle.load(fop)
-                _trkds.properties = self
-                self.from_pkl = True
-            elif os.path.exists(self.trk_file):
-                _trkds = TrackDataset(self.trk_file, properties=self)
-            self.__streamlines=_trkds
-            
-        return self.__streamlines
-    
-    def load_scalars(self):
+        if not self._streamlines is None: return self._streamlines
+        print "getting streamlines"
+        from dsi2.streamlines.track_dataset import TrackDataset
+        if os.path.exists(self.pkl_path):
+            pkl_file = self.pkl_path
+            print "load:", pkl_file
+            fop = open(pkl_file, "rb")
+            _trkds = pickle.load(fop)
+            _trkds.properties = self
+            self.from_pkl = True
+        elif os.path.exists(self.trk_file):
+            _trkds = TrackDataset(self.trk_file, properties=self)
+        self._streamlines=_trkds
+        
         # Loop over the scalar items
+        self.load_streamline_scalars()
         for scalar_item in self.track_scalar_items:
-            setattr(self.get_streamlines(),
+            setattr(_trkds,
                     scalar_item.name,
                     scalar_item.get_scalars())
+            
+        print "done." 
+        return self._streamlines
+    
                 
     def get_track_dataset(self):
         return self.get_streamlines()
@@ -579,7 +616,8 @@ class Scan(Dataset):
             "fib_file":self.fib_file,
             "track_labels": track_labels,
             "track_scalars": track_scalars,
-            "software":self.software
+            "software":self.software,
+            "connectivity_matrix_path":self.connectivity_matrix_path
         }
     
     import_view = View(
@@ -647,10 +685,10 @@ class MongoScan(Scan):
             self.header = np.array([0])
         self.scan_id = self.mongo_result["scan_id"]
         self.subject_id = self.mongo_result["subject_id"]
-        self.scan_gender = self.mongo_result["gender"]
-        self.scan_age = self.mongo_result["age"]
+        self.scan_gender = self.mongo_result.get("gender","N")
+        self.scan_age = self.mongo_result.get("age",0)
         self.study = self.mongo_result["study"]
-        self.scan_group = self.mongo_result["group"]
+        self.scan_group = self.mongo_result.get("group","")
         self.smoothing = self.mongo_result["smoothing"]
         self.cutoff_angle = self.mongo_result["cutoff_angle"]
         self.qa_threshold = self.mongo_result["qa_threshold"]
@@ -665,7 +703,7 @@ class MongoScan(Scan):
         self.bvals = self.mongo_result["bvals"]
         self.bvecs = self.mongo_result["bvecs"]
         self.label = self.mongo_result["label"]
-        self.streamline_space = self.mongo_result["streamline_space"]
+        self.streamline_space = self.mongo_result.get("streamline_space","qsdr")
     
         
         

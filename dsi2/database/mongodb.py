@@ -6,6 +6,9 @@ from traitsui.api import View,Group, VGroup, Item
 import logging
 import os
 import subprocess
+import numpy as np
+import cPickle as pickle
+from dipy.tracking.distances import approximate_mdl_trajectory, approx_polygon_track
 
 def init_db(db):
     """
@@ -78,15 +81,25 @@ def upload_atlases(db, trackds, sc):
         return False
     return True
 
-def upload_streamlines(db, trackds, sc):
+def upload_streamlines(db, trackds, sc, downsample_method):
     """
     Inserts the binary streamline data into db.streamlines
     """
+    print "Uploading streamlines using '%s' downsampling" % downsample_method
     try:
         logging.info("Building streamline collection")
         inserts = []
         for ntrk, trk in enumerate(trackds.tracks):
             # continue appending to inserts until it gets too big
+            if downsample_method == "Approximate MDL":
+                _trk = approximate_mdl_trajectory(trk)
+            elif downsample_method == "None":
+                _trk = trk
+            elif downsample_method == "Approximate Polygon":
+                _trk = approx_polygon_track(trk)
+            else:
+                raise ValueError
+            
             if len(inserts) >= 1000:
                 # then insert it and clear inserts
                 db.streamlines.insert(inserts)
@@ -95,7 +108,7 @@ def upload_streamlines(db, trackds, sc):
                 {
                   "scan_id":sc.scan_id,
                   "sl_id": ntrk,
-                  "data":Binary(pickle.dumps(trk,protocol=2))
+                  "data":Binary(pickle.dumps(_trk.astype(np.float16),protocol=2))
                  }
             )
         # Finally, insert the leftovers
@@ -139,42 +152,21 @@ def upload_scan_info(db, trackds, sc):
                 atlas = db.atlases.insert( { "name": label.name, "parameters": label.parameters } )
     
             atlases.append(atlas)
-        db.scans.insert([
-                {
-                    "scan_id":sc.scan_id,
-                    "subject_id":sc.subject_id,
-                    "gender":sc.scan_gender,
-                    "age":sc.scan_age,
-                    "study":sc.study,
-                    "group":sc.scan_group,
-                    "smoothing":sc.smoothing,
-                    "cutoff_angle":sc.cutoff_angle,
-                    "qa_threshold":sc.qa_threshold,
-                    "gfa_threshold":sc.gfa_threshold,
-                    "length_min":sc.length_min,
-                    "length_max":sc.length_max,
-                    "institution":sc.institution,
-                    "reconstruction":sc.reconstruction,
-                    "scanner":sc.scanner,
-                    "n_directions":sc.n_directions,
-                    "max_b_value":sc.max_b_value,
-                    "bvals":sc.bvals,
-                    "bvecs":sc.bvecs,
-                    "label":sc.label,
-                    "streamline_space":sc.streamline_space,
-                    "atlases":list(set(atlases)),
-                    "sls": len(trackds.tracks),
-                    "header":Binary(pickle.dumps(trackds.header,protocol=2)),
-                    "original_json":sc.original_json
-                }
-        ])
+            scan_json = sc.to_json()
+            scan_json["sls"] = len(trackds.tracks)
+            scan_json["atlases"] = list(set(atlases))
+            scan_json['header'] = Binary(pickle.dumps(trackds.header,protocol=2))
+            scan_json['original_json'] = sc.original_json 
+        db.scans.insert(scan_json)
     except Exception, e:
         print "Failed to upload scan info", e
         return False
     return True
 
 
-def upload_local_scan(db, sc):
+def upload_local_scan(db, sc,downsample_method):
+    if not downsample_method in ("Approximate Polygon", "Approximate MDL", "None"):
+        raise ValueError("Unrecognized downsample_method setting")
     logging.info("uploading %s", sc.scan_id)
     try:
         trackds = sc.get_track_dataset()
@@ -186,7 +178,7 @@ def upload_local_scan(db, sc):
         print "failed to upload atlases"
         return False, "upload_atlases"
 
-    if not upload_streamlines(db, trackds, sc):
+    if not upload_streamlines(db, trackds, sc, downsample_method):
         print "failed to upload streamlines"
         return False, "upload_streamlines"
 
@@ -199,6 +191,8 @@ def upload_local_scan(db, sc):
         return False, "upload scan info"
 
     return True, "hooray!"
+
+
 class MongoCreator(HasTraits):
     database_dir = File()
     log_path = File()

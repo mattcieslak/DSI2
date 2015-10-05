@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys, json, os
+from time import time
 # Traits stuff
 from traits.api import HasTraits, Instance, Array, Bool, Dict, Range, \
      Color, List, Int, Property, Any, Function, DelegatesTo, Str, Enum, \
@@ -8,64 +9,53 @@ from traitsui.api import View, Item, VGroup, HGroup, Group, \
      RangeEditor, TableEditor, Handler, Include,HSplit, EnumEditor, HSplit, Action, \
      CheckListEditor, ObjectColumn, SetEditor
 import numpy as np
+from scipy.io.matlab import savemat
 from dsi2.database.traited_query import Scan
 from dsi2.volumes.mask_dataset import MaskDataset
+from collections import defaultdict
+from scipy.sparse import lil_matrix
 """
 Connectivity self.data can calculate many things.  Functions work by returning
 an array with one value per streamline
 """
-
-from dipy.tracking.metrics import length as _length
-def length(tds):
-    return np.array(
-        [_length(stream) for stream in tds.tracks])
-
-from dipy.tracking.metrics import winding as _winding
-def winding(tds):
-    return np.array(
-        [_length(stream) for stream in tds.tracks])
-
-from dipy.tracking.metrics import mean_curvature
-def curvature(tds):
-    return np.array(
-        [mean_curvature(stream) for stream in tds.tracks])
-
-from dipy.tracking.metrics import center_of_mass
-def center_of_mass(tds):
-    return np.array(
-        [center_of_mass(stream) for stream in tds.tracks])
-
-def voxel_density(tds):
-    pass
-    
-function_registry = {
-        "Length (voxels)":length, 
-        "Winding":winding, 
-        "Curvature":curvature,
-        "Center of Mass":center_of_mass,
-        "Voxel Density":voxel_density
-}
-
 def matlab_variable(label_item):
     return  "_".join(
             ["%s_%s" % (k,v) for k,v in label_item.parameters.iteritems()]) + "_"
+
+def voxel_density(list_of_voxel_lists):
+    voxels = defaultdict(int)
+    for voxel_stream in list_of_voxel_lists:
+        for voxel in voxel_stream:
+            voxels[voxel] += 1
+    densities = np.array([v for k,v in voxels.iteritems()])
+    density_median = np.median(densities)    
+    return {
+        "density_mean":densities.mean(),
+        "density_std":densities.std(),
+        "density_median":density_median,
+        "density_mad":np.median(np.abs(densities - density_median)),
+        "unique_voxels":len(densities)
+        }
 
 def measure_variable(s):
     return s.replace(" ","_").replace("(","").replace(")","").lower()
 
 class ConnectivityMatrixCalculator(HasTraits):
-    measures = List( editor = SetEditor(
-        values = sorted(function_registry.keys()),
+    measures = List(["Length (voxels)", "Winding", "Curvature","Center of Mass"],
+                    editor = SetEditor(
+        values = ["Length (voxels)", "Winding", "Curvature","Center of Mass"],
         left_column_title  = 'Available Measurements',
         right_column_title = 'Measurements to Calculate'))    
     save_file = File("")
     calcluate_region_summaries = Bool(True)
     scan = Instance(Scan)
     
-    def __init__(self,**traits):
+    def __init__(self,voxelized_steramlines, streamline_properties,**traits):
         super(ConnectivityMatrixCalculator,self).__init__(**traits)
         # everything gets stored in data until it gets saved
         self.data = {}
+        self.voxelized_streamlines = voxelized_steramlines
+        self.streamline_properties = streamline_properties
         
     def get_streamline_summaries(self):
         """
@@ -73,64 +63,84 @@ class ConnectivityMatrixCalculator(HasTraits):
         streamline. Then it loops over all the streamline labelings 
         and summarizes these values for each region pair.
         """
-        streamline_measures = {}
-        # Calculate the measurements requested
-        for func_name in self.measures:
-            computation = function_registry[func_name]
-            track_dset = scan.get_streamlines()
-            if not scan.from_pkl: raise AttributeError("Must 'Process Inputs' first!")
-            streamline_measures[measure_variable(func_name)] = computation(track_dset)
-            
+        return self.streamline_properties
     
     def calculate_measurements(self):
         if self.calcluate_region_summaries:
             self.process_regions()
         self.calculate_streamline_summaries()
-            
+        
     def process_connectivity(self):
         """
         calculates surface area in mm2, region center of mass (in voxel coordinates)
         and region volume in mm3.
         """
-        # First process every streamline in the dataset
-        streamline_measures = self.get_streamline_summaries()
+        if not self.scan.connectivity_matrix_path:
+            raise AttributeError("No output path specified")
         
-        self.data = {}
+        if os.path.exists(self.scan.connectivity_matrix_path):
+            print self.scan.connectivity_matrix_path, "exists - skipping"
+            return
+        
+        # First process every streamline in the dataset
+        streamline_measures = self.streamline_properties
+        
+        # Then calculate the set of voxels for each streamline
+        print "getting voelized streamlines"
+        voxel_sets = self.voxelized_streamlines
+        print "done"
+        
+        # Load in the streamline scalars
+        streamline_scalars = {}        
+        for scalar in self.scan.track_scalar_items:
+            streamline_scalars[scalar.name] = scalar.load_array()
+        
+        #self.scan.clearmem()
         from dsi2.volumes import load_lausanne_graphml, find_graphml_from_filename
         for label in self.scan.track_label_items:
             img_path = label.get_tracking_image_filename()
+            print img_path
             node_data = load_lausanne_graphml(find_graphml_from_filename(img_path))
             prefix= matlab_variable(label)
             region_ints = np.array(node_data['regions'])
-            region_names = np.array(node_data["region_labels"])
+            region_names = np.array([node_data['region_labels'][str(_id)]['dn_name'] for _id in region_ints])
             self.data[prefix + "region_ids"] = region_ints
             self.data[prefix + "region_names"] = region_names
             
             # Process the rois used in this atlas            
             mask = MaskDataset(img_path, region_int_labels=region_ints,
                                region_names=region_names)
-            for k,v in mask.get_stats():
+            print "calculating volume measurements"
+            for k,v in mask.get_stats().iteritems():
                 self.data[prefix + k] = v
                 
             # process the simple streamline measurements
             connection_ids = label.load_array()
-            # Make empty self.data for user-requested measurements
-            self.data[prefix + "streamline_count"] =  np.zeros((len(region_ints),len(region_ints))) 
+            
+            # Make empty matrices for user-requested measurements
+            self.data[prefix + "streamline_count"] =  lil_matrix((len(region_ints),len(region_ints))) 
             for measure in streamline_measures.keys():
-                self.data[prefix + measure + "_mean" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + measure + "_std" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + measure + "_median" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + measure + "_mad" ] = np.zeros((len(region_ints),len(region_ints)))
+                self.data[prefix + measure + "_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + measure + "_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + measure + "_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + measure + "_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
                 
-            # Make empty self.data for streamline scalars
+            # Make empty matrices for streamline scalars
             for scalar in streamline_scalars.keys():
-                self.data[prefix + scalar + "_mean" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + scalar + "_std" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + scalar + "_median" ] = np.zeros((len(region_ints),len(region_ints)))
-                self.data[prefix + scalar + "_mad" ] = np.zeros((len(region_ints),len(region_ints)))
+                self.data[prefix + scalar + "_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + scalar + "_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + scalar + "_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+                self.data[prefix + scalar + "_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
+                
+            # Make empty matrices for density
+            self.data[prefix +  "density_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "density_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "density_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "density_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "unique_voxels" ] = lil_matrix((len(region_ints),len(region_ints)))
                 
              # Loop over all region pairs for this parcellation 
-            for conn_id, (_i,_j) in node_data["index_to_region_pairs"].iteritems():
+            for (_i,_j), conn_id in node_data["region_pairs_to_index"].iteritems():
                 i,j = _i-1, _j-1
                 indexes = connection_ids == conn_id
                 n_streamlines = indexes.sum()
@@ -141,24 +151,25 @@ class ConnectivityMatrixCalculator(HasTraits):
                 for measure,values in streamline_measures.iteritems():
                     conn_values = values[indexes]
                     val_median = np.median(conn_values)
-                    self.data[prefix + measure + "_mean" ] = conn_values.mean()
-                    self.data[prefix + measure + "_std" ] = conn_values.std()
-                    self.data[prefix + measure + "_median" ] = val_median
-                    self.data[prefix + measure + "_mad" ] = np.median(np.abs(conn_values-val_median))
+                    self.data[prefix + measure + "_mean" ][i,j] = conn_values.mean()
+                    self.data[prefix + measure + "_std" ][i,j] = conn_values.std()
+                    self.data[prefix + measure + "_median" ][i,j] = val_median
+                    self.data[prefix + measure + "_mad" ][i,j] = np.median(np.abs(conn_values-val_median))
                     
                 # extract streamline scalar means
                 for scalar, values in streamline_scalars.iteritems():
                     conn_values = values[indexes]
                     val_median = np.median(conn_values)
-                    self.data[prefix + scalar + "_mean" ] = conn_values.mean()
-                    self.data[prefix + scalar + "_std" ] = conn_values.std()
-                    self.data[prefix + scalar + "_median" ] = val_median
-                    self.data[prefix + scalar + "_mad" ] = np.median(np.abs(conn_values-val_median))
+                    self.data[prefix + scalar + "_mean" ][i,j] = conn_values.mean()
+                    self.data[prefix + scalar + "_std" ][i,j] = conn_values.std()
+                    self.data[prefix + scalar + "_median" ][i,j] = val_median
+                    self.data[prefix + scalar + "_mad" ][i,j] = np.median(np.abs(conn_values-val_median))
                 
+                # add in the density results for this connection
+                density_results = voxel_density([map(tuple,stream) for stream \
+                                                 in voxel_sets[indexes]])
+                for density_measure, density_value in density_results.iteritems():
+                    self.data[prefix + density_measure][i,j] = density_value                    
                     
-                            
-                    
-                                
-                
-                
-                
+    def save(self):
+        savemat(self.scan.connectivity_matrix_path, self.data)
