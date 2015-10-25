@@ -316,7 +316,7 @@ class TrackDataset(HasTraits):
                 new_tracks = np.asanyarray(tracklist)
         elif type(tracklist) == np.ndarray:
             if not tracklist.size: return
-            if tracklist.dtype in (object,np.float64):
+            if tracklist.dtype in (object,np.float64,np.float16,np.float32):
                 #print "using a numpy object array"
                 new_tracks = tracklist
             else:

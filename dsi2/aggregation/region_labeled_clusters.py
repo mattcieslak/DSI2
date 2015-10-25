@@ -10,6 +10,7 @@ from traitsui.tabular_adapter import TabularAdapter
 import matplotlib.pyplot as plt
 from dsi2.config import dsi2_data_path
 from dsi2.ui.ltpa_result import LTPAResult, LTPAResults
+import cPickle as pickle
 
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as td
@@ -524,14 +525,16 @@ class RegionLabelAggregator(ClusterEditor):
             
         _results = []
         for conn_id, coords in filtered_results.iteritems():
+            if conn_id ==0: continue
             name = " ".join(self.index_to_region_pairs[conn_id])
             conn_tracks = self.track_source.query_connection_id(conn_id)
             tracks_a = join_tracks([trk for trk,gid in zip(conn_tracks,group_ids) \
                                     if gid == id_nums[0]])
             tracks_b = join_tracks([trk for trk,gid in zip(conn_tracks,group_ids) \
-                                    if gid == id_nums[0]])
+                                    if gid == id_nums[1]])
             _results.append(
                 LTPAResult(
+                    name=name,
                     result_coords = np.array(coords),
                     coord_radius = radius,
                     tracksA = tracks_a,

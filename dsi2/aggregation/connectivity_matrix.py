@@ -22,6 +22,28 @@ def matlab_variable(label_item):
     return  "_".join(
             ["%s_%s" % (k,v) for k,v in label_item.parameters.iteritems()]) + "_"
 
+def group_center_of_mass(coordinates):
+    # Make empty matrices for centers of mass
+    means = coordinates.mean(axis=0)
+    stds = coordinates.std(axis=0)
+    medians = np.median(coordinates,axis=0)
+    mads = np.median(np.abs(coordinates-medians),axis=0)
+    return {
+              "cx_mean" :means[0],
+              "cx_std" :stds[0],
+              "cx_median":medians[0], 
+              "cx_mad" :mads[0],
+              "cy_mean" :means[1],
+              "cy_std" :stds[1],
+              "cy_median":medians[1], 
+              "cy_mad" :mads[1],
+              "cz_mean" :means[2],
+              "cz_std" :stds[2],
+              "cz_median":medians[2], 
+              "cz_mad" :mads[2]
+              }
+
+
 def voxel_density(list_of_voxel_lists):
     voxels = defaultdict(int)
     for voxel_stream in list_of_voxel_lists:
@@ -50,11 +72,11 @@ class ConnectivityMatrixCalculator(HasTraits):
     calcluate_region_summaries = Bool(True)
     scan = Instance(Scan)
     
-    def __init__(self,voxelized_steramlines, streamline_properties,**traits):
+    def __init__(self,voxelized_streamlines, streamline_properties,**traits):
         super(ConnectivityMatrixCalculator,self).__init__(**traits)
         # everything gets stored in data until it gets saved
         self.data = {}
-        self.voxelized_streamlines = voxelized_steramlines
+        self.voxelized_streamlines = voxelized_streamlines
         self.streamline_properties = streamline_properties
         
     def get_streamline_summaries(self):
@@ -120,6 +142,7 @@ class ConnectivityMatrixCalculator(HasTraits):
             # Make empty matrices for user-requested measurements
             self.data[prefix + "streamline_count"] =  lil_matrix((len(region_ints),len(region_ints))) 
             for measure in streamline_measures.keys():
+                if measure == "center_of_mass": continue
                 self.data[prefix + measure + "_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
                 self.data[prefix + measure + "_std" ] = lil_matrix((len(region_ints),len(region_ints)))
                 self.data[prefix + measure + "_median" ] = lil_matrix((len(region_ints),len(region_ints)))
@@ -138,6 +161,20 @@ class ConnectivityMatrixCalculator(HasTraits):
             self.data[prefix +  "density_median" ] = lil_matrix((len(region_ints),len(region_ints)))
             self.data[prefix +  "density_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
             self.data[prefix +  "unique_voxels" ] = lil_matrix((len(region_ints),len(region_ints)))
+            
+            # Make empty matrices for centers of mass
+            self.data[prefix +  "cx_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cx_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cx_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cx_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cy_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cy_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cy_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cy_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cz_mean" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cz_std" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cz_median" ] = lil_matrix((len(region_ints),len(region_ints)))
+            self.data[prefix +  "cz_mad" ] = lil_matrix((len(region_ints),len(region_ints)))
                 
              # Loop over all region pairs for this parcellation 
             for (_i,_j), conn_id in node_data["region_pairs_to_index"].iteritems():
@@ -149,6 +186,7 @@ class ConnectivityMatrixCalculator(HasTraits):
 
                 # extract user-requested measurements                
                 for measure,values in streamline_measures.iteritems():
+                    if measure == "center_of_mass": continue
                     conn_values = values[indexes]
                     val_median = np.median(conn_values)
                     self.data[prefix + measure + "_mean" ][i,j] = conn_values.mean()
@@ -164,6 +202,11 @@ class ConnectivityMatrixCalculator(HasTraits):
                     self.data[prefix + scalar + "_std" ][i,j] = conn_values.std()
                     self.data[prefix + scalar + "_median" ][i,j] = val_median
                     self.data[prefix + scalar + "_mad" ][i,j] = np.median(np.abs(conn_values-val_median))
+                    
+                # get the center of mass
+                centers = group_center_of_mass(streamline_measures['center_of_mass'][indexes])
+                for measure, value in centers.iteritems():
+                    self.data[prefix+measure][i,j] = value
                 
                 # add in the density results for this connection
                 density_results = voxel_density([map(tuple,stream) for stream \
