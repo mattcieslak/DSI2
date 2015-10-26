@@ -310,4 +310,21 @@ class SlicerPanel(HasTraits):
         )
     traits_view = View(
           slice_panel_group
+        )        
+    
+    
+class SlicerPanel3D(SlicerPanel):
+    plot3d_group = Group(
+                     Item('scene3d',
+                     editor=SceneEditor(scene_class=Scene),
+                     height=500, width=500),
+                 show_labels=False)
+    slice_panel_group = HGroup(
+                               Item('slice_plots',style="custom"),
+                               show_labels=False)
+    traits_view = View(
+        VSplit(
+            plot3d_group,
+            slice_panel_group
+            )
         )

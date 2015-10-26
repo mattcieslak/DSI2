@@ -17,6 +17,7 @@ import multiprocessing
 from dsi2.volumes import get_region_ints_from_graphml, b0_to_qsdr_map
 from dsi2.database.mongodb import MongoCreator
 from dsi2.database.mongodb import upload_local_scan, init_db
+from copy import deepcopy
 
 import time                                                
 
@@ -74,48 +75,69 @@ def measure_variable(s):
     return s.replace(" ","_").replace("(","").replace(")","").lower()
 
 import multiprocessing, random, sys, os, time
-# found http://stackoverflow.com/questions/23937189/how-do-i-use-subprocesses-to-force-python-to-release-memory/24126616#24126616
-def _get_voxelized_and_properties(scan, state, measures):
-    t0 = time.time()
-    streamline_measures = {}
-    streamlines = scan.get_voxel_coordinate_streamlines()
-    # Calculate the measurements requested
-    for func_name in measures:
-        save_name = measure_variable(func_name)
-        filename = scan.pkl_path+"."+save_name+".npy"
-        if os.path.exists(filename):
-            print "Loading", filename, "from disk" 
-            streamline_measures[save_name] = np.load(filename)
-        else:
-            print "running",  func_name
-            computation = function_registry[func_name]
-            result = computation(streamlines)
-            print "saving", filename
-            np.save(filename,result)
-            streamline_measures[save_name] = result
-    state['streamline_measures'] = streamline_measures
-    state['voxelized_streamlines'] = scan.get_voxelized_streamlines()
-    t1 = time.time()
-    state['time'] = t1 - t0
 
-def create_connectivity_matrix(scan):
-    print scan.connectivity_matrix_path
-    if os.path.exists(scan.connectivity_matrix_path):
-        print scan.connectivity_matrix_path, "exists - skipping"
-        return
-    from dsi2.aggregation.connectivity_matrix import ConnectivityMatrixCalculator
-    manager = multiprocessing.Manager()
-    state = manager.dict(streamline_properties={},voxelized_streamlines=[],time=0)  # shared state
-    p = multiprocessing.Process(target=_get_voxelized_and_properties, args=(scan,state,function_registry.keys()))
-    p.start()
-    p.join()
-    print 'time to sort: %.3f' % state['time']
-    cmc= ConnectivityMatrixCalculator(
-                        voxelized_steramlines=state['voxelized_streamlines'],
-                        streamline_properties=state['streamline_properties'],
-                        scan = scan)
-    cmc.process_connectivity()
-    cmc.save()
+class PickleLoader(multiprocessing.Process):
+    def __init__(self, input_queue, output_queue,measures):
+        multiprocessing.Process.__init__(self)
+        self.input_queue = input_queue
+        self.output_queue = output_queue
+        self.measures = measures
+        
+    def run(self):
+        proc_name = self.name
+        while True:
+            scan = self.input_queue.get()
+            if scan is None:
+                print "Pickle loader exiting"
+                break
+            
+            t0 = time.time()
+            state = {"scan":deepcopy(scan)}
+            streamline_measures = {}
+            streamlines = scan.get_voxel_coordinate_streamlines()
+            # Calculate the measurements requested
+            for func_name in self.measures:
+                save_name = measure_variable(func_name)
+                filename = scan.pkl_path+"."+save_name+".npy"
+                if os.path.exists(filename):
+                    print "Loading", filename, "from disk" 
+                    streamline_measures[save_name] = np.load(filename)
+                else:
+                    print "running",  func_name
+                    computation = function_registry[func_name]
+                    result = computation(streamlines)
+                    print "saving", filename
+                    np.save(filename,result)
+                    streamline_measures[save_name] = result
+            state['streamline_measures'] = streamline_measures
+            state['voxelized_streamlines'] = scan.get_voxelized_streamlines()
+            t1 = time.time()
+            state['time'] = t1 - t0
+            self.output_queue.put(state)
+
+class ConMatRunner(multiprocessing.Process):
+    def __init__(self,data_input_queue, result_queue):
+        multiprocessing.Process.__init__(self)
+        self.input_queue = data_input_queue
+        self.result_queue = result_queue
+    
+    def run(self):
+        proc_name = self.name
+        while True:
+            state = self.input_queue.get()
+            if state is None:
+                print "Exiting conmat processor"
+                break
+            
+            from dsi2.aggregation.connectivity_matrix import ConnectivityMatrixCalculator
+            print 'time to sort: %.3f' % state['time']
+            cmc= ConnectivityMatrixCalculator(
+                                state['voxelized_streamlines'],
+                                state['streamline_measures'],
+                                scan = state['scan'])
+            cmc.process_connectivity()
+            cmc.save()
+            self.result_queue.put("done")
 
 def create_missing_files(scan,overwrite=False):
     """
@@ -168,6 +190,7 @@ class LocalDataImporter(HasTraits):
     Holds a list of Scan objects. These can be loaded from
     and saved to a json file.
     """
+    conmat_measures = List(sorted(function_registry.keys()))
     json_file = File()
     datasets = List(Instance(Scan))
     save = Button()
@@ -189,17 +212,45 @@ class LocalDataImporter(HasTraits):
         return MongoCreator()
     
     def create_connectivity_matrices(self):
-        print "Creating connectivity matrices"
-        if self.n_processors > 1:
-            print "Using %d processors" % self.n_processors
-            pool = multiprocessing.Pool(processes=self.n_processors)
-            result = pool.map(create_connectivity_matrix, self.datasets)
-            pool.close()
-            pool.join()
-        else:    
-            for scan in self.datasets:
-                create_connectivity_matrix(scan)
-        print "Finished!"
+        
+        scans_to_process = [scan for scan in self.datasets if not os.path.exists(scan.connectivity_matrix_path)]
+        if not len(scans_to_process): 
+            print "Connectivity matrices already created"
+            return
+        
+        n_to_process = len(scans_to_process)
+        print "creating %d connectivity matrices" % n_to_process
+        
+        # Create a queue that reads data and sends results to the worker procs
+        scans_to_process = scans_to_process + [None] 
+        
+        inputs = multiprocessing.Queue()
+        data_queue_for_conmats=multiprocessing.Queue()
+        conmat_results = multiprocessing.Queue()
+        
+        print "Creating reader processes"
+        p_reader = PickleLoader(inputs,data_queue_for_conmats,self.conmat_measures)
+        p_reader.start()
+        
+        
+        print "creating results processors"
+        conmat_processors = [
+            ConMatRunner(data_queue_for_conmats,conmat_results) \
+                                       for x in range(self.n_processors)]
+        for cm in conmat_processors: cm.start()
+        
+        for arg in scans_to_process:
+            inputs.put(arg)
+            
+        p_reader.join()
+        for n in range(self.n_processors):
+            data_queue_for_conmats.put(None)
+        
+        finished_procs = 0
+        while finished_procs < n_to_process:
+            res = conmat_results.get()
+            finished_procs += 1
+            print "finished %d/%d" %(finished_procs, n_to_process)
     
     def _b_create_connectivity_matrices_fired(self):
         self.create_connectivity_matrices()

@@ -37,6 +37,7 @@ ltpa_result_table = TableEditor(
     columns = 
     [
         ObjectColumn(name="name"),
+        ObjectColumn(name="n_coordinates"),
         CheckboxColumn(name="visible"),
         ObjectColumn(name="coord_opacity"),
         ObjectColumn(name="tracksA_opacity"),
@@ -64,7 +65,7 @@ class CoordinatesGraphic(HasTraits):
     glyph = Instance(PipelineBase, transient=True)
     glyph_drawn = Bool(False, transient=True)
     splatter = Instance(PipelineBase,transient=True)
-    glyph_opacity = Range(high=1.0,low=0.0,value=0.3)
+    glyph_opacity = Range(high=1.0,low=0.0,value=1.)
     
 
     # MayaVi data options
@@ -72,8 +73,8 @@ class CoordinatesGraphic(HasTraits):
         [ "Blues", "Oranges", "pink", "Greens"] )
     render_type = Enum(["static_spheres","sized_cubes",
                         "static_cubes","splatter"])
-    static_color = Color
-    visible = Bool(True)
+    static_color = Color("green")
+    visible = Bool(False)
 
             
     def set_visibility(self, visibility):
@@ -141,6 +142,13 @@ class LTPAResult(HasTraits):
     # 3d MayaVi scene that will display slices and streamlines
     scene3d = Instance(MlabSceneModel,transient=True)
 
+    n_coordinates=Property(Int)
+    def _get_n_coordinates(self):
+        try:
+            return self.result_coords.shape[0]
+        except Exception, e:
+            return 0
+
     # Data objects
     result_coords = Array
     result_coord_scalars = Array
@@ -156,17 +164,16 @@ class LTPAResult(HasTraits):
     showA_as = Enum("splatter","tracks")
     showB_as = Enum("splatter","tracks")
     coord_group = Enum("A","B")
-    coord_opacity = Range(0.0,1.0,0.5)
     visible = Bool(False)
-    tracksA_opacity = Range(0.0,1.0,0.5)
-    tracksA_visible = Bool(True)
-    tracksB_opacity = Range(0.0,1.0,0.5)
-    tracksB_visible = Bool(True)
+    tracksA_opacity = Range(0.0,1.0,0.05)
+    tracksA_visible = Bool(False)
+    tracksB_opacity = Range(0.0,1.0,0.05)
+    tracksB_visible = Bool(False)
     
     
     # graphics objects
     coord_graphic = Instance(CoordinatesGraphic,transient=True)
-    coord_opacity = Range(0.0,1.0,0.5)
+    coord_opacity = Range(0.0,1.0,1.)
     
     def __init__(self,**traits):
         super(LTPAResult,self).__init__(**traits)
@@ -204,6 +211,7 @@ class LTPAResult(HasTraits):
             tds.set_track_visibility(self.visible)
             self._tracksA_opacity_changed()
             self._tracksB_opacity_changed()
+        self.coord_graphic.visible = self.visible
         self.coord_graphic.set_visibility(self.visible)
         
     def _tracksA_opacity_changed(self):
@@ -234,7 +242,8 @@ class LTPAResults(HasTraits):
         Group(
             Item("results", editor=ltpa_result_table),
             show_labels=False
-            )
+            ),
+        resizable=True
         )
     test_view = View(
         Group(
@@ -251,8 +260,8 @@ class LTPAResults(HasTraits):
     @on_trait_change('scene3d.activated')
     def display_scene3d(self):
         if self.scene3d_inited: return
-        for res in self.results:
-            res.visible = True
+        #for res in self.results:
+        #    res.visible = True
             
 
 def load_ltpa_results(results_pth):
