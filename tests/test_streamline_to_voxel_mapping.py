@@ -25,7 +25,7 @@ NUM_SIMULATIONS=1000
 TDI_CSV=TDI_OUTPUT+".csv"
 TEMP_ATLAS="temp_atlas.nii.gz"
 CONN_TRK="fake_conn.trk"
-FRANK_CONN=CONN_TRK + ".connectivity.mat"
+FRANK_CONN="fake.fib.gz.temp_atlas.count.end.connectivity.mat"
 
 all_rm = [FAKE_FIB_FILE,FAKE_TRK_FILE,TDI_OUTPUT,
          REFERENCE_VOL, TDI_CSV]
@@ -42,12 +42,12 @@ rm(all_rm)
 
 # Generate an output from DSI Studio
 create_fake_fib_file(FAKE_FIB_FILE, VOLUME_SHAPE, VOXEL_SIZE)
-os.system("/home/cieslak/projects/bin/dsi_studio " 
+os.system("dsi_studio " 
           "--action=exp --export=fa0 " 
           "--source=" +  FAKE_FIB_FILE )
 ref_output = nib.load(REFERENCE_VOL)
 ref_affine = ref_output.get_affine()
-ref_shape = ref_output.get_shape()
+ref_shape = ref_output.shape
 ref_voxel_size = ref_output.get_header().get_zooms()
 
 def get_coordinate_from_ants(volume):
@@ -70,12 +70,12 @@ def test_coordinate_transforms():
     nib.trackvis.write(FAKE_TRK_FILE,streamlines,header)
     
     # Use DSI Studio to calculate a track density map.
-    os.system("/home/cieslak/projects/bin/dsi_studio " 
+    os.system("dsi_studio " 
               "--action=ana --export=tdi " 
               "--source=" +  FAKE_FIB_FILE + " "
               "--tract=" + FAKE_TRK_FILE)
     from_frank = nib.load(TDI_OUTPUT)
-    franks_voxel = np.unravel_index(from_frank.get_data().argmax(),from_frank.get_shape())
+    franks_voxel = np.unravel_index(from_frank.get_data().argmax(),from_frank.shape)
     
     ijk_streamlines = streamlines_to_ijk(voxmm_streamlines,
                                    from_frank, trackvis_header=header,return_coordinates="voxel_index")
@@ -138,10 +138,10 @@ def simulate_connection(nib_atlas_img, regions,
     nib_atlas_img.to_filename(TEMP_ATLAS)
 
 
-    os.system("/home/cieslak/projects/bin/dsi_studio " 
+    os.system("dsi_studio " 
               "--action=ana --tract=" + CONN_TRK + " " 
-              "--source=" +  FAKE_FIB_FILE + " --end=" + TEMP_ATLAS + " "
-              "--export=connectivity")          
+              "--source=" +  FAKE_FIB_FILE + " --connectivity=" + TEMP_ATLAS + " "
+              "--connectivity_type=end")          
     m = loadmat(FRANK_CONN)
     assert m['connectivity'].max() == n_streamlines
     frank_maxes = np.unravel_index(m['connectivity'].argmax(),m['connectivity'].shape)
@@ -170,7 +170,7 @@ def test_connectivity_matrix():
                                               #output_trk_filename=CONN_TRK,
                                               #n_streamlines=n_streamlines,
                                               #return_streamlines=True)
-        #os.system("/home/cieslak/projects/bin/dsi_studio " 
+        #os.system("dsi_studio " 
               #"--action=ana --tract=" + CONN_TRK + " " 
               #"--source=" +  FAKE_FIB_FILE + " --end=" + TEMP_ATLAS + " "
               #"--export=connectivity")          
